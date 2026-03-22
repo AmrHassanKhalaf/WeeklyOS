@@ -17,12 +17,8 @@ export function useAiApi() {
       })
 
       if (error) {
-        console.error('Edge Function Error:', error)
-        // Check if error is related to 401 Unauthorized
-        if (error.message?.includes('401') || error.message?.includes('non-2xx')) {
-          throw new Error('Session unauthorized or expired. Please sign out and sign back in.')
-        }
-        throw new Error(error.message || 'AI Edge Function failed')
+        console.error('Edge Function Error Response:', error)
+        throw new Error(error.message || 'AI Edge Function failed with a non-2xx status code.')
       }
 
       if (data?.error) {
