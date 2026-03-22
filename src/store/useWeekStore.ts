@@ -173,6 +173,7 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
       date: dateStr,
       shortName: DAY_SHORT[idx],
       isToday: isCurrentWeek && idx === todayIdx,
+      isRestDay: day === 'friday',
       progress,
       highTask: highTask ? mapDbTask(highTask) : undefined,
       mediumTasks: mediumTasks.map(mapDbTask),

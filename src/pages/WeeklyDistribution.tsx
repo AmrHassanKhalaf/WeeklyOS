@@ -55,7 +55,7 @@ export function WeeklyDistribution() {
             <DayCardDistribution day={wed} isHighOutputZone={wed.isToday} />
             <DayCardDistribution day={thu} />
             <div className="col-span-2">
-              <DayCardDistribution day={{ ...fri, isRestDay: !fri.highTask && fri.mediumTasks.length === 0 && fri.smallTasks.length === 0 }} />
+              <DayCardDistribution day={fri} />
             </div>
           </div>
         </div>

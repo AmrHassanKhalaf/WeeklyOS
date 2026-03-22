@@ -10,7 +10,10 @@ export function TaskCard({ item }: TaskCardProps) {
   const { toggleBrainDumpSelection, removeBrainDumpItem, updateBrainDumpItem } = useWeekStore()
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(item.title)
+  const [editTags, setEditTags] = useState<string[]>(item.tags || [])
+  const [newTag, setNewTag] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const tagInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isEditing) inputRef.current?.focus()
@@ -18,16 +21,45 @@ export function TaskCard({ item }: TaskCardProps) {
 
   const commitEdit = async () => {
     setIsEditing(false)
-    if (editValue.trim() && editValue.trim() !== item.title) {
-      await updateBrainDumpItem(item.id, { title: editValue.trim() })
+    const titleChanged = editValue.trim() && editValue.trim() !== item.title
+    const tagsChanged = JSON.stringify(editTags) !== JSON.stringify(item.tags || [])
+
+    if (titleChanged || tagsChanged) {
+      await updateBrainDumpItem(item.id, { 
+        title: editValue.trim() || item.title, 
+        tags: editTags 
+      })
     } else {
-      setEditValue(item.title) // reset if unchanged or empty
+      setEditValue(item.title)
+      setEditTags(item.tags || [])
     }
+  }
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !editTags.includes(newTag.trim().toLowerCase())) {
+      setEditTags([...editTags, newTag.trim().toLowerCase()])
+    }
+    setNewTag('')
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setEditTags(editTags.filter(t => t !== tagToRemove))
   }
 
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') commitEdit()
-    if (e.key === 'Escape') { setIsEditing(false); setEditValue(item.title) }
+    if (e.key === 'Escape') { 
+      setIsEditing(false)
+      setEditValue(item.title)
+      setEditTags(item.tags || [])
+    }
+  }
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
   }
 
   return (
@@ -56,18 +88,45 @@ export function TaskCard({ item }: TaskCardProps) {
       {/* Content */}
       <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5" onClick={e => e.stopPropagation()}>
         {isEditing ? (
-          <input
-            ref={inputRef}
-            value={editValue}
-            onChange={e => setEditValue(e.target.value)}
-            onKeyDown={handleEditKeyDown}
-            onBlur={commitEdit}
-            className="w-full bg-transparent border-b border-primary text-sm font-medium text-on-surface outline-none py-0.5"
-          />
+          <div className="w-full space-y-2">
+            <input
+              ref={inputRef}
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+              onKeyDown={handleEditKeyDown}
+              className="w-full bg-transparent border-b border-primary text-sm font-medium text-on-surface outline-none py-0.5"
+            />
+            <div className="flex flex-wrap gap-2 items-center">
+               {editTags.map(tag => (
+                 <span key={tag} className="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 group/tag">
+                   {tag}
+                   <button onClick={() => handleRemoveTag(tag)} className="text-on-surface-variant/50 hover:text-error">
+                     <span className="material-symbols-outlined text-[10px]">close</span>
+                   </button>
+                 </span>
+               ))}
+               <div className="flex items-center gap-1">
+                 <input
+                   ref={tagInputRef}
+                   value={newTag}
+                   onChange={e => setNewTag(e.target.value)}
+                   onKeyDown={handleTagKeyDown}
+                   placeholder="Add tag..."
+                   className="bg-surface-container-low text-[10px] px-2 py-0.5 rounded outline-none w-24 text-on-surface placeholder:text-neutral-500"
+                 />
+                 <button onClick={handleAddTag} className="text-[10px] bg-primary/20 text-primary p-0.5 rounded hover:bg-primary/30">
+                   <span className="material-symbols-outlined text-[12px]">add</span>
+                 </button>
+               </div>
+            </div>
+            <div className="flex justify-end pt-1">
+              <button onClick={commitEdit} className="text-[10px] bg-primary/20 text-primary font-bold px-3 py-1 rounded hover:bg-primary/30 transition-colors">Done</button>
+            </div>
+          </div>
         ) : (
-          <p className="text-sm font-medium text-on-surface truncate w-full">{item.title}</p>
+          <p className="text-sm font-medium text-on-surface w-full">{item.title}</p>
         )}
-        {item.tags && item.tags.length > 0 && (
+        {!isEditing && item.tags && item.tags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap mt-1">
             {item.tags.map(tag => (
               <span key={tag} className="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded text-[10px] font-bold uppercase tracking-wider">
@@ -84,7 +143,7 @@ export function TaskCard({ item }: TaskCardProps) {
         onClick={e => e.stopPropagation()}
       >
         <button
-          onClick={() => { setIsEditing(true); setEditValue(item.title) }}
+          onClick={() => { setIsEditing(true); setEditValue(item.title); setEditTags(item.tags || []) }}
           className="material-symbols-outlined text-outline hover:text-white transition-colors text-xl"
           title="Edit"
         >

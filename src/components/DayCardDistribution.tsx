@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { DayPlan, Task, DayOfWeek, Priority } from '../data/mockData'
 import { useWeekStore } from '../store/useWeekStore'
 
@@ -7,40 +7,167 @@ interface DayCardDistributionProps {
   isHighOutputZone?: boolean
 }
 
-function TaskSlot({ task, emptyHeight = 'h-12' }: { task?: Task; emptyHeight?: string }) {
-  if (task) {
+const DAYS_OPTIONS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+
+function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void }) {
+  const { toggleTaskComplete, deleteTask, updateTask } = useWeekStore()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editData, setEditData] = useState({
+    title: '', start: '', duration: '', description: '', day: 'monday' as DayOfWeek, priority: 'low' as Priority
+  })
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (task && isEditing) {
+      setEditData({
+        title: task.title,
+        start: task.startTime || '',
+        duration: task.estimatedTime || '',
+        description: task.description || '',
+        day: task.day || 'monday',
+        priority: task.priority || 'low'
+      })
+      setTimeout(() => inputRef.current?.focus(), 50)
+    }
+  }, [isEditing, task])
+
+  if (!task) {
     return (
-      <div className={`bg-surface-container-highest p-3 rounded-xl border border-white/5 text-sm cursor-pointer hover:bg-surface-bright transition-colors ${task.status === 'done' ? 'opacity-50 line-through' : ''}`}>
-        <div className="break-words leading-relaxed">{task.title}</div>
-        {(task.startTime || task.estimatedTime) && (
-           <div className="flex gap-3 mt-2 text-[10px] text-primary/70 font-medium bg-primary/5 w-max px-2 py-0.5 rounded">
-             {task.startTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">schedule</span>{task.startTime}</div>}
-             {task.estimatedTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">hourglass_bottom</span>{task.estimatedTime}</div>}
-           </div>
-        )}
+      <div onClick={onEmptyClick} className={`${emptyHeight} rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic cursor-pointer hover:border-white/20 transition-colors`}>
+        No tasks yet
       </div>
     )
   }
+
+  if (isEditing) {
+    return (
+      <div className="bg-surface-container-high border border-primary/30 rounded-xl p-3 flex flex-col gap-3">
+        <input
+          ref={inputRef}
+          value={editData.title}
+          onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
+          onKeyDown={e => e.key === 'Enter' && handleSave()}
+          placeholder="Task title..."
+          className="w-full bg-transparent text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
+        />
+        <textarea
+          value={editData.description}
+          onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
+          placeholder="Notes (optional)..."
+          rows={2}
+          className="w-full bg-transparent text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
+        />
+        <div className="flex gap-2">
+          <input
+            type="time"
+            title="Start Time"
+            value={editData.start}
+            onChange={e => setEditData(p => ({ ...p, start: e.target.value }))}
+            className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 flex-1 text-on-surface-variant [color-scheme:dark]"
+          />
+          <input
+            value={editData.duration}
+            title="Estimated Duration"
+            onChange={e => setEditData(p => ({ ...p, duration: e.target.value }))}
+            onKeyDown={e => e.key === 'Enter' && handleSave()}
+            placeholder="Duration (e.g. 2h)"
+            className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 w-24 text-on-surface-variant placeholder:text-neutral-600"
+          />
+        </div>
+        <div className="flex gap-2 items-center">
+            <select
+                value={editData.priority}
+                onChange={e => setEditData(p => ({ ...p, priority: e.target.value as Priority }))}
+                className="bg-surface-container-low text-xs text-on-surface-variant rounded outline-none p-1 flex-1"
+            >
+                <option value="high">High Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="low">Low Priority</option>
+            </select>
+            <select
+                value={editData.day}
+                onChange={e => setEditData(p => ({ ...p, day: e.target.value as DayOfWeek }))}
+                className="bg-surface-container-low text-xs text-on-surface-variant rounded outline-none p-1 flex-1"
+            >
+                {DAYS_OPTIONS.map(d => (
+                    <option key={d} value={d}>{d[0].toUpperCase() + d.substring(1)}</option>
+                ))}
+            </select>
+        </div>
+        
+        <div className="flex justify-between items-center mt-1 pt-2 border-t border-white/5">
+          <button onClick={() => deleteTask(task.id)} className="text-[10px] text-error hover:bg-error/10 px-2 py-1.5 rounded transition-colors flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">delete</span> Delete
+          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setIsEditing(false)} className="text-[10px] text-neutral-400 hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors">Cancel</button>
+            <button onClick={() => handleSave()} className="text-[10px] bg-primary/20 text-primary font-bold px-4 py-1.5 rounded hover:bg-primary/30 transition-colors">Save</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const handleSave = async () => {
+    if (editData.title.trim()) {
+      await updateTask(task.id, {
+        title: editData.title.trim(),
+        startTime: editData.start.trim() || undefined,
+        estimatedTime: editData.duration.trim() || undefined,
+        description: editData.description.trim() || undefined,
+        day: editData.day,
+        priority: editData.priority
+      })
+      setIsEditing(false)
+    }
+  }
+
   return (
-    <div className={`${emptyHeight} rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic`}>
-      No tasks yet
+    <div className={`group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-all focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden ${task.status === 'done' ? 'opacity-60 bg-surface-container-low' : ''}`}>
+      <div className="flex items-start gap-3">
+        <button
+            onClick={() => toggleTaskComplete(task.id)}
+            className={`mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded border transition-colors ${
+                task.status === 'done' ? 'bg-primary border-primary text-background' : 'border-outline-variant hover:border-primary text-transparent'
+            }`}
+        >
+            <span className="material-symbols-outlined text-[12px] font-bold">check</span>
+        </button>
+        <div className="flex-1 min-w-0" onClick={() => setIsEditing(true)}>
+            <div className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}>{task.title}</div>
+            {task.description && <div className="text-xs text-on-surface-variant mt-1 line-clamp-2">{task.description}</div>}
+            {(task.startTime || task.estimatedTime) && (
+            <div className="flex gap-2 mt-2 text-[10px] text-primary/70 font-medium bg-primary/5 w-max px-2 py-0.5 rounded">
+                {task.startTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">schedule</span>{task.startTime}</div>}
+                {task.estimatedTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">hourglass_bottom</span>{task.estimatedTime}</div>}
+            </div>
+            )}
+        </div>
+      </div>
     </div>
   )
 }
 
-function TaskInlineForm({ priority, onSave, onCancel }: { priority: Priority; onSave: (title: string, start?: string, duration?: string) => Promise<void>; onCancel: () => void }) {
-  const [title, setTitle] = useState('')
-  const [start, setStart] = useState('')
-  const [duration, setDuration] = useState('')
-
+function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priority; day: DayOfWeek; onSave: (task: Partial<Task>) => Promise<void>; onCancel: () => void }) {
+  const [editData, setEditData] = useState({
+    title: '', start: '', duration: '', description: '', day: day, priority: priority
+  })
+  
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSave()
     if (e.key === 'Escape') onCancel()
   }
 
   const handleSave = () => {
-    if (title.trim()) {
-      onSave(title.trim(), start.trim() || undefined, duration.trim() || undefined)
+    if (editData.title.trim()) {
+      onSave({
+        title: editData.title.trim(),
+        startTime: editData.start.trim() || undefined,
+        estimatedTime: editData.duration.trim() || undefined,
+        description: editData.description.trim() || undefined,
+        day: editData.day,
+        priority: editData.priority
+      })
     }
   }
 
@@ -48,22 +175,29 @@ function TaskInlineForm({ priority, onSave, onCancel }: { priority: Priority; on
     <div className="bg-surface-container-high border border-primary/30 rounded-xl p-3 flex flex-col gap-3">
       <input
         autoFocus
-        value={title}
-        onChange={e => setTitle(e.target.value)}
+        value={editData.title}
+        onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
         onKeyDown={handleKeyDown}
         placeholder={`${priority.charAt(0).toUpperCase() + priority.slice(1)} task title...`}
-        className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-500"
+        className="w-full bg-transparent text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
+      />
+      <textarea
+        value={editData.description}
+        onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
+        placeholder="Notes (optional)..."
+        rows={2}
+        className="w-full bg-transparent text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
       />
       <div className="flex gap-2">
         <input
           type="time"
-          value={start}
-          onChange={e => setStart(e.target.value)}
+          value={editData.start}
+          onChange={e => setEditData(p => ({ ...p, start: e.target.value }))}
           className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 flex-1 text-on-surface-variant [color-scheme:dark]"
         />
         <input
-          value={duration}
-          onChange={e => setDuration(e.target.value)}
+          value={editData.duration}
+          onChange={e => setEditData(p => ({ ...p, duration: e.target.value }))}
           onKeyDown={handleKeyDown}
           placeholder="Duration (e.g. 2h)"
           className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 w-24 text-on-surface-variant placeholder:text-neutral-600"
@@ -71,7 +205,7 @@ function TaskInlineForm({ priority, onSave, onCancel }: { priority: Priority; on
       </div>
       <div className="flex justify-end gap-2 mt-1">
         <button onClick={onCancel} className="text-[10px] text-neutral-400 hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors">Cancel</button>
-        <button onClick={handleSave} className="text-[10px] bg-primary/20 text-primary font-bold px-4 py-1.5 rounded hover:bg-primary/30 transition-colors">Save Task</button>
+        <button onClick={handleSave} className="text-[10px] bg-primary/20 text-primary font-bold px-4 py-1.5 rounded hover:bg-primary/30 transition-colors">Create Task</button>
       </div>
     </div>
   )
@@ -92,8 +226,16 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
       return (
         <TaskInlineForm
           priority={priority}
-          onSave={async (title, start, duration) => {
-            await createTask({ title, priority, day: day.day as DayOfWeek, startTime: start, estimatedTime: duration })
+          day={day.day as DayOfWeek}
+          onSave={async (taskUpdates) => {
+            await createTask({ 
+              title: taskUpdates.title!, 
+              priority: taskUpdates.priority || priority, 
+              day: taskUpdates.day || (day.day as DayOfWeek), 
+              startTime: taskUpdates.startTime, 
+              estimatedTime: taskUpdates.estimatedTime,
+              description: taskUpdates.description
+            })
             setAddingFor(null)
           }}
           onCancel={() => setAddingFor(null)}
@@ -221,7 +363,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
                 >add</span>
               </div>
             </div>
-            <TaskSlot task={day.highTask} emptyHeight="h-24" />
+            <TaskItem task={day.highTask} emptyHeight="h-24" onEmptyClick={() => startAdd('high')} />
             {renderInlineForm('high')}
           </div>
 
@@ -238,7 +380,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               </div>
             </div>
             {Array.from({ length: medSlots }).map((_, i) => (
-              <TaskSlot key={i} task={day.mediumTasks[i]} />
+              <TaskItem key={i} task={day.mediumTasks[i]} onEmptyClick={() => startAdd('medium')} />
             ))}
             {renderInlineForm('medium')}
           </div>
@@ -257,7 +399,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
             </div>
             <div className="space-y-2">
               {Array.from({ length: smallSlots }).map((_, i) => (
-                <TaskSlot key={i} task={day.smallTasks[i]} />
+                <TaskItem key={i} task={day.smallTasks[i]} onEmptyClick={() => startAdd('low')} />
               ))}
             </div>
             {renderInlineForm('low')}
