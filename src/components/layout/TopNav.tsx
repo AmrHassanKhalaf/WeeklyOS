@@ -2,7 +2,9 @@ import { NavLink } from 'react-router-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
 
 export function TopNav() {
-  const { isLeftSidebarOpen, toggleLeftSidebar, toggleRightSidebar, isMobile } = useLayoutStore()
+  const { isMobile, isLeftSidebarOpen, isFocusMode, toggleLeftSidebar, toggleRightSidebar } = useLayoutStore()
+
+  if (isFocusMode) return null
 
   return (
     <header className={`fixed top-0 right-0 h-14 z-40 bg-[#131313]/80 backdrop-blur-xl flex items-center justify-between px-8 border-none transition-all duration-300 ${

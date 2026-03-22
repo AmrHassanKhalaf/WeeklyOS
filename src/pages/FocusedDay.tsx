@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
-import { AppLayout, useFocusMode } from '../components/layout/AppLayout'
+import { AppLayout } from '../components/layout/AppLayout'
+import { useLayoutStore } from '../store/useLayoutStore'
 import { useWeekStore } from '../store/useWeekStore'
 import type { Task } from '../store/useWeekStore'
 
 export function FocusedDay() {
   const { currentWeek, isLoadingWeek, pomodoroTime, isPomodoroRunning, startPomodoro, stopPomodoro, tickPomodoro, toggleTaskComplete, markDayComplete } = useWeekStore()
-  const { focusMode, setFocusMode } = useFocusMode()
+  const { isFocusMode, toggleFocusMode } = useLayoutStore()
 
 
   useEffect(() => {
@@ -73,11 +74,11 @@ export function FocusedDay() {
             {isPomodoroRunning ? 'Pause Focus' : 'Start Focus'}
           </button>
           <button
-            onClick={() => setFocusMode(!focusMode)}
+            onClick={toggleFocusMode}
             className="bg-surface-container-high px-6 py-3 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-surface-container-highest transition-colors"
           >
-            <span className="material-symbols-outlined">{focusMode ? 'visibility' : 'visibility_off'}</span>
-            {focusMode ? 'Show Interface' : 'Hide Interface'}
+            <span className="material-symbols-outlined">{isFocusMode ? 'visibility' : 'visibility_off'}</span>
+            {isFocusMode ? 'Show Interface' : 'Hide Interface'}
           </button>
         </div>
 

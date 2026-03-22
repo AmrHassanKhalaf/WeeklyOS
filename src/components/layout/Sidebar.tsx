@@ -14,12 +14,15 @@ const navItems = [
 
 export function Sidebar() {
   const navigate = useNavigate()
-  const { isLeftSidebarOpen, closeSidebarsOnMobile } = useLayoutStore()
+  const { isLeftSidebarOpen, isFocusMode, toggleLeftSidebar, closeSidebarsOnMobile } = useLayoutStore()
+
+  const isActuallyOpen = isLeftSidebarOpen && !isFocusMode
 
   return (
-    <aside className={`h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#1C1B1B] z-50 font-['Inter'] antialiased text-sm font-medium transition-transform duration-300 shadow-xl border-r border-white/5 ${
-      isLeftSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-    }`}>
+    <>
+      <aside className={`h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#1C1B1B] z-50 font-['Inter'] antialiased text-sm font-medium transition-transform duration-300 shadow-xl border-r border-white/5 ${
+        isActuallyOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
       <div className="flex flex-col h-full p-4">
         {/* Brand */}
         <div className="flex items-center gap-3 px-2 mb-8">
@@ -94,5 +97,18 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+
+      {/* Edge Toggle Button */}
+      <button
+        onClick={toggleLeftSidebar}
+        className={`fixed top-1/2 -translate-y-1/2 z-50 w-6 h-6 bg-[#1C1B1B] border border-white/10 rounded-full flex items-center justify-center text-[#A1A1A1] hover:text-white hover:border-white/30 transition-all duration-300 hidden lg:flex shadow-md ${
+          isActuallyOpen ? 'left-[calc(16rem-12px)]' : 'left-0 rounded-l-none border-l-0'
+        } ${isFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      >
+        <span className="material-symbols-outlined text-[14px]">
+          {isLeftSidebarOpen ? 'chevron_left' : 'chevron_right'}
+        </span>
+      </button>
+    </>
   )
 }

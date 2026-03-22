@@ -20,7 +20,9 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   ])
   const { sendMessage } = useAiApi()
   const navigate = useNavigate()
-  const { isRightSidebarOpen, closeSidebarsOnMobile } = useLayoutStore()
+  const { isRightSidebarOpen, isFocusMode, toggleRightSidebar, closeSidebarsOnMobile } = useLayoutStore()
+
+  const isActuallyOpen = isRightSidebarOpen && !isFocusMode
 
   const handleSendMessage = async (overrideText?: string) => {
     const msg = (overrideText ?? chatInput).trim()
@@ -34,9 +36,10 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const quickActions = ['Optimize my schedule', 'Analyze my productivity', 'Plan my week']
 
   return (
-    <aside className={`fixed right-0 top-0 h-screen w-80 z-50 bg-[#1C1B1B] border-l border-white/5 shadow-2xl shadow-[#2F5CFF]/5 flex flex-col font-['Inter'] transition-transform duration-300 ${
-      isRightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-    }`}>
+    <>
+      <aside className={`fixed right-0 top-0 h-screen w-80 z-50 bg-[#1C1B1B] border-l border-white/5 shadow-2xl shadow-[#2F5CFF]/5 flex flex-col font-['Inter'] transition-transform duration-300 ${
+        isActuallyOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
       {/* Header */}
       <div className="p-6 pt-20 border-b border-white/5">
         <div className="flex items-center justify-between mb-1">
@@ -212,5 +215,18 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
         </div>
       </div>
     </aside>
+
+      {/* Edge Toggle Button */}
+      <button
+        onClick={toggleRightSidebar}
+        className={`fixed top-1/2 -translate-y-1/2 z-50 w-6 h-6 bg-[#1C1B1B] border border-white/10 rounded-full flex items-center justify-center text-[#A1A1A1] hover:text-white hover:border-white/30 transition-all duration-300 hidden lg:flex shadow-md ${
+          isActuallyOpen ? 'right-[calc(20rem-12px)]' : 'right-0 rounded-r-none border-r-0'
+        } ${isFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      >
+        <span className="material-symbols-outlined text-[14px]">
+          {isRightSidebarOpen ? 'chevron_right' : 'chevron_left'}
+        </span>
+      </button>
+    </>
   )
 }
