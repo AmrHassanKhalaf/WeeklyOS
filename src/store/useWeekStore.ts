@@ -82,10 +82,12 @@ interface WeekStore {
   createTask: (task: { title: string; priority: Priority; day?: DayOfWeek; description?: string }) => Promise<void>
   updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string }>) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
+  markDayComplete: (day: DayOfWeek) => Promise<void>
 
   // Brain dump CRUD
   addBrainDumpItem: (content: string) => Promise<void>
   removeBrainDumpItem: (id: string) => Promise<void>
+  updateBrainDumpItem: (id: string, content: string) => Promise<void>
   toggleBrainDumpSelection: (id: string) => void
   deleteSelectedBrainDumpItems: () => Promise<void>
 
@@ -378,6 +380,39 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }))
   },
 
+  markDayComplete: async (day) => {
+    const week = get().currentWeek
+    if (!week) return
+    const dayPlan = week.days.find(d => d.day === day)
+    if (!dayPlan) return
+
+    const pendingTasks = [
+      dayPlan.highTask,
+      ...dayPlan.mediumTasks,
+      ...dayPlan.smallTasks,
+    ].filter(t => t && t.status === 'pending').map(t => t!.id)
+
+    if (pendingTasks.length > 0) {
+      await supabase.from('tasks').update({ status: 'done' }).in('id', pendingTasks)
+    }
+
+    // Optimistic update
+    set(state => ({
+      currentWeek: state.currentWeek ? {
+        ...state.currentWeek,
+        days: state.currentWeek.days.map(d =>
+          d.day === day ? {
+            ...d,
+            progress: 100,
+            highTask: d.highTask ? { ...d.highTask, status: 'done' } : undefined,
+            mediumTasks: d.mediumTasks.map(t => ({ ...t, status: 'done' })),
+            smallTasks: d.smallTasks.map(t => ({ ...t, status: 'done' })),
+          } : d
+        ),
+      } : null,
+    }))
+  },
+
   // ── Brain dump CRUD ────────────────────────────────────────────────────────
 
   addBrainDumpItem: async (content: string) => {
@@ -402,6 +437,14 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   removeBrainDumpItem: async (id: string) => {
     await supabase.from('brain_dump').delete().eq('id', id)
     set(state => ({ brainDumpItems: state.brainDumpItems.filter(i => i.id !== id) }))
+  },
+
+  updateBrainDumpItem: async (id: string, content: string) => {
+    if (!content.trim()) return
+    await supabase.from('brain_dump').update({ content: content.trim() }).eq('id', id)
+    set(state => ({
+      brainDumpItems: state.brainDumpItems.map(i => i.id === id ? { ...i, title: content.trim() } : i),
+    }))
   },
 
   toggleBrainDumpSelection: (id: string) =>

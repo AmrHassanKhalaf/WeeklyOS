@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { signOut } from '../../lib/supabase'
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
 ]
 
 export function Sidebar() {
+  const navigate = useNavigate()
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#1C1B1B] z-50 font-['Inter'] antialiased text-sm font-medium">
       <div className="flex flex-col h-full p-4">
@@ -47,7 +48,10 @@ export function Sidebar() {
 
         {/* Bottom CTA + User */}
         <div className="mt-auto pt-6 space-y-4">
-          <button className="w-full obsidian-gradient text-on-primary-container py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95 transition-transform">
+          <button
+            onClick={() => navigate('/brain-dump')}
+            className="w-full obsidian-gradient text-on-primary-container py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95 transition-transform"
+          >
             <span className="material-symbols-outlined text-sm">add</span>
             New Plan
           </button>

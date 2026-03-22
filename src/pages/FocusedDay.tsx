@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
-import { AppLayout } from '../components/layout/AppLayout'
+import { AppLayout, useFocusMode } from '../components/layout/AppLayout'
 import { useWeekStore } from '../store/useWeekStore'
 import type { Task } from '../store/useWeekStore'
 
 export function FocusedDay() {
-  const { currentWeek, isLoadingWeek, pomodoroTime, isPomodoroRunning, startPomodoro, stopPomodoro, tickPomodoro, toggleTaskComplete } = useWeekStore()
+  const { currentWeek, isLoadingWeek, pomodoroTime, isPomodoroRunning, startPomodoro, stopPomodoro, tickPomodoro, toggleTaskComplete, markDayComplete } = useWeekStore()
+  const { focusMode, setFocusMode } = useFocusMode()
 
 
   useEffect(() => {
@@ -71,9 +72,12 @@ export function FocusedDay() {
             <span className="material-symbols-outlined">{isPomodoroRunning ? 'pause' : 'play_arrow'}</span>
             {isPomodoroRunning ? 'Pause Focus' : 'Start Focus'}
           </button>
-          <button className="bg-surface-container-high px-6 py-3 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
-            <span className="material-symbols-outlined">visibility_off</span>
-            Hide Interface
+          <button
+            onClick={() => setFocusMode(!focusMode)}
+            className="bg-surface-container-high px-6 py-3 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-surface-container-highest transition-colors"
+          >
+            <span className="material-symbols-outlined">{focusMode ? 'visibility' : 'visibility_off'}</span>
+            {focusMode ? 'Show Interface' : 'Hide Interface'}
           </button>
         </div>
 
@@ -187,7 +191,10 @@ export function FocusedDay() {
 
           {/* Day Complete */}
           <section className="pt-12 pb-24 text-center">
-            <button className="bg-tertiary-container/20 text-tertiary border border-tertiary/20 px-10 py-4 rounded-xl font-bold group hover:bg-tertiary-container/40 transition-all">
+            <button
+              onClick={() => todayPlan && markDayComplete(todayPlan.day)}
+              className="bg-tertiary-container/20 text-tertiary border border-tertiary/20 px-10 py-4 rounded-xl font-bold group hover:bg-tertiary-container/40 transition-all"
+            >
               <div className="flex flex-col items-center gap-2">
                 <span className="material-symbols-outlined text-3xl mb-1 group-hover:scale-125 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                 <span>Day Complete</span>

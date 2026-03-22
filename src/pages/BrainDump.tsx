@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { TaskCard } from '../components/TaskCard'
 import { useWeekStore } from '../store/useWeekStore'
@@ -7,6 +8,9 @@ export function BrainDump() {
   const { brainDumpItems, isLoadingBrainDump, deleteSelectedBrainDumpItems, addBrainDumpItem } = useWeekStore()
   const [inputValue, setInputValue] = useState('')
   const [isStructuring, setIsStructuring] = useState(false)
+  const [quickInput, setQuickInput] = useState('')
+  const [showQuickInput, setShowQuickInput] = useState(false)
+  const navigate = useNavigate()
   const selectedCount = brainDumpItems.filter(i => i.selected).length
 
   const handleStructure = async () => {
@@ -24,6 +28,12 @@ export function BrainDump() {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       handleStructure()
     }
+  }
+
+  const handleQuickAdd = async () => {
+    if (quickInput.trim()) await addBrainDumpItem(quickInput.trim())
+    setQuickInput('')
+    setShowQuickInput(false)
   }
 
   return (
@@ -69,7 +79,10 @@ export function BrainDump() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary-container rounded-lg text-sm font-bold shadow-xl shadow-primary-container/10 hover:scale-[1.02] active:scale-95 transition-all">
+            <button
+              onClick={() => navigate('/weekly-distribution')}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary-container rounded-lg text-sm font-bold shadow-xl shadow-primary-container/10 hover:scale-[1.02] active:scale-95 transition-all"
+            >
               <span className="material-symbols-outlined text-sm">send</span>
               Send to Distribution
             </button>
@@ -92,20 +105,31 @@ export function BrainDump() {
             brainDumpItems.map(item => <TaskCard key={item.id} item={item} />)
           )}
 
-          {/* Add Quick Task slot */}
+          {/* Quick add inline input */}
           {!isLoadingBrainDump && (
-            <div
-              onClick={() => {
-                const content = prompt('Quick add task:')
-                if (content?.trim()) addBrainDumpItem(content.trim())
-              }}
-              className="p-5 border-2 border-dashed border-surface-variant rounded-xl flex items-center justify-center text-outline hover:border-outline hover:text-on-surface transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
-                <span className="text-sm font-semibold tracking-wide uppercase">Add a quick task</span>
+            showQuickInput ? (
+              <div className="p-5 border-2 border-primary/30 border-dashed rounded-xl">
+                <input
+                  autoFocus
+                  value={quickInput}
+                  onChange={e => setQuickInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleQuickAdd(); if (e.key === 'Escape') { setShowQuickInput(false); setQuickInput('') } }}
+                  onBlur={handleQuickAdd}
+                  placeholder="Task title, press Enter to save…"
+                  className="w-full bg-transparent text-sm text-on-surface outline-none placeholder:text-neutral-600"
+                />
               </div>
-            </div>
+            ) : (
+              <div
+                onClick={() => setShowQuickInput(true)}
+                className="p-5 border-2 border-dashed border-surface-variant rounded-xl flex items-center justify-center text-outline hover:border-outline hover:text-on-surface transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
+                  <span className="text-sm font-semibold tracking-wide uppercase">Add a quick task</span>
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>

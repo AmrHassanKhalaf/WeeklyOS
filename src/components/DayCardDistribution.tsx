@@ -1,4 +1,6 @@
-import type { DayPlan, Task } from '../data/mockData'
+import { useState } from 'react'
+import type { DayPlan, Task, DayOfWeek, Priority } from '../data/mockData'
+import { useWeekStore } from '../store/useWeekStore'
 
 interface DayCardDistributionProps {
   day: DayPlan
@@ -8,7 +10,7 @@ interface DayCardDistributionProps {
 function TaskSlot({ task, emptyHeight = 'h-12' }: { task?: Task; emptyHeight?: string }) {
   if (task) {
     return (
-      <div className="bg-surface-container-highest p-4 rounded-xl border border-white/5 text-sm cursor-pointer hover:bg-surface-bright transition-colors">
+      <div className={`bg-surface-container-highest p-4 rounded-xl border border-white/5 text-sm cursor-pointer hover:bg-surface-bright transition-colors ${task.status === 'done' ? 'opacity-50 line-through' : ''}`}>
         {task.title}
       </div>
     )
@@ -20,7 +22,31 @@ function TaskSlot({ task, emptyHeight = 'h-12' }: { task?: Task; emptyHeight?: s
   )
 }
 
+type AddingFor = { priority: Priority; day: DayOfWeek } | null
+
 export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributionProps) {
+  const { createTask, markDayComplete } = useWeekStore()
+  const [addingFor, setAddingFor] = useState<AddingFor>(null)
+  const [newTitle, setNewTitle] = useState('')
+
+  const commitAdd = async () => {
+    if (addingFor && newTitle.trim()) {
+      await createTask({ title: newTitle.trim(), priority: addingFor.priority, day: addingFor.day })
+    }
+    setAddingFor(null)
+    setNewTitle('')
+  }
+
+  const handleAddKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') commitAdd()
+    if (e.key === 'Escape') { setAddingFor(null); setNewTitle('') }
+  }
+
+  const startAdd = (priority: Priority) => {
+    setAddingFor({ priority, day: day.day as DayOfWeek })
+    setNewTitle('')
+  }
+
   if (day.isRestDay) {
     return (
       <div className="bg-surface-container-low rounded-2xl border border-tertiary/20 flex flex-col h-[500px] relative overflow-hidden">
@@ -40,9 +66,23 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
           <p className="text-xs text-neutral-500 leading-relaxed max-w-xs mb-8">
             System-mandated downtime for cognitive recovery and preparation for next cycle.
           </p>
-          <button className="px-6 py-2 border border-tertiary/30 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded-full hover:bg-tertiary/10 transition-colors">
+          <button
+            onClick={() => startAdd('medium')}
+            className="px-6 py-2 border border-tertiary/30 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded-full hover:bg-tertiary/10 transition-colors"
+          >
             Override Rest
           </button>
+          {addingFor && (
+            <input
+              autoFocus
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              onKeyDown={handleAddKeyDown}
+              onBlur={commitAdd}
+              placeholder="Task title, press Enter"
+              className="mt-3 w-full max-w-xs bg-surface-container-high border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-tertiary/40"
+            />
+          )}
         </div>
       </div>
     )
@@ -59,7 +99,10 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
             <h2 className="text-2xl font-bold">{day.date}</h2>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">
+            <button
+              onClick={() => markDayComplete(day.day as DayOfWeek)}
+              className="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors"
+            >
               Day Complete
             </button>
             <span className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer">drag_indicator</span>
@@ -93,7 +136,10 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
           <h2 className="text-2xl font-bold">{day.date}</h2>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">
+          <button
+            onClick={() => markDayComplete(day.day as DayOfWeek)}
+            className="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors"
+          >
             Day Complete
           </button>
           <span className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer">drag_indicator</span>
@@ -101,10 +147,13 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
       </div>
 
       {/* Body */}
-      {!hasAnyTasks ? (
-        <div className="p-6 flex-1 flex flex-col items-center justify-center text-center opacity-20">
+      {!hasAnyTasks && !addingFor ? (
+        <div
+          className="p-6 flex-1 flex flex-col items-center justify-center text-center opacity-20 cursor-pointer hover:opacity-40 transition-opacity"
+          onClick={() => startAdd('medium')}
+        >
           <span className="material-symbols-outlined text-6xl mb-4">format_list_bulleted</span>
-          <p className="text-sm">Day Plan Incomplete</p>
+          <p className="text-sm">Click to plan this day</p>
         </div>
       ) : (
         <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
@@ -114,10 +163,24 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               <span className="tracking-widest">High Impact</span>
               <div className="flex items-center gap-2">
                 <span>{highFilled}/{highSlots}</span>
-                <span className="material-symbols-outlined text-sm cursor-pointer">add</span>
+                <span
+                  className="material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors"
+                  onClick={() => startAdd('high')}
+                >add</span>
               </div>
             </div>
             <TaskSlot task={day.highTask} emptyHeight="h-24" />
+            {addingFor?.priority === 'high' && addingFor.day === day.day && (
+              <input
+                autoFocus
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                onKeyDown={handleAddKeyDown}
+                onBlur={commitAdd}
+                placeholder="High-impact task title, press Enter"
+                className="w-full bg-surface-container-high border border-primary/30 rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary/40"
+              />
+            )}
           </div>
 
           {/* Medium Priority */}
@@ -126,12 +189,26 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               <span className="tracking-widest">Medium Priority</span>
               <div className="flex items-center gap-2">
                 <span>{medFilled}/{medSlots}</span>
-                <span className="material-symbols-outlined text-sm cursor-pointer">add</span>
+                <span
+                  className="material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors"
+                  onClick={() => startAdd('medium')}
+                >add</span>
               </div>
             </div>
             {Array.from({ length: medSlots }).map((_, i) => (
               <TaskSlot key={i} task={day.mediumTasks[i]} />
             ))}
+            {addingFor?.priority === 'medium' && addingFor.day === day.day && (
+              <input
+                autoFocus
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                onKeyDown={handleAddKeyDown}
+                onBlur={commitAdd}
+                placeholder="Medium task title, press Enter"
+                className="w-full bg-surface-container-high border border-primary/30 rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary/40"
+              />
+            )}
           </div>
 
           {/* Small Tasks */}
@@ -140,7 +217,10 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               <span className="tracking-widest">Small Tasks</span>
               <div className="flex items-center gap-2">
                 <span>{smallFilled}/{smallSlots}</span>
-                <span className="material-symbols-outlined text-sm cursor-pointer">add</span>
+                <span
+                  className="material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors"
+                  onClick={() => startAdd('low')}
+                >add</span>
               </div>
             </div>
             <div className="space-y-2">
@@ -148,6 +228,17 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
                 <TaskSlot key={i} task={day.smallTasks[i]} />
               ))}
             </div>
+            {addingFor?.priority === 'low' && addingFor.day === day.day && (
+              <input
+                autoFocus
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                onKeyDown={handleAddKeyDown}
+                onBlur={commitAdd}
+                placeholder="Quick task title, press Enter"
+                className="w-full bg-surface-container-high border border-primary/30 rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary/40"
+              />
+            )}
           </div>
         </div>
       )}

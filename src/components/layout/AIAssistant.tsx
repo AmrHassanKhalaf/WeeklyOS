@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
 
 type Tab = 'insights' | 'stats' | 'activity'
@@ -17,13 +18,14 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
     },
   ])
   const { sendMessage } = useAiApi()
+  const navigate = useNavigate()
 
-  const handleSendMessage = async () => {
-    if (!chatInput.trim()) return
-    const userMsg = chatInput.trim()
+  const handleSendMessage = async (overrideText?: string) => {
+    const msg = (overrideText ?? chatInput).trim()
+    if (!msg) return
     setChatInput('')
-    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }])
-    const res = await sendMessage('chat', userMsg, {})
+    setChatMessages(prev => [...prev, { role: 'user', text: msg }])
+    const res = await sendMessage('chat', msg, {})
     setChatMessages(prev => [...prev, { role: 'ai', text: res.response }])
   }
 
@@ -79,7 +81,10 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               <span className="text-xs font-bold uppercase tracking-wider">Burnout Risk Detected</span>
             </div>
             <p className="text-xs text-on-error-container leading-relaxed">Wednesday metrics indicate a high cognitive load failure. Continuing at this pace may lead to a productivity crash.</p>
-            <button className="mt-3 w-full bg-error text-on-error text-[10px] font-bold py-2 rounded uppercase tracking-widest hover:brightness-110 transition-all">
+            <button
+              onClick={() => navigate('/weekly-distribution')}
+              className="mt-3 w-full bg-error text-on-error text-[10px] font-bold py-2 rounded uppercase tracking-widest hover:brightness-110 transition-all"
+            >
               Schedule Rest Day
             </button>
           </div>
@@ -171,7 +176,11 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
         {variant === 'evaluation' && (
           <div className="flex flex-wrap gap-2">
             {quickActions.map(a => (
-              <button key={a} className="px-3 py-1.5 bg-surface-container-high hover:bg-surface-variant text-[10px] text-on-surface rounded-full transition-colors">
+              <button
+                key={a}
+                onClick={() => handleSendMessage(a)}
+                className="px-3 py-1.5 bg-surface-container-high hover:bg-surface-variant text-[10px] text-on-surface rounded-full transition-colors"
+              >
                 {a}
               </button>
             ))}
@@ -192,7 +201,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             }`}
           />
           {variant === 'evaluation' && (
-            <button onClick={handleSendMessage} className="absolute right-2 text-primary hover:scale-110 transition-transform">
+            <button onClick={() => handleSendMessage()} className="absolute right-2 text-primary hover:scale-110 transition-transform">
               <span className="material-symbols-outlined">send</span>
             </button>
           )}
