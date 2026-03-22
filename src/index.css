@@ -81,6 +81,15 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: filter 0.3s ease;
+}
+
+body.light {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+body.light img {
+  filter: invert(1) hue-rotate(180deg);
 }
 
 /* ────────────────────────────────────────────────────────── */

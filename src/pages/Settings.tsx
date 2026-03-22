@@ -1,12 +1,37 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { useSettingsStore, AIProvider } from '../store/useSettingsStore'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import html2canvas from 'html2canvas'
+import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
 
 export function Settings() {
   const settings = useSettingsStore()
   const [keysVis, setKeysVis] = useState<Record<string, boolean>>({})
+  const [isExporting, setIsExporting] = useState(false)
+  const printRef = useRef<HTMLDivElement>(null)
 
   const toggleKeyVis = (prov: string) => setKeysVis(p => ({ ...p, [prov]: !p[prov] }))
+
+  const handleExport = async () => {
+    if (!printRef.current || isExporting) return
+    try {
+      setIsExporting(true)
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2, // High resolution
+        useCORS: true,
+        backgroundColor: '#131313'
+      })
+      const dataUrl = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.download = 'weekly_os_report.png'
+      link.href = dataUrl
+      link.click()
+    } catch (e) {
+      console.error('Export failed:', e)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const ProviderInput = ({ provider, label }: { provider: AIProvider, label: string }) => (
     <div>
@@ -152,11 +177,14 @@ export function Settings() {
               </div>
               
               <button 
-                onClick={settings.exportWeeklyReport}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-white/10 text-neutral-400 font-bold text-sm hover:text-white hover:border-white/30 transition-colors"
+                onClick={handleExport}
+                disabled={isExporting}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-white/10 text-neutral-400 font-bold text-sm hover:text-white hover:border-white/30 transition-colors disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[18px]">download</span>
-                Export All Weekly Data
+                <span className="material-symbols-outlined text-[18px]">
+                  {isExporting ? 'hourglass_empty' : 'download'}
+                </span>
+                {isExporting ? 'Generating Image...' : 'Export Weekly Report'}
               </button>
             </div>
 
@@ -164,6 +192,7 @@ export function Settings() {
 
         </div>
       </div>
+      <WeeklyReportPrintView ref={printRef} />
     </AppLayout>
   )
 }

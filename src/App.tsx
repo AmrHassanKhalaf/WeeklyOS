@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useWeekStore } from './store/useWeekStore'
+import { useSettingsStore } from './store/useSettingsStore'
 import { SignIn } from './pages/SignIn'
 import { Dashboard } from './pages/Dashboard'
 import { WeeklyDistribution } from './pages/WeeklyDistribution'
@@ -39,6 +40,7 @@ function LoadingScreen() {
 function AppRouter() {
   const { user, isLoading } = useAuth()
   const { initialize, cleanup } = useWeekStore()
+  const theme = useSettingsStore(s => s.theme)
 
   useEffect(() => {
     if (user) {
@@ -46,6 +48,11 @@ function AppRouter() {
       return () => cleanup()
     }
   }, [user, initialize, cleanup])
+
+  useEffect(() => {
+    const isLight = theme === 'light' || (theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)
+    document.body.classList.toggle('light', isLight)
+  }, [theme])
 
   if (isLoading) return <LoadingScreen />
   if (!user) return <SignIn />
