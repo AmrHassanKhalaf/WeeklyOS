@@ -110,6 +110,9 @@ interface WeekStore {
 
   // Reset
   startNewPlan: () => Promise<void>
+
+  // Challenge
+  updateChallenge: (title: string, desc?: string) => Promise<void>
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -640,6 +643,23 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
       await supabase.from('brain_dump').delete().in('id', selected.map(i => i.id))
       set(state => ({ brainDumpItems: state.brainDumpItems.filter(i => !i.selected) }))
+    },
+
+    updateChallenge: async (title: string, _desc?: string) => {
+      const { currentWeek } = get()
+      if (!currentWeek) return
+      
+      set(state => ({
+        currentWeek: state.currentWeek ? { ...state.currentWeek, challengeTitle: title, challengeProgress: 0, challengeEndsIn: '3 Days' } : null
+      }))
+
+      const { error } = await supabase.from('weeks').update({
+        challenge_title: title,
+        challenge_progress: 0,
+        challenge_ends_in: '3 Days'
+      }).eq('id', currentWeek.id)
+
+      if (error) console.error('updateChallenge error', error)
     },
 
     // ── Pomodoro (local) ───────────────────────────────────────────────────────

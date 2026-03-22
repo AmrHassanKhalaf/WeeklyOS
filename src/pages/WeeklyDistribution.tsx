@@ -1,9 +1,75 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { DayCardDistribution } from '../components/DayCardDistribution'
 import { useWeekStore } from '../store/useWeekStore'
+import { useState } from 'react'
+import { useAiApi } from '../hooks/useApi'
 
 export function WeeklyDistribution() {
-  const { currentWeek, isLoadingWeek } = useWeekStore()
+  const { currentWeek, isLoadingWeek, brainDumpItems, createTask, toggleBrainDumpSelection, deleteSelectedBrainDumpItems } = useWeekStore()
+  const [isDistributing, setIsDistributing] = useState(false)
+  const { sendMessage } = useAiApi()
+
+  const handleAutoDistribute = async () => {
+    if (!currentWeek || isDistributing || brainDumpItems.length === 0) return
+    setIsDistributing(true)
+    
+    const prompt = `Your job is to convert a brain dump into a structured weekly plan using the 1-3-5 productivity system.
+    
+Rules:
+- 1 main task per day (High priority)
+- 3 medium tasks (Medium priority)
+- 5 small tasks (Low priority)
+
+Input:
+Brain dump items: ${brainDumpItems.map(i => i.title).join(', ')}
+
+Output requirements:
+Return exactly one JSON object with a "tasks" array.
+Each object in the array MUST have:
+- title: string
+- priority: "high" | "medium" | "low"
+- day: "saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday"
+- estimatedTime: optional string (e.g. "1h", "30m")
+
+Make sure:
+- Avoid overloading any day
+- Balance workload logically
+- DO NOT assign tasks to "friday" (REST DAY)`
+
+    try {
+      const res = await sendMessage('schedule', prompt, { dateRange: currentWeek.dateRange })
+      
+      let parsed
+      try {
+        parsed = JSON.parse(res.response)
+      } catch {
+         const matched = res.response.match(/```json\n([\s\S]*)\n```/);
+         parsed = JSON.parse(matched ? matched[1] : res.response.replace(/```json|```/g, ''))
+      }
+
+      const tasksToCreate = parsed.tasks || (Array.isArray(parsed) ? parsed : [])
+      for (const t of tasksToCreate) {
+        if (!t.title || !t.priority || !t.day) continue
+        await createTask({
+          title: t.title,
+          priority: t.priority,
+          day: t.day,
+          estimatedTime: t.estimatedTime
+        })
+      }
+      
+      // Auto-clear brain dump after successful distribution
+      brainDumpItems.forEach(item => {
+        if (!item.selected) toggleBrainDumpSelection(item.id)
+      })
+      await deleteSelectedBrainDumpItems()
+
+    } catch (e: any) {
+      alert("Failed to auto-distribute: " + e.message)
+    } finally {
+      setIsDistributing(false)
+    }
+  }
 
   if (isLoadingWeek || !currentWeek) {
     return (
@@ -38,9 +104,17 @@ export function WeeklyDistribution() {
               <span className="material-symbols-outlined text-lg">psychology</span>
               Assign Braindump
             </button>
-            <button className="px-4 py-2 bg-gradient-to-br from-tertiary-container to-tertiary text-on-tertiary rounded-lg flex items-center gap-2 text-xs font-bold shadow-lg shadow-tertiary/10 hover:brightness-110 transition-all">
-              <span className="material-symbols-outlined text-lg">auto_mode</span>
-              Auto-distribute
+            <button 
+              onClick={handleAutoDistribute}
+              disabled={isDistributing || brainDumpItems.length === 0}
+              className={`px-4 py-2 bg-gradient-to-br from-tertiary-container to-tertiary text-on-tertiary rounded-lg flex items-center gap-2 text-xs font-bold shadow-lg shadow-tertiary/10 transition-all ${
+                isDistributing || brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'
+              }`}
+            >
+              <span className={`material-symbols-outlined text-lg ${isDistributing ? 'animate-spin' : ''}`}>
+                {isDistributing ? 'sync' : 'auto_mode'}
+              </span>
+              {isDistributing ? 'Distributing...' : 'Auto-distribute'}
             </button>
           </div>
         </div>

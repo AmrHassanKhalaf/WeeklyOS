@@ -15,6 +15,30 @@ export function Dashboard() {
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
   const [isInsightLoading, setIsInsightLoading] = useState(false)
+  const [isGeneratingChallenge, setIsGeneratingChallenge] = useState(false)
+
+  const generateChallenge = async () => {
+    if (!currentWeek || isGeneratingChallenge) return
+    setIsGeneratingChallenge(true)
+    try {
+      const pendingTasks = currentWeek.days.flatMap(d => [d.highTask, ...d.mediumTasks, ...d.smallTasks])
+        .filter(t => t?.status === 'pending')
+        .map(t => t?.title)
+        .join(', ')
+      
+      const res = await sendMessage('challenge', '', { tasks: pendingTasks })
+      // Expected response format: 2 lines
+      const parts = res.response.split('\n').filter((s: string) => s.trim())
+      const title = parts[0]?.replace(/^1\.\s*/, '').replace(/\*+/g, '') || 'Clear the Backlog'
+      const desc = parts[1]?.replace(/^2\.\s*/, '').replace(/\*+/g, '') || 'Finish all your pending tasks before Friday.'
+      
+      await useWeekStore.getState().updateChallenge(title, desc)
+    } catch (e: any) {
+      alert(e.message) // Show error
+    } finally {
+      setIsGeneratingChallenge(false)
+    }
+  }
 
   const fetchInsight = async () => {
     if (!currentWeek || isInsightLoading) return
@@ -83,7 +107,7 @@ export function Dashboard() {
         </section>
 
         {/* Weekly Challenge */}
-        {currentWeek.challengeTitle && (
+        {currentWeek.challengeTitle ? (
           <section>
             <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -110,6 +134,24 @@ export function Dashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          </section>
+        ) : (
+          <section>
+            <div className="bg-surface-container-low rounded-xl border border-dashed border-white/20 p-6 flex flex-col items-center justify-center gap-4 text-center">
+              <span className="material-symbols-outlined text-4xl text-neutral-600">psychology</span>
+              <div>
+                <h3 className="text-on-surface font-bold text-lg">No Active Challenge</h3>
+                <p className="text-sm text-on-surface-variant max-w-sm">Let AI analyze your week and generate a custom challenge to boost your productivity.</p>
+              </div>
+              <button 
+                onClick={generateChallenge} 
+                disabled={isGeneratingChallenge}
+                className="bg-primary/10 text-primary font-bold px-6 py-2 rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                {isGeneratingChallenge ? 'Generating...' : 'Generate Weekly Challenge'}
+              </button>
             </div>
           </section>
         )}

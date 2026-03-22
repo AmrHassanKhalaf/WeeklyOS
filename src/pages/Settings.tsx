@@ -7,11 +7,8 @@ import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
 
 export function Settings() {
   const settings = useSettingsStore()
-  const [keysVis, setKeysVis] = useState<Record<string, boolean>>({})
   const [isExporting, setIsExporting] = useState(false)
   const printRef = useRef<HTMLDivElement>(null)
-
-  const toggleKeyVis = (prov: string) => setKeysVis(p => ({ ...p, [prov]: !p[prov] }))
 
   const handleExport = async () => {
     if (!printRef.current || isExporting) return
@@ -38,24 +35,6 @@ export function Settings() {
       setIsExporting(false)
     }
   }
-
-  const ProviderInput = ({ provider, label }: { provider: AIProvider, label: string }) => (
-    <div>
-      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">{label} API Key</label>
-      <div className="flex bg-surface-container-low rounded-xl border border-white/5 overflow-hidden focus-within:border-primary/50 transition-colors">
-        <input
-          type={keysVis[provider] ? "text" : "password"}
-          value={settings.aiKeys[provider] || ''}
-          onChange={e => settings.setAiKey(provider, e.target.value)}
-          placeholder={`sk-...`}
-          className="flex-1 bg-transparent px-4 py-3 outline-none text-sm text-on-surface font-mono"
-        />
-        <button onClick={() => toggleKeyVis(provider)} className="px-4 text-neutral-500 hover:text-white">
-          <span className="material-symbols-outlined text-[18px]">{keysVis[provider] ? 'visibility_off' : 'visibility'}</span>
-        </button>
-      </div>
-    </div>
-  )
 
   const Toggle = ({ label, desc, checked, onChange }: { label: string, desc: string, checked: boolean, onChange: (c: boolean) => void }) => (
     <div className="flex items-center justify-between p-4 bg-surface-container-none rounded-xl border border-white/5">
@@ -104,9 +83,9 @@ export function Settings() {
               </div>
 
               <div className="space-y-4 py-4 border-y border-white/5">
-                <ProviderInput provider="openai" label="OpenAI" />
-                <ProviderInput provider="gemini" label="Google Gemini" />
-                <ProviderInput provider="grok" label="xAI Grok" />
+                <ProviderInput provider="openai" label="OpenAI" settings={settings} />
+                <ProviderInput provider="gemini" label="Google Gemini" settings={settings} />
+                <ProviderInput provider="grok" label="xAI Grok" settings={settings} />
               </div>
 
               <Toggle 
@@ -199,5 +178,42 @@ export function Settings() {
       </div>
       <WeeklyReportPrintView ref={printRef} />
     </AppLayout>
+  )
+}
+
+function ProviderInput({ provider, label, settings }: { provider: AIProvider, label: string, settings: any }) {
+  const [localVal, setLocalVal] = useState(settings.aiKeys[provider] || '')
+  const [isVis, setIsVis] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    await settings.setAiKey(provider, localVal)
+    setIsSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">{label} API Key</label>
+      <div className="flex bg-surface-container-low rounded-xl border border-white/5 overflow-hidden focus-within:border-primary/50 transition-colors">
+        <input
+          type={isVis ? "text" : "password"}
+          value={localVal}
+          onChange={e => setLocalVal(e.target.value)}
+          placeholder="sk-..."
+          className="flex-1 bg-transparent px-4 py-3 outline-none text-sm text-on-surface font-mono"
+        />
+        <button onClick={() => setIsVis(!isVis)} className="px-4 text-neutral-500 hover:text-white border-l border-white/5">
+          <span className="material-symbols-outlined text-[18px]">{isVis ? 'visibility_off' : 'visibility'}</span>
+        </button>
+        <button onClick={handleSave} disabled={isSaving || localVal === (settings.aiKeys[provider] || '')} className="px-4 font-bold text-xs bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          {isSaving ? 'SAVING...' : saved ? 'SAVED' : 'SAVE'}
+        </button>
+      </div>
+      {saved && <p className="text-tertiary text-[10px] mt-1 font-medium">API key saved successfully</p>}
+    </div>
   )
 }

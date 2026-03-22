@@ -177,6 +177,10 @@ export type Database = {
           user_id: string
           week_number: number
           year: number
+          challenge_title: string | null
+          challenge_progress: number | null
+          challenge_ends_in: string | null
+          activities: string | null
         }
         Insert: {
           created_at?: string
@@ -185,6 +189,10 @@ export type Database = {
           user_id: string
           week_number: number
           year: number
+          challenge_title?: string | null
+          challenge_progress?: number | null
+          challenge_ends_in?: string | null
+          activities?: string | null
         }
         Update: {
           created_at?: string
@@ -193,6 +201,10 @@ export type Database = {
           user_id?: string
           week_number?: number
           year?: number
+          challenge_title?: string | null
+          challenge_progress?: number | null
+          challenge_ends_in?: string | null
+          activities?: string | null
         }
         Relationships: []
       }

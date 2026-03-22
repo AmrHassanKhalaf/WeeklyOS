@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
@@ -14,7 +14,11 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const [activeTab, setActiveTab] = useState<Tab>('insights')
   const [chatInput, setChatInput] = useState('')
   const [isAiTyping, setIsAiTyping] = useState(false)
-  const [chatMessages, setChatMessages] = useState<{ role: 'ai' | 'user'; text: string }[]>([
+  const [isRecording, setIsRecording] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  
+  const [chatMessages, setChatMessages] = useState<{ role: 'ai' | 'user' | 'system'; text: string; provider?: string }[]>([
     {
       role: 'ai',
       text: "Based on your activity data, I've noticed a significant trend. Your output on Wednesday was 45% lower than your average, and your biometric indicators suggest elevated stress.",
@@ -57,9 +61,62 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
       const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score, days: currentWeek.days } : {}
       
       const res = await sendMessage('chat', msg, context)
-      setChatMessages(prev => [...prev, { role: 'ai', text: res.response }])
+      setChatMessages(prev => [...prev, { role: 'ai', text: res.response, provider: res.providerUsed }])
     } catch (e: any) {
-      setChatMessages(prev => [...prev, { role: 'ai', text: `System Error: ${e.message}` }])
+      setChatMessages(prev => [...prev, { role: 'system', text: `System Error: ${e.message}` }])
+    } finally {
+      setIsAiTyping(false)
+    }
+  }
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      mediaRecorderRef.current = recorder
+      audioChunksRef.current = []
+
+      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data)
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const reader = new FileReader()
+        reader.readAsDataURL(audioBlob)
+        reader.onloadend = async () => {
+           const base64data = (reader.result as string).split(',')[1]
+           await handleVoiceMessage(base64data)
+        }
+      }
+
+      recorder.start()
+      setIsRecording(true)
+    } catch (e) {
+      console.error('Failed to start recording', e)
+      alert('Microphone access denied or unavailable.')
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop())
+      setIsRecording(false)
+    }
+  }
+
+  const handleVoiceMessage = async (base64audio: string) => {
+    if (isAiTyping) return
+    setActiveTab('chat')
+    setChatMessages(prev => [...prev, { role: 'user', text: '🎤 Voice Message' }])
+    
+    setIsAiTyping(true)
+    try {
+      const { currentWeek } = useWeekStore.getState()
+      const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score, days: currentWeek.days } : {}
+      
+      const res = await sendMessage('voice', '', context, 'gemini', base64audio)
+      setChatMessages(prev => [...prev, { role: 'ai', text: res.response, provider: res.providerUsed }])
+    } catch (e: any) {
+      setChatMessages(prev => [...prev, { role: 'system', text: `System Error: ${e.message}` }])
     } finally {
       setIsAiTyping(false)
     }
@@ -106,10 +163,13 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             <div key={i} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'max-w-[90%]'}`}>
               <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
                 msg.role === 'ai'
-                  ? 'bg-surface-container-high rounded-tl-none'
+                  ? 'bg-surface-container-high border border-white/5 rounded-tl-none'
+                  : msg.role === 'system' 
+                  ? 'bg-error/20 text-error border border-error/20 rounded-tl-none'
                   : 'bg-primary-container text-on-primary-container rounded-tr-none'
               }`}>
                 {msg.text}
+                {msg.provider && <span className="block mt-2 text-[9px] uppercase tracking-widest opacity-50 text-right">via {msg.provider}</span>}
               </div>
             </div>
           ))}
@@ -238,9 +298,12 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
                   <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
                     msg.role === 'ai'
                       ? 'bg-surface-container-highest border border-white/5 rounded-tl-none'
+                      : msg.role === 'system'
+                      ? 'bg-error-container/20 text-error border border-error/20 rounded-tl-none'
                       : 'bg-primary-container text-on-primary-container rounded-tr-none shadow-md'
                   }`}>
                     {msg.text}
+                    {msg.provider && <span className="block mt-2 text-[9px] uppercase tracking-widest opacity-50 text-right">via {msg.provider}</span>}
                   </div>
                 </div>
               ))}
@@ -283,16 +346,25 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             value={chatInput}
             onChange={e => setChatInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-            placeholder={variant === 'evaluation' ? 'Ask AI Assistant...' : 'Ask AI anything...'}
+            placeholder={isRecording ? 'Listening...' : variant === 'evaluation' ? 'Ask AI Assistant...' : 'Ask AI anything...'}
+            disabled={isRecording}
             className={`w-full bg-surface-container-highest border border-white/5 rounded-xl py-2.5 text-xs focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors outline-none placeholder:text-neutral-600 text-on-surface ${
-              variant === 'default' ? 'pl-9 pr-4' : 'pl-4 pr-10'
+              variant === 'default' ? 'pl-9 pr-10' : 'pl-4 pr-16'
             }`}
           />
-          {variant === 'evaluation' && (
-            <button onClick={() => handleSendMessage()} className="absolute right-2 text-primary hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined">send</span>
+          <div className="absolute right-2 flex items-center gap-1">
+            <button 
+              onClick={isRecording ? stopRecording : startRecording} 
+              className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${isRecording ? 'text-error animate-pulse bg-error/10' : 'text-neutral-500 hover:text-white'}`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{isRecording ? 'stop_circle' : 'mic'}</span>
             </button>
-          )}
+            {variant === 'evaluation' && (
+              <button onClick={() => handleSendMessage()} className="p-1.5 text-primary hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-[18px]">send</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </aside>
