@@ -5,7 +5,7 @@ import { TaskCard } from '../components/TaskCard'
 import { useWeekStore } from '../store/useWeekStore'
 
 export function BrainDump() {
-  const { brainDumpItems, isLoadingBrainDump, deleteSelectedBrainDumpItems, addBrainDumpItem } = useWeekStore()
+  const { brainDumpItems, isLoadingBrainDump, deleteSelectedBrainDumpItems, addBrainDumpItem, updateBrainDumpItem } = useWeekStore()
   const [inputValue, setInputValue] = useState('')
   const [isStructuring, setIsStructuring] = useState(false)
   const [quickInput, setQuickInput] = useState('')
@@ -139,7 +139,19 @@ export function BrainDump() {
         <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 bg-surface-container-highest/80 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/5 z-50">
           <span className="text-[10px] text-neutral-500 px-4">{selectedCount} selected</span>
           <div className="w-[1px] h-8 bg-surface-variant" />
-          <button className="flex items-center gap-2 px-6 py-3 bg-surface-bright text-on-surface rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors">
+          <button
+            onClick={async () => {
+              const tag = window.prompt('Enter tag name:')
+              if (tag?.trim()) {
+                const selected = brainDumpItems.filter(i => i.selected)
+                await Promise.all(selected.map(item => {
+                  const newTags = Array.from(new Set([...(item.tags || []), tag.trim()]))
+                  return updateBrainDumpItem(item.id, { tags: newTags })
+                }))
+              }
+            }}
+            className="flex items-center gap-2 px-6 py-3 bg-surface-bright text-on-surface rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors"
+          >
             <span className="material-symbols-outlined text-lg">tag</span>
             Bulk Tag
           </button>

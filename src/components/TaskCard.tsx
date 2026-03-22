@@ -19,7 +19,7 @@ export function TaskCard({ item }: TaskCardProps) {
   const commitEdit = async () => {
     setIsEditing(false)
     if (editValue.trim() && editValue.trim() !== item.title) {
-      await updateBrainDumpItem(item.id, editValue.trim())
+      await updateBrainDumpItem(item.id, { title: editValue.trim() })
     } else {
       setEditValue(item.title) // reset if unchanged or empty
     }
@@ -54,7 +54,7 @@ export function TaskCard({ item }: TaskCardProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
+      <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5" onClick={e => e.stopPropagation()}>
         {isEditing ? (
           <input
             ref={inputRef}
@@ -65,7 +65,16 @@ export function TaskCard({ item }: TaskCardProps) {
             className="w-full bg-transparent border-b border-primary text-sm font-medium text-on-surface outline-none py-0.5"
           />
         ) : (
-          <p className="text-sm font-medium text-on-surface truncate">{item.title}</p>
+          <p className="text-sm font-medium text-on-surface truncate w-full">{item.title}</p>
+        )}
+        {item.tags && item.tags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            {item.tags.map(tag => (
+              <span key={tag} className="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded text-[10px] font-bold uppercase tracking-wider">
+                {tag}
+              </span>
+            ))}
+          </div>
         )}
       </div>
 

@@ -32,7 +32,7 @@ export function Dashboard() {
     )
   }
 
-  const [mon, tue, wed, thu, fri] = currentWeek.days
+  const [sat, sun, mon, tue, wed, thu, fri] = currentWeek.days
 
   return (
     <AppLayout>
@@ -92,13 +92,17 @@ export function Dashboard() {
 
         {/* Day Cards */}
         <section className="space-y-6">
-          <DayCard day={mon} />
-          <DayCard day={tue} />
-          <DayCard day={wed} />
+          <DayCard day={sat} />
+          <DayCard day={sun} />
           <div className="grid grid-cols-2 gap-6">
-            <DayCard day={thu} isCompact />
-            <DayCard day={fri} isCompact />
+            <DayCard day={mon} isCompact />
+            <DayCard day={tue} isCompact />
           </div>
+          <div className="grid grid-cols-2 gap-6">
+            <DayCard day={wed} isCompact />
+            <DayCard day={thu} isCompact />
+          </div>
+          <DayCard day={{...fri, isRestDay: true}} isCompact />
         </section>
 
         {/* Bottom Stats */}

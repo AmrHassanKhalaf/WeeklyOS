@@ -17,7 +17,7 @@ export function WeeklyDistribution() {
     )
   }
 
-  const [mon, tue, wed, thu, fri, sat, sun] = currentWeek.days
+  const [sat, sun, mon, tue, wed, thu, fri] = currentWeek.days
 
   return (
     <AppLayout>
@@ -48,48 +48,14 @@ export function WeeklyDistribution() {
         {/* 2-col day grid */}
         <div className="flex-1 px-8 pb-8 overflow-y-auto custom-scrollbar">
           <div className="grid grid-cols-2 gap-6 pb-12">
+            <DayCardDistribution day={sat} />
+            <DayCardDistribution day={sun} />
             <DayCardDistribution day={mon} />
             <DayCardDistribution day={tue} />
             <DayCardDistribution day={wed} isHighOutputZone={wed.isToday} />
             <DayCardDistribution day={thu} />
-            <DayCardDistribution day={{ ...fri, isRestDay: !fri.highTask && fri.mediumTasks.length === 0 && fri.smallTasks.length === 0 }} />
-            <div className="grid grid-cols-2 gap-4 h-[500px]">
-              {/* Saturday */}
-              <div className="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-full">
-                <div className="p-4 border-b border-white/5 flex flex-col">
-                  <span className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Saturday</span>
-                  <h2 className="text-lg font-bold">{sat.date}</h2>
-                </div>
-                <div className="p-4 space-y-2 flex-1">
-                  {sat.mediumTasks.map(t => (
-                    <div key={t.id} className="bg-surface-container-highest p-3 rounded-lg text-xs">{t.title}</div>
-                  ))}
-                  {sat.smallTasks.map(t => (
-                    <div key={t.id} className="bg-surface-container-highest p-3 rounded-lg text-xs italic text-neutral-500">{t.title}</div>
-                  ))}
-                  {!sat.highTask && sat.mediumTasks.length === 0 && sat.smallTasks.length === 0 && (
-                    <div className="flex-1 border border-dashed border-white/5 rounded-xl" />
-                  )}
-                </div>
-              </div>
-              {/* Sunday */}
-              <div className="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-full">
-                <div className="p-4 border-b border-white/5 flex flex-col">
-                  <span className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Sunday</span>
-                  <h2 className="text-lg font-bold">{sun.date}</h2>
-                </div>
-                <div className="p-4 space-y-2 flex-1">
-                  {sun.mediumTasks.map(t => (
-                    <div key={t.id} className="bg-surface-container-highest p-3 rounded-lg text-xs">{t.title}</div>
-                  ))}
-                  {sun.smallTasks.map(t => (
-                    <div key={t.id} className="bg-surface-container-highest p-3 rounded-lg text-xs italic text-neutral-500">{t.title}</div>
-                  ))}
-                  {!sun.highTask && sun.mediumTasks.length === 0 && sun.smallTasks.length === 0 && (
-                    <div className="flex-1 border border-dashed border-white/5 rounded-xl" />
-                  )}
-                </div>
-              </div>
+            <div className="col-span-2">
+              <DayCardDistribution day={{ ...fri, isRestDay: !fri.highTask && fri.mediumTasks.length === 0 && fri.smallTasks.length === 0 }} />
             </div>
           </div>
         </div>

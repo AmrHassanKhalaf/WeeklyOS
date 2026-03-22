@@ -23,6 +23,7 @@ export interface Task {
   status: TaskStatus
   day?: DayOfWeek
   weekId?: string
+  startTime?: string
   estimatedTime?: string
   tags?: string[]
 }
@@ -31,6 +32,7 @@ export interface BrainDumpItem {
   id: string
   title: string
   selected?: boolean
+  tags?: string[]
 }
 
 export interface DayPlan {
@@ -79,15 +81,15 @@ interface WeekStore {
 
   // Tasks CRUD
   toggleTaskComplete: (taskId: string) => Promise<void>
-  createTask: (task: { title: string; priority: Priority; day?: DayOfWeek; description?: string }) => Promise<void>
-  updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string }>) => Promise<void>
+  createTask: (task: { title: string; priority: Priority; day?: DayOfWeek; description?: string; startTime?: string; estimatedTime?: string }) => Promise<void>
+  updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string; startTime: string; estimatedTime: string; tags: string[] }>) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
   markDayComplete: (day: DayOfWeek) => Promise<void>
 
   // Brain dump CRUD
   addBrainDumpItem: (content: string) => Promise<void>
   removeBrainDumpItem: (id: string) => Promise<void>
-  updateBrainDumpItem: (id: string, content: string) => Promise<void>
+  updateBrainDumpItem: (id: string, updates: Partial<{ title: string; tags: string[] }>) => Promise<void>
   toggleBrainDumpSelection: (id: string) => void
   deleteSelectedBrainDumpItems: () => Promise<void>
 
@@ -101,9 +103,9 @@ interface WeekStore {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const DAYS: DayOfWeek[] = [
-  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+  'saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
 ]
-const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAY_SHORT = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
 function getCurrentWeekInfo(): { weekNumber: number; year: number } {
   const now = new Date()
@@ -114,13 +116,15 @@ function getCurrentWeekInfo(): { weekNumber: number; year: number } {
   return { weekNumber, year: now.getFullYear() }
 }
 
-/** Get the Monday of a given ISO week. */
+/** Get the Saturday of a given ISO week. */
 function getWeekStartDate(year: number, weekNumber: number): Date {
   const jan4 = new Date(year, 0, 4)
-  const dayOfWeek = jan4.getDay() || 7
+  const dayOfWeek = jan4.getDay() || 7 // 1 is Monday, 7 is Sunday
   const monday = new Date(jan4)
   monday.setDate(jan4.getDate() - (dayOfWeek - 1) + (weekNumber - 1) * 7)
-  return monday
+  const saturday = new Date(monday)
+  saturday.setDate(monday.getDate() - 2) // Shift ISO Monday to Saturday
+  return saturday
 }
 
 function mapDbTask(t: Record<string, unknown>): Task {
@@ -132,6 +136,9 @@ function mapDbTask(t: Record<string, unknown>): Task {
     status: (t.status as TaskStatus) ?? 'pending',
     day: (t.day as DayOfWeek | null) ?? undefined,
     weekId: (t.week_id as string | null) ?? undefined,
+    startTime: (t.start_time as string | null) ?? undefined,
+    estimatedTime: (t.estimated_duration as string | null) ?? undefined,
+    tags: (t.tags as string[] | null) ?? undefined,
   }
 }
 
@@ -141,7 +148,7 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
   const startDate = getWeekStartDate(year, weekNumber)
 
   const today = new Date()
-  const todayIdx = today.getDay() === 0 ? 6 : today.getDay() - 1
+  const todayIdx = (today.getDay() + 1) % 7 // For Saturday-started week: Sat=0, Sun=1, Mon=2, etc.
 
   // Is the loaded week the current one?
   const { weekNumber: curWeek, year: curYear } = getCurrentWeekInfo()
@@ -351,6 +358,8 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       day: task.day ?? null,
       description: task.description ?? null,
       status: 'pending',
+      start_time: task.startTime ?? null,
+      estimated_duration: task.estimatedTime ?? null,
     })
 
     if (error) console.error('[createTask]', error)
@@ -358,7 +367,17 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   updateTask: async (taskId, updates) => {
-    const { error } = await supabase.from('tasks').update(updates).eq('id', taskId)
+    const payload: Record<string, any> = { ...updates }
+    if (updates.startTime !== undefined) {
+      payload.start_time = updates.startTime
+      delete payload.startTime
+    }
+    if (updates.estimatedTime !== undefined) {
+      payload.estimated_duration = updates.estimatedTime
+      delete payload.estimatedTime
+    }
+
+    const { error } = await supabase.from('tasks').update(payload).eq('id', taskId)
     if (error) console.error('[updateTask]', error)
   },
 
@@ -439,11 +458,20 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     set(state => ({ brainDumpItems: state.brainDumpItems.filter(i => i.id !== id) }))
   },
 
-  updateBrainDumpItem: async (id: string, content: string) => {
-    if (!content.trim()) return
-    await supabase.from('brain_dump').update({ content: content.trim() }).eq('id', id)
+  updateBrainDumpItem: async (id: string, updates: Partial<{ title: string; tags: string[] }>) => {
+    const payload: Record<string, any> = {}
+    if (updates.title !== undefined) payload.content = updates.title.trim()
+    if (updates.tags !== undefined) payload.tags = updates.tags
+
+    if (Object.keys(payload).length > 0) {
+      const { error } = await supabase.from('brain_dump').update(payload).eq('id', id)
+      if (error) {
+        console.error('[updateBrainDumpItem]', error)
+        return
+      }
+    }
     set(state => ({
-      brainDumpItems: state.brainDumpItems.map(i => i.id === id ? { ...i, title: content.trim() } : i),
+      brainDumpItems: state.brainDumpItems.map(i => i.id === id ? { ...i, ...updates } : i),
     }))
   },
 

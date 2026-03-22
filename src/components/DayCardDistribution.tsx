@@ -10,8 +10,14 @@ interface DayCardDistributionProps {
 function TaskSlot({ task, emptyHeight = 'h-12' }: { task?: Task; emptyHeight?: string }) {
   if (task) {
     return (
-      <div className={`bg-surface-container-highest p-4 rounded-xl border border-white/5 text-sm cursor-pointer hover:bg-surface-bright transition-colors ${task.status === 'done' ? 'opacity-50 line-through' : ''}`}>
-        {task.title}
+      <div className={`bg-surface-container-highest p-3 rounded-xl border border-white/5 text-sm cursor-pointer hover:bg-surface-bright transition-colors ${task.status === 'done' ? 'opacity-50 line-through' : ''}`}>
+        <div className="break-words leading-relaxed">{task.title}</div>
+        {(task.startTime || task.estimatedTime) && (
+           <div className="flex gap-3 mt-2 text-[10px] text-primary/70 font-medium bg-primary/5 w-max px-2 py-0.5 rounded">
+             {task.startTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">schedule</span>{task.startTime}</div>}
+             {task.estimatedTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">hourglass_bottom</span>{task.estimatedTime}</div>}
+           </div>
+        )}
       </div>
     )
   }
@@ -22,29 +28,79 @@ function TaskSlot({ task, emptyHeight = 'h-12' }: { task?: Task; emptyHeight?: s
   )
 }
 
+function TaskInlineForm({ priority, onSave, onCancel }: { priority: Priority; onSave: (title: string, start?: string, duration?: string) => Promise<void>; onCancel: () => void }) {
+  const [title, setTitle] = useState('')
+  const [start, setStart] = useState('')
+  const [duration, setDuration] = useState('')
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSave()
+    if (e.key === 'Escape') onCancel()
+  }
+
+  const handleSave = () => {
+    if (title.trim()) {
+      onSave(title.trim(), start.trim() || undefined, duration.trim() || undefined)
+    }
+  }
+
+  return (
+    <div className="bg-surface-container-high border border-primary/30 rounded-xl p-3 flex flex-col gap-3">
+      <input
+        autoFocus
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={`${priority.charAt(0).toUpperCase() + priority.slice(1)} task title...`}
+        className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-500"
+      />
+      <div className="flex gap-2">
+        <input
+          type="time"
+          value={start}
+          onChange={e => setStart(e.target.value)}
+          className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 flex-1 text-on-surface-variant [color-scheme:dark]"
+        />
+        <input
+          value={duration}
+          onChange={e => setDuration(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Duration (e.g. 2h)"
+          className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 w-24 text-on-surface-variant placeholder:text-neutral-600"
+        />
+      </div>
+      <div className="flex justify-end gap-2 mt-1">
+        <button onClick={onCancel} className="text-[10px] text-neutral-400 hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors">Cancel</button>
+        <button onClick={handleSave} className="text-[10px] bg-primary/20 text-primary font-bold px-4 py-1.5 rounded hover:bg-primary/30 transition-colors">Save Task</button>
+      </div>
+    </div>
+  )
+}
+
 type AddingFor = { priority: Priority; day: DayOfWeek } | null
 
 export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributionProps) {
   const { createTask, markDayComplete } = useWeekStore()
   const [addingFor, setAddingFor] = useState<AddingFor>(null)
-  const [newTitle, setNewTitle] = useState('')
-
-  const commitAdd = async () => {
-    if (addingFor && newTitle.trim()) {
-      await createTask({ title: newTitle.trim(), priority: addingFor.priority, day: addingFor.day })
-    }
-    setAddingFor(null)
-    setNewTitle('')
-  }
-
-  const handleAddKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') commitAdd()
-    if (e.key === 'Escape') { setAddingFor(null); setNewTitle('') }
-  }
 
   const startAdd = (priority: Priority) => {
     setAddingFor({ priority, day: day.day as DayOfWeek })
-    setNewTitle('')
+  }
+
+  const renderInlineForm = (priority: Priority) => {
+    if (addingFor?.priority === priority && addingFor.day === day.day) {
+      return (
+        <TaskInlineForm
+          priority={priority}
+          onSave={async (title, start, duration) => {
+            await createTask({ title, priority, day: day.day as DayOfWeek, startTime: start, estimatedTime: duration })
+            setAddingFor(null)
+          }}
+          onCancel={() => setAddingFor(null)}
+        />
+      )
+    }
+    return null
   }
 
   if (day.isRestDay) {
@@ -66,22 +122,18 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
           <p className="text-xs text-neutral-500 leading-relaxed max-w-xs mb-8">
             System-mandated downtime for cognitive recovery and preparation for next cycle.
           </p>
-          <button
-            onClick={() => startAdd('medium')}
-            className="px-6 py-2 border border-tertiary/30 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded-full hover:bg-tertiary/10 transition-colors"
-          >
-            Override Rest
-          </button>
-          {addingFor && (
-            <input
-              autoFocus
-              value={newTitle}
-              onChange={e => setNewTitle(e.target.value)}
-              onKeyDown={handleAddKeyDown}
-              onBlur={commitAdd}
-              placeholder="Task title, press Enter"
-              className="mt-3 w-full max-w-xs bg-surface-container-high border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-tertiary/40"
-            />
+          {!addingFor && (
+            <button
+              onClick={() => startAdd('low')}
+              className="px-6 py-2 border border-tertiary/30 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded-full hover:bg-tertiary/10 transition-colors"
+            >
+              Override Rest
+            </button>
+          )}
+          {addingFor?.day === day.day && (
+            <div className="mt-4 w-full text-left">
+              {renderInlineForm('low')}
+            </div>
           )}
         </div>
       </div>
@@ -170,17 +222,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               </div>
             </div>
             <TaskSlot task={day.highTask} emptyHeight="h-24" />
-            {addingFor?.priority === 'high' && addingFor.day === day.day && (
-              <input
-                autoFocus
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                onKeyDown={handleAddKeyDown}
-                onBlur={commitAdd}
-                placeholder="High-impact task title, press Enter"
-                className="w-full bg-surface-container-high border border-primary/30 rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary/40"
-              />
-            )}
+            {renderInlineForm('high')}
           </div>
 
           {/* Medium Priority */}
@@ -198,17 +240,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
             {Array.from({ length: medSlots }).map((_, i) => (
               <TaskSlot key={i} task={day.mediumTasks[i]} />
             ))}
-            {addingFor?.priority === 'medium' && addingFor.day === day.day && (
-              <input
-                autoFocus
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                onKeyDown={handleAddKeyDown}
-                onBlur={commitAdd}
-                placeholder="Medium task title, press Enter"
-                className="w-full bg-surface-container-high border border-primary/30 rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary/40"
-              />
-            )}
+            {renderInlineForm('medium')}
           </div>
 
           {/* Small Tasks */}
@@ -228,17 +260,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
                 <TaskSlot key={i} task={day.smallTasks[i]} />
               ))}
             </div>
-            {addingFor?.priority === 'low' && addingFor.day === day.day && (
-              <input
-                autoFocus
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                onKeyDown={handleAddKeyDown}
-                onBlur={commitAdd}
-                placeholder="Quick task title, press Enter"
-                className="w-full bg-surface-container-high border border-primary/30 rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary/40"
-              />
-            )}
+            {renderInlineForm('low')}
           </div>
         </div>
       )}
