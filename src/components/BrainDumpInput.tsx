@@ -1,22 +1,17 @@
 import { useState, useRef } from 'react'
 import { useWeekStore } from '../store/useWeekStore'
-import type { BrainDumpItem } from '../data/mockData'
 
 export function BrainDumpInput() {
   const [value, setValue] = useState('')
   const { addBrainDumpItem } = useWeekStore()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleStructure = () => {
+  const handleStructure = async () => {
     if (!value.trim()) return
     const lines = value.split('\n').filter(l => l.trim())
-    lines.forEach((line, i) => {
-      const newItem: BrainDumpItem = {
-        id: `bd-new-${Date.now()}-${i}`,
-        title: line.trim(),
-      }
-      addBrainDumpItem(newItem)
-    })
+    for (const line of lines) {
+      await addBrainDumpItem(line.trim())
+    }
     setValue('')
   }
 
@@ -26,7 +21,8 @@ export function BrainDumpInput() {
         ref={textareaRef}
         value={value}
         onChange={e => setValue(e.target.value)}
-        placeholder="What's on your mind? Start typing anything..."
+        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleStructure() }}
+        placeholder="What's on your mind? Start typing anything... (Ctrl+Enter to save)"
         className="w-full h-48 bg-transparent border-b-2 border-surface-variant focus:border-primary focus:ring-0 text-xl font-light py-6 px-0 resize-none transition-all outline-none placeholder:text-surface-variant text-on-surface"
       />
       <div className="absolute bottom-4 right-0 flex gap-4">
