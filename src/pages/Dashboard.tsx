@@ -118,15 +118,11 @@ export function Dashboard() {
         <section className="space-y-6">
           <DayCard day={sat} />
           <DayCard day={sun} />
-          <div className="grid grid-cols-2 gap-6">
-            <DayCard day={mon} isCompact />
-            <DayCard day={tue} isCompact />
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <DayCard day={wed} isCompact />
-            <DayCard day={thu} isCompact />
-          </div>
-          <DayCard day={{...fri, isRestDay: true}} isCompact />
+          <DayCard day={mon} />
+          <DayCard day={tue} />
+          <DayCard day={wed} />
+          <DayCard day={thu} />
+          <DayCard day={{...fri, isRestDay: true}} />
         </section>
 
         {/* Bottom Stats */}

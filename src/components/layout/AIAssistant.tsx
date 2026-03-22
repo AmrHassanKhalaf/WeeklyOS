@@ -4,7 +4,7 @@ import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
 
-type Tab = 'insights' | 'stats' | 'activity'
+type Tab = 'insights' | 'stats' | 'activity' | 'chat'
 
 interface AIAssistantProps {
   variant?: 'default' | 'evaluation'
@@ -48,6 +48,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
     const msg = (overrideText ?? chatInput).trim()
     if (!msg || isAiTyping) return
     setChatInput('')
+    setActiveTab('chat')
     setChatMessages(prev => [...prev, { role: 'user', text: msg }])
     
     setIsAiTyping(true)
@@ -84,7 +85,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
 
       {/* Tabs */}
       <nav className="flex gap-4 border-b border-white/5 px-6 pb-3 pt-4">
-        {(['insights', 'stats', 'activity'] as Tab[]).map(tab => (
+        {(['insights', 'stats', 'activity', 'chat'] as Tab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -92,7 +93,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               activeTab === tab ? 'text-[#4EDEA3] font-bold' : 'text-neutral-500 hover:text-white'
             }`}
           >
-            {tab === 'insights' ? 'AI Insights' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'insights' ? 'AI Insights' : tab === 'chat' ? 'Chat' : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </nav>
@@ -226,6 +227,32 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
                 ))
               ) : (
                 <p className="text-xs text-neutral-500">No activity logged yet.</p>
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'chat' && (
+            <div className="space-y-4 pb-4">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'max-w-[95%]'}`}>
+                  <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                    msg.role === 'ai'
+                      ? 'bg-surface-container-highest border border-white/5 rounded-tl-none'
+                      : 'bg-primary-container text-on-primary-container rounded-tr-none shadow-md'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              {isAiTyping && (
+                <div className="flex flex-col gap-2 max-w-[90%]">
+                  <div className="p-3 bg-surface-container-high rounded-2xl rounded-tl-none text-sm text-neutral-400">
+                    <span className="animate-pulse flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm text-[#4EDEA3]">smart_toy</span>
+                      Processing data...
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
           )}
