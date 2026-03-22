@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WeeklyOS - Weekly Distribution</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary": "#4edea3",
+              "surface-dim": "#131313",
+              "on-secondary-fixed-variant": "#474746",
+              "surface-variant": "#353534",
+              "on-surface-variant": "#c4c5d9",
+              "tertiary-fixed": "#6ffbbe",
+              "primary-fixed": "#dde1ff",
+              "on-primary-fixed-variant": "#0035bd",
+              "tertiary-container": "#007e56",
+              "surface-tint": "#b8c3ff",
+              "on-primary-fixed": "#001355",
+              "on-tertiary": "#003824",
+              "on-secondary-container": "#b7b5b4",
+              "surface": "#131313",
+              "on-error": "#690005",
+              "surface-bright": "#3a3939",
+              "on-tertiary-fixed": "#002113",
+              "inverse-on-surface": "#313030",
+              "tertiary-fixed-dim": "#4edea3",
+              "surface-container-low": "#1c1b1b",
+              "primary-container": "#2f5cff",
+              "secondary-fixed-dim": "#c8c6c5",
+              "on-tertiary-fixed-variant": "#005236",
+              "on-surface": "#e5e2e1",
+              "on-primary": "#002388",
+              "secondary": "#c8c6c5",
+              "inverse-primary": "#124aef",
+              "surface-container-lowest": "#0e0e0e",
+              "on-secondary": "#303030",
+              "on-primary-container": "#f0f0ff",
+              "on-tertiary-container": "#c5ffde",
+              "primary-fixed-dim": "#b8c3ff",
+              "error-container": "#93000a",
+              "primary": "#b8c3ff",
+              "outline": "#8e90a2",
+              "secondary-fixed": "#e4e2e1",
+              "secondary-container": "#474746",
+              "on-error-container": "#ffdad6",
+              "surface-container-highest": "#353534",
+              "outline-variant": "#434656",
+              "error": "#ffb4ab",
+              "on-background": "#e5e2e1",
+              "background": "#131313",
+              "on-secondary-fixed": "#1b1c1c",
+              "surface-container-high": "#2a2a2a",
+              "surface-container": "#201f1f",
+              "inverse-surface": "#e5e2e1"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            background-color: #131313;
+            color: #e5e2e1;
+            font-family: 'Inter', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #353534;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="antialiased overflow-hidden">
+<!-- SideNavBar (Left) -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#1C1B1B] dark:bg-[#1C1B1B] font-['Inter'] antialiased text-sm font-medium p-4 z-50">
+<div class="mb-8 flex flex-col gap-1">
+<span class="text-xl font-bold tracking-tight text-[#E5E2E1] dark:text-[#E5E2E1]">WeeklyOS</span>
+<span class="text-[10px] uppercase tracking-[0.2em] text-[#A1A1A1]">Productivity Engine</span>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#E5E2E1] bg-[#2A2A2A] rounded-lg group" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="calendar_view_week">calendar_view_week</span>
+<span>Weekly Distribution</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="target">target</span>
+<span>Focused Day</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="psychology">psychology</span>
+<span>Prep &amp; Brain Dump</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="assessment">assessment</span>
+<span>Weekly Evaluation</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1 pt-4">
+<button class="w-full flex items-center justify-center gap-2 py-2.5 mb-4 bg-gradient-to-br from-primary-container to-primary text-on-primary rounded font-bold text-xs uppercase tracking-widest scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+            New Plan
+        </button>
+<a class="flex items-center gap-3 px-3 py-2 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-14 z-40 bg-[#131313]/80 dark:bg-[#131313]/80 backdrop-blur-xl flex items-center justify-between px-8 font-['Inter'] text-xs uppercase tracking-widest">
+<div class="flex items-center gap-8 h-full">
+<a class="text-[#E5E2E1]/60 hover:text-white transition-opacity cursor-pointer opacity-80 hover:opacity-100 h-full flex items-center" href="#">Current Week</a>
+<a class="text-[#B8C3FF] border-b-2 border-[#2F5CFF] h-full flex items-center" href="#">Roadmap</a>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<input class="bg-surface-container-low border-none rounded-full px-4 py-1.5 text-[10px] w-48 focus:ring-1 focus:ring-primary-container transition-all text-white placeholder-neutral-500" placeholder="Search Obsidian..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-sm opacity-40" data-icon="search">search</span>
+</div>
+<div class="flex items-center gap-4 text-[#B8C3FF]">
+<span class="material-symbols-outlined cursor-pointer opacity-80 hover:opacity-100" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer opacity-80 hover:opacity-100" data-icon="auto_awesome">auto_awesome</span>
+<span class="material-symbols-outlined cursor-pointer opacity-80 hover:opacity-100" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Right / AI Assistant) -->
+<aside class="fixed right-0 top-0 h-screen w-80 z-30 bg-[#1C1B1B] dark:bg-[#1C1B1B] flex flex-col border-l border-white/5 shadow-2xl shadow-[#2F5CFF]/5 font-['Inter'] text-sm">
+<div class="p-6 pt-20">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-sm font-semibold text-[#4EDEA3]">AI Assistant</h3>
+<p class="text-[10px] text-neutral-500 uppercase tracking-tighter">Productivity Analyst</p>
+</div>
+<span class="material-symbols-outlined text-[#4EDEA3]" data-icon="bolt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div class="space-y-6">
+<div class="bg-surface-container-high rounded-xl p-4 border border-white/5">
+<p class="text-xs text-on-surface-variant leading-relaxed mb-3 italic">"Your output peak is usually Wednesday morning. I suggest moving high-impact tasks there."</p>
+<button class="text-[10px] font-bold text-primary flex items-center gap-2 hover:underline">
+                    Apply Suggestions <span class="material-symbols-outlined text-[10px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-neutral-500">
+<span>Weekly Progress</span>
+<span>64%</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[64%] shadow-[0_0_8px_#4edea3]"></div>
+</div>
+</div>
+</div>
+</div>
+<nav class="mt-auto p-4 flex gap-2 border-t border-white/5 bg-surface-container-lowest">
+<button class="flex-1 flex flex-col items-center gap-1 py-2 text-[#4EDEA3] font-bold">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+<span class="text-[9px] uppercase">Insights</span>
+</button>
+<button class="flex-1 flex flex-col items-center gap-1 py-2 text-neutral-500 hover:bg-[#2A2A2A] rounded transition-colors">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="text-[9px] uppercase">Stats</span>
+</button>
+<button class="flex-1 flex flex-col items-center gap-1 py-2 text-neutral-500 hover:bg-[#2A2A2A] rounded transition-colors">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-[9px] uppercase">Activity</span>
+</button>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 mr-80 pt-14 h-screen overflow-hidden flex flex-col">
+<!-- Dashboard Header -->
+<div class="px-8 py-8 flex items-end justify-between shrink-0">
+<div class="space-y-1">
+<h1 class="text-[2.75rem] font-bold tracking-tight text-on-surface leading-none">Week 42 — October 2023</h1>
+<p class="text-sm text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="calendar_today">calendar_today</span>
+                Distribution Phase: Aligning energy with impact.
+            </p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container-high hover:bg-surface-variant transition-colors rounded-lg flex items-center gap-2 text-xs font-semibold">
+<span class="material-symbols-outlined text-lg" data-icon="psychology">psychology</span>
+                Assign Braindump
+            </button>
+<button class="px-4 py-2 bg-gradient-to-br from-tertiary-container to-tertiary text-on-tertiary rounded-lg flex items-center gap-2 text-xs font-bold shadow-lg shadow-tertiary/10 hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-lg" data-icon="auto_mode">auto_mode</span>
+                Auto-distribute
+            </button>
+</div>
+</div>
+<!-- Redesigned Grid: 2-Column Vertical Layout -->
+<div class="flex-1 px-8 pb-8 overflow-y-auto custom-scrollbar">
+<div class="grid grid-cols-2 gap-6 pb-12">
+<!-- Monday Card -->
+<div class="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-[500px]">
+<div class="p-6 border-b border-white/5 flex items-center justify-between bg-surface-container-low/50 rounded-t-2xl">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Monday</span>
+<h2 class="text-2xl font-bold">16 Oct</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">Day Complete</button>
+<span class="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer" data-icon="drag_indicator">drag_indicator</span>
+</div>
+</div>
+<div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+<!-- High Impact (1) -->
+<div class="space-y-3">
+<div class="flex items-center justify-between text-[10px] uppercase font-bold text-[#b8c3ff]">
+<span class="tracking-widest">High Impact</span>
+<div class="flex items-center gap-2">
+<span>0/1</span>
+<span class="material-symbols-outlined text-sm cursor-pointer" data-icon="add">add</span>
+</div>
+</div>
+<div class="h-24 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic">
+                            No tasks yet
+                        </div>
+</div>
+<!-- Medium Priority (3) -->
+<div class="space-y-3">
+<div class="flex items-center justify-between text-[10px] uppercase font-bold text-[#b8c3ff]">
+<span class="tracking-widest">Medium Priority</span>
+<div class="flex items-center gap-2">
+<span>1/3</span>
+<span class="material-symbols-outlined text-sm cursor-pointer" data-icon="add">add</span>
+</div>
+</div>
+<div class="bg-surface-container-highest p-4 rounded-xl border border-white/5 text-sm">
+                            Quarterly Strategy Presentation Outline
+                        </div>
+<div class="h-12 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic">No tasks yet</div>
+<div class="h-12 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic">No tasks yet</div>
+</div>
+<!-- Small Tasks (5) -->
+<div class="space-y-3">
+<div class="flex items-center justify-between text-[10px] uppercase font-bold text-[#b8c3ff]">
+<span class="tracking-widest">Small Tasks</span>
+<div class="flex items-center gap-2">
+<span>0/5</span>
+<span class="material-symbols-outlined text-sm cursor-pointer" data-icon="add">add</span>
+</div>
+</div>
+<div class="h-32 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic">
+                            No tasks yet
+                        </div>
+</div>
+</div>
+</div>
+<!-- Tuesday Card -->
+<div class="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-[500px]">
+<div class="p-6 border-b border-white/5 flex items-center justify-between bg-surface-container-low/50 rounded-t-2xl">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Tuesday</span>
+<h2 class="text-2xl font-bold">17 Oct</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">Day Complete</button>
+<span class="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer" data-icon="drag_indicator">drag_indicator</span>
+</div>
+</div>
+<div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6 text-on-surface-variant/40">
+<div class="h-full flex flex-col items-center justify-center text-center opacity-20">
+<span class="material-symbols-outlined text-6xl mb-4" data-icon="format_list_bulleted">format_list_bulleted</span>
+<p class="text-sm">Day Plan Incomplete</p>
+</div>
+</div>
+</div>
+<!-- Wednesday Card -->
+<div class="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-[500px]">
+<div class="p-6 border-b border-white/5 flex items-center justify-between bg-surface-container-low/50 rounded-t-2xl">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Wednesday</span>
+<h2 class="text-2xl font-bold">18 Oct</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">Day Complete</button>
+<span class="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer" data-icon="drag_indicator">drag_indicator</span>
+</div>
+</div>
+<div class="p-6 flex-1 flex flex-col items-center justify-center bg-primary-container/5 rounded-b-2xl">
+<span class="material-symbols-outlined text-5xl text-primary mb-4" data-icon="auto_awesome">auto_awesome</span>
+<h3 class="text-primary font-bold uppercase tracking-widest text-xs mb-1">High Output Zone</h3>
+<p class="text-[10px] text-primary/60">Peak cognitive window identified</p>
+</div>
+</div>
+<!-- Thursday Card -->
+<div class="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-[500px]">
+<div class="p-6 border-b border-white/5 flex items-center justify-between bg-surface-container-low/50 rounded-t-2xl">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Thursday</span>
+<h2 class="text-2xl font-bold">19 Oct</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">Day Complete</button>
+<span class="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer" data-icon="drag_indicator">drag_indicator</span>
+</div>
+</div>
+<div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+<div class="space-y-3 opacity-30">
+<div class="h-12 bg-surface-container-highest rounded-xl"></div>
+<div class="h-12 bg-surface-container-highest rounded-xl"></div>
+<div class="h-12 bg-surface-container-highest rounded-xl"></div>
+</div>
+</div>
+</div>
+<!-- Friday Card (Rest Day) -->
+<div class="bg-surface-container-low rounded-2xl border border-tertiary/20 flex flex-col h-[500px] relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-b from-tertiary/5 to-transparent pointer-events-none"></div>
+<div class="p-6 border-b border-tertiary/10 flex items-center justify-between bg-tertiary/5 rounded-t-2xl relative z-10">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-tertiary font-black">Rest Day</span>
+<h2 class="text-2xl font-bold text-tertiary">20 Oct</h2>
+</div>
+<span class="material-symbols-outlined text-tertiary" data-icon="eco">eco</span>
+</div>
+<div class="flex-1 flex flex-col items-center justify-center p-8 text-center relative z-10">
+<div class="w-20 h-20 bg-tertiary/10 rounded-full flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-4xl text-tertiary" data-icon="bedtime">bedtime</span>
+</div>
+<h3 class="text-lg font-bold text-tertiary mb-2">Recharge Phase</h3>
+<p class="text-xs text-neutral-500 leading-relaxed max-w-xs mb-8">
+                        System-mandated downtime for cognitive recovery and preparation for next cycle.
+                    </p>
+<button class="px-6 py-2 border border-tertiary/30 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded-full hover:bg-tertiary/10 transition-colors">
+                        Override Rest
+                    </button>
+</div>
+</div>
+<!-- Weekend (Sat/Sun merged or separate vertical) -->
+<div class="grid grid-cols-2 gap-4 h-[500px]">
+<div class="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-full">
+<div class="p-4 border-b border-white/5 flex flex-col">
+<span class="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Saturday</span>
+<h2 class="text-lg font-bold">21 Oct</h2>
+</div>
+<div class="p-4 flex-1 border border-dashed border-white/5 m-3 rounded-xl"></div>
+</div>
+<div class="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-full">
+<div class="p-4 border-b border-white/5 flex flex-col">
+<span class="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Sunday</span>
+<h2 class="text-lg font-bold">22 Oct</h2>
+</div>
+<div class="p-4 flex-1 space-y-3">
+<div class="bg-surface-container-highest p-3 rounded-lg text-[10px] italic text-neutral-500">System Evaluation</div>
+<div class="bg-surface-container-highest p-3 rounded-lg text-[10px] italic text-neutral-500">Next Week Prep</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

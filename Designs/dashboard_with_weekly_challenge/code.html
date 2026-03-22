@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WeeklyOS - Digital Obsidian</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary": "#4edea3",
+              "surface-dim": "#131313",
+              "on-secondary-fixed-variant": "#474746",
+              "surface-variant": "#353534",
+              "on-surface-variant": "#c4c5d9",
+              "tertiary-fixed": "#6ffbbe",
+              "primary-fixed": "#dde1ff",
+              "on-primary-fixed-variant": "#0035bd",
+              "tertiary-container": "#007e56",
+              "surface-tint": "#b8c3ff",
+              "on-primary-fixed": "#001355",
+              "on-tertiary": "#003824",
+              "on-secondary-container": "#b7b5b4",
+              "surface": "#131313",
+              "on-error": "#690005",
+              "surface-bright": "#3a3939",
+              "on-tertiary-fixed": "#002113",
+              "inverse-on-surface": "#313030",
+              "tertiary-fixed-dim": "#4edea3",
+              "surface-container-low": "#1c1b1b",
+              "primary-container": "#2f5cff",
+              "secondary-fixed-dim": "#c8c6c5",
+              "on-tertiary-fixed-variant": "#005236",
+              "on-surface": "#e5e2e1",
+              "on-primary": "#002388",
+              "secondary": "#c8c6c5",
+              "inverse-primary": "#124aef",
+              "surface-container-lowest": "#0e0e0e",
+              "on-secondary": "#303030",
+              "on-primary-container": "#f0f0ff",
+              "on-tertiary-container": "#c5ffde",
+              "primary-fixed-dim": "#b8c3ff",
+              "error-container": "#93000a",
+              "primary": "#b8c3ff",
+              "outline": "#8e90a2",
+              "secondary-fixed": "#e4e2e1",
+              "secondary-container": "#474746",
+              "on-error-container": "#ffdad6",
+              "surface-container-highest": "#353534",
+              "outline-variant": "#434656",
+              "error": "#ffb4ab",
+              "on-background": "#e5e2e1",
+              "background": "#131313",
+              "on-secondary-fixed": "#1b1c1c",
+              "surface-container-high": "#2a2a2a",
+              "surface-container": "#201f1f",
+              "inverse-surface": "#e5e2e1"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .obsidian-gradient {
+        background: linear-gradient(135deg, #2f5cff 0%, #b8c3ff 100%);
+      }
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #353534; border-radius: 10px; }
+      .day-card-tasks::-webkit-scrollbar { width: 3px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30 antialiased overflow-hidden">
+<!-- SIDE NAVIGATION BAR (LEFT) -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#1C1B1B] dark:bg-[#1C1B1B] z-50 font-['Inter'] antialiased text-sm font-medium">
+<div class="flex flex-col h-full p-4">
+<!-- Brand Section -->
+<div class="flex items-center gap-3 px-2 mb-8">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center obsidian-gradient">
+<span class="material-symbols-outlined text-on-primary-container text-lg">dashboard</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-[#E5E2E1] dark:text-[#E5E2E1]">WeeklyOS</h1>
+<p class="text-[10px] text-[#A1A1A1] uppercase tracking-[0.2em]">Productivity Engine</p>
+</div>
+</div>
+<!-- Main Tabs -->
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#E5E2E1] bg-[#2A2A2A] rounded-lg transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-lg">calendar_view_week</span>
+<span>Weekly Distribution</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-lg">target</span>
+<span>Focused Day</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-lg">psychology</span>
+<span>Prep &amp; Brain Dump</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-lg">assessment</span>
+<span>Weekly Evaluation</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-[#A1A1A1] dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-lg">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<!-- CTA & User -->
+<div class="mt-auto pt-6 space-y-4">
+<button class="w-full obsidian-gradient text-on-primary-container py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Plan
+                </button>
+<div class="flex items-center gap-3 p-2 bg-surface-container-lowest rounded-lg">
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="User profile photo in dark aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRr0MTw_GZMpxLJ2daQw7VGnzttdfTZaUr0tbqdAXB0PG1H99rMJoPkRS4lymPaXZTSGc-qOvsvq9TYSLJQp83_sj7V18K3uas7bhpaut90j_DbyF2d7YTwe2OmXiq2eBbdnEbR6H6fzf7t5mmli8ZIWzRvzMczGJWT0tMdFms8IfHttQCGjQ8H9n7jiYhINUqeNwfbg4rNVtGnfBlrMbbFbahO4aclpnQi3CYYcZ-3KpXgprSZUW1cyVn1nLzXnFbKXujZ7FS5xo"/>
+</div>
+<div class="overflow-hidden">
+<p class="truncate font-semibold text-[#E5E2E1]">Alex Rivera</p>
+<p class="text-[10px] text-[#A1A1A1] truncate">Pro Subscriber</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- TOP NAVIGATION BAR -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-14 z-40 bg-[#131313]/80 dark:bg-[#131313]/80 backdrop-blur-xl flex items-center justify-between px-8 border-none">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-6">
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-[#B8C3FF] border-b-2 border-[#2F5CFF] pb-1 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" href="#">Current Week</a>
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-[#E5E2E1]/60 dark:text-[#E5E2E1]/60 hover:text-white transition-opacity cursor-pointer opacity-80 hover:opacity-100" href="#">Roadmap</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative w-64 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-container-low border-none rounded-lg py-1.5 pl-9 pr-4 text-xs w-full focus:ring-1 focus:ring-primary/40 text-on-surface" placeholder="Quick find..." type="text"/>
+</div>
+<div class="flex items-center gap-4 text-[#B8C3FF]">
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-colors">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-colors" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-colors">account_circle</span>
+</div>
+</div>
+</header>
+<!-- MAIN CANVAS -->
+<main class="ml-64 mr-80 pt-14 h-screen overflow-y-auto bg-surface">
+<div class="max-w-4xl mx-auto p-8 space-y-12">
+<!-- Hero Stats / Summary Section -->
+<section class="flex justify-between items-end gap-8">
+<div class="flex-1">
+<h2 class="text-4xl font-extrabold tracking-tight mb-2">The Digital Obsidian</h2>
+<p class="text-on-surface-variant max-w-lg">March 11 — March 17. Week 11 status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.</p>
+</div>
+<div class="flex items-center gap-6 shrink-0">
+<div class="text-right">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Week Score</p>
+<p class="text-3xl font-mono font-bold text-tertiary">92/100</p>
+</div>
+<div class="w-px h-10 bg-surface-variant"></div>
+<div class="text-right">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Completed</p>
+<p class="text-3xl font-mono font-bold text-primary">44/63</p>
+</div>
+</div>
+</section>
+<!-- Weekly Challenge Teaser -->
+<section>
+<div class="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary">emoji_events</span>
+</div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="space-y-1">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Weekly Challenge</span>
+<span class="w-1 h-1 rounded-full bg-primary/40"></span>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-widest">Ends in 4 days</span>
+</div>
+<h3 class="text-xl font-bold text-on-surface">Finish the Obsidian Redesign</h3>
+<p class="text-xs text-on-surface-variant max-w-md italic">Level up your productivity workflow by mastering the deep work cycle this week.</p>
+</div>
+<div class="w-full md:w-64 space-y-2">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-primary">
+<span>Progress</span>
+<span>75%</span>
+</div>
+<div class="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[75%] shadow-[0_0_10px_rgba(47,92,255,0.4)]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Vertical Stacked Day Grid -->
+<section class="space-y-6">
+<!-- Monday -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 overflow-hidden flex transition-all duration-300 hover:border-white/10">
+<div class="w-32 bg-surface-container p-6 flex flex-col justify-center items-center border-r border-white/5 shrink-0">
+<h3 class="font-bold text-2xl">Mon</h3>
+<p class="text-xs text-on-surface-variant">Mar 11</p>
+<div class="mt-4 w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="flex-1 p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div class="flex-1 max-w-xs space-y-2">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+<span>Day Progress</span>
+<span>100%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-8 day-card-tasks max-h-48 overflow-y-auto pr-2">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-primary mb-3 font-black">Strategic</p>
+<p class="text-sm leading-relaxed text-on-surface">Finalize Q2 Roadmap</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">Medium</p>
+<ul class="text-xs space-y-2 text-on-surface/80">
+<li class="flex items-center gap-2"><div class="w-1 h-1 rounded-full bg-secondary"></div> Review ad spend</li>
+<li class="flex items-center gap-2"><div class="w-1 h-1 rounded-full bg-secondary"></div> Team sync 1:1</li>
+<li class="flex items-center gap-2"><div class="w-1 h-1 rounded-full bg-secondary"></div> Content batching</li>
+</ul>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">Tasks</p>
+<p class="text-xs text-on-surface-variant italic">No minor tasks listed</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Tuesday -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 overflow-hidden flex transition-all duration-300 hover:border-white/10">
+<div class="w-32 bg-surface-container p-6 flex flex-col justify-center items-center border-r border-white/5 shrink-0">
+<h3 class="font-bold text-2xl">Tue</h3>
+<p class="text-xs text-on-surface-variant">Mar 12</p>
+<div class="mt-4 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">pending</span>
+</div>
+</div>
+<div class="flex-1 p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div class="flex-1 max-w-xs space-y-2">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+<span>Day Progress</span>
+<span>65%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[65%]"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-8 day-card-tasks max-h-48 overflow-y-auto pr-2">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-primary mb-3 font-black">Strategic</p>
+<p class="text-sm leading-relaxed text-on-surface">UI Redesign Sprint</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">Medium</p>
+<ul class="text-xs space-y-2 text-on-surface/80">
+<li class="flex items-center gap-2"><div class="w-1 h-1 rounded-full bg-secondary"></div> Client onboarding</li>
+<li class="flex items-center gap-2"><div class="w-1 h-1 rounded-full bg-secondary"></div> Asset export</li>
+<li class="flex items-center gap-2 line-through opacity-40"><div class="w-1 h-1 rounded-full bg-secondary"></div> Font pairing</li>
+</ul>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">Tasks</p>
+<ul class="text-xs space-y-2 text-on-surface/80">
+<li class="flex items-center gap-2"><div class="w-1 h-1 rounded-full bg-surface-variant"></div> Email cleanup</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<!-- Wednesday (Today Highlight) -->
+<div class="bg-surface-container-high ring-1 ring-primary/30 rounded-xl shadow-2xl shadow-primary/5 overflow-hidden flex">
+<div class="w-32 bg-primary/5 p-6 flex flex-col justify-center items-center border-r border-white/5 shrink-0 relative">
+<div class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-primary/20 text-[8px] font-bold text-primary uppercase">Current</div>
+<h3 class="font-bold text-2xl text-primary">Wed</h3>
+<p class="text-xs text-on-surface-variant">Mar 13</p>
+</div>
+<div class="flex-1 p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div class="flex-1 max-w-xs space-y-2">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+<span>Day Progress</span>
+<span>40%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full obsidian-gradient w-[40%]"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-8 day-card-tasks max-h-48 overflow-y-auto pr-2">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-primary mb-3 font-black">Strategic</p>
+<p class="text-sm leading-relaxed text-on-surface font-semibold">Weekly Dashboard UI</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">Medium</p>
+<p class="text-xs text-on-surface-variant italic">No medium priority tasks</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">Tasks (5)</p>
+<ul class="text-xs space-y-2.5 text-on-surface">
+<li class="flex items-center gap-2 font-medium"><div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div> Bento Layout</li>
+<li class="flex items-center gap-2 font-medium"><div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div> Color Tokens</li>
+<li class="flex items-center gap-2 opacity-60"><div class="w-1.5 h-1.5 rounded-full bg-surface-variant"></div> AI Sidebar</li>
+<li class="flex items-center gap-2 opacity-60"><div class="w-1.5 h-1.5 rounded-full bg-surface-variant"></div> Mobile Nav</li>
+<li class="flex items-center gap-2 opacity-60"><div class="w-1.5 h-1.5 rounded-full bg-surface-variant"></div> Asset Export</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<!-- Remaining Days (Thursday - Sunday) -->
+<div class="grid grid-cols-2 gap-6">
+<!-- Thu -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 p-6 opacity-80 hover:opacity-100 transition-opacity flex gap-6">
+<div class="text-center shrink-0">
+<h3 class="font-bold text-xl">Thu</h3>
+<p class="text-[10px] text-on-surface-variant">Mar 14</p>
+</div>
+<div class="flex-1 space-y-4">
+<div class="h-1 w-full bg-surface-container-high rounded-full overflow-hidden"></div>
+<div>
+<p class="text-[9px] uppercase tracking-widest text-primary font-black mb-1">Strategic</p>
+<p class="text-xs text-on-surface-variant italic">Deep Work: Coding</p>
+</div>
+</div>
+</div>
+<!-- Fri -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 p-6 opacity-80 hover:opacity-100 transition-opacity flex gap-6">
+<div class="text-center shrink-0">
+<h3 class="font-bold text-xl">Fri</h3>
+<p class="text-[10px] text-on-surface-variant">Mar 15</p>
+</div>
+<div class="flex-1 space-y-4">
+<div class="h-1 w-full bg-surface-container-high rounded-full overflow-hidden"></div>
+<div>
+<p class="text-[9px] uppercase tracking-widest text-primary font-black mb-1">Strategic</p>
+<p class="text-xs text-on-surface-variant italic">Client Presentations</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Stats Grid -->
+<section class="grid grid-cols-3 gap-8 pb-12">
+<div class="col-span-2 bg-surface-container-low rounded-xl p-8 border border-white/5">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-xl font-bold">Deep Work Distribution</h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-primary"></div> <span class="text-xs text-on-surface-variant">Focus</span></div>
+<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-tertiary"></div> <span class="text-xs text-on-surface-variant">Admin</span></div>
+</div>
+</div>
+<div class="h-48 flex items-end justify-between gap-4 px-4">
+<div class="flex-1 space-y-2 group">
+<div class="flex flex-col-reverse w-full gap-0.5 h-32">
+<div class="bg-primary/20 w-full h-[60%] rounded-sm"></div>
+<div class="bg-primary w-full h-[40%] rounded-sm"></div>
+</div>
+<p class="text-center text-[10px] font-bold text-on-surface-variant group-hover:text-primary">M</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="flex flex-col-reverse w-full gap-0.5 h-36">
+<div class="bg-primary/20 w-full h-[30%] rounded-sm"></div>
+<div class="bg-primary w-full h-[70%] rounded-sm"></div>
+</div>
+<p class="text-center text-[10px] font-bold text-on-surface-variant group-hover:text-primary">T</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="flex flex-col-reverse w-full gap-0.5 h-40">
+<div class="bg-tertiary w-full h-[20%] rounded-sm"></div>
+<div class="bg-primary w-full h-[80%] rounded-sm"></div>
+</div>
+<p class="text-center text-[10px] font-bold text-primary group-hover:text-primary">W</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="flex flex-col-reverse w-full gap-0.5 h-24">
+<div class="bg-primary/20 w-full h-[100%] rounded-sm opacity-20"></div>
+</div>
+<p class="text-center text-[10px] font-bold text-on-surface-variant group-hover:text-primary">T</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="flex flex-col-reverse w-full gap-0.5 h-24">
+<div class="bg-primary/20 w-full h-[100%] rounded-sm opacity-20"></div>
+</div>
+<p class="text-center text-[10px] font-bold text-on-surface-variant group-hover:text-primary">F</p>
+</div>
+</div>
+</div>
+<div class="bg-tertiary-container text-on-tertiary-container rounded-xl p-8 relative overflow-hidden flex flex-col">
+<span class="material-symbols-outlined absolute top-[-20px] right-[-20px] text-9xl opacity-10 rotate-12">bolt</span>
+<h3 class="text-xl font-bold mb-4">Focus Mode</h3>
+<p class="text-sm opacity-90 mb-8 leading-relaxed">You've reached a peak state. Recommendation: Batch your remaining 3 tasks now to clear Thursday.</p>
+<div class="mt-auto">
+<button class="w-full bg-on-tertiary-container text-tertiary-container py-3 rounded-lg font-bold text-sm">Optimize Schedule</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- AI ASSISTANT SIDEBAR (RIGHT) -->
+<aside class="fixed right-0 top-0 h-screen w-80 z-30 bg-[#1C1B1B] dark:bg-[#1C1B1B] border-l border-white/5 shadow-2xl shadow-[#2F5CFF]/5 flex flex-col font-['Inter']">
+<div class="p-6 h-full flex flex-col">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h2 class="text-sm font-semibold text-[#4EDEA3]">AI Assistant</h2>
+<p class="text-[10px] text-neutral-500 uppercase tracking-widest">Productivity Analyst</p>
+</div>
+<div class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></div>
+</div>
+<nav class="flex gap-4 border-b border-white/5 pb-4 mb-6">
+<button class="text-[#4EDEA3] font-bold text-sm">AI Insights</button>
+<button class="text-neutral-500 text-sm hover:text-white transition-colors">Stats</button>
+<button class="text-neutral-500 text-sm hover:text-white transition-colors">Activity</button>
+</nav>
+<div class="flex-1 overflow-y-auto space-y-6">
+<!-- Insight Card -->
+<div class="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-tertiary/40">
+<div class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-sm">bolt</span>
+<span class="text-[10px] font-black uppercase tracking-tighter">Energy Level Peak</span>
+</div>
+<p class="text-xs text-on-surface/80 leading-relaxed">Based on last week, your creative output peaks between 9 AM and 11 AM. Tomorrow is blocked for focus work.</p>
+</div>
+<div class="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-primary/40">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="text-[10px] font-black uppercase tracking-tighter">Deadline Risk</span>
+</div>
+<p class="text-xs text-on-surface/80 leading-relaxed">Friday's "Client Presentations" task has 4 subtasks pending. Start prep 1 hour earlier.</p>
+</div>
+<!-- Mini Log -->
+<div class="space-y-4 pt-4">
+<h3 class="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Recent Activity</h3>
+<div class="space-y-3">
+<div class="flex gap-3 text-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary mt-1"></div>
+<div>
+<p class="text-on-surface">"Bento Layout" completed</p>
+<p class="text-[10px] text-neutral-500">24m ago</p>
+</div>
+</div>
+<div class="flex gap-3 text-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary mt-1"></div>
+<div>
+<p class="text-on-surface">"Color Tokens" completed</p>
+<p class="text-[10px] text-neutral-500">1h ago</p>
+</div>
+</div>
+<div class="flex gap-3 text-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-neutral-600 mt-1"></div>
+<div>
+<p class="text-on-surface">New plan: "Spring Sprint"</p>
+<p class="text-[10px] text-neutral-500">3h ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Chat Field -->
+<div class="pt-6 border-t border-white/5">
+<div class="bg-surface-container-highest rounded-lg px-4 py-3 flex items-center gap-2 border border-white/5 focus-within:border-primary/40 transition-colors">
+<span class="material-symbols-outlined text-neutral-500 text-sm">auto_awesome</span>
+<input class="bg-transparent border-none p-0 text-xs focus:ring-0 w-full placeholder:text-neutral-600" placeholder="Ask AI anything..." type="text"/>
+</div>
+</div>
+</div>
+</aside>
+</body></html>

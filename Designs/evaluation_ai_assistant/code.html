@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Weekly Evaluation | Obsidian AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary-container": "#c5ffde",
+                        "secondary-container": "#474746",
+                        "primary-container": "#2f5cff",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#003824",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed": "#002113",
+                        "on-primary": "#002388",
+                        "primary-fixed": "#dde1ff",
+                        "inverse-on-surface": "#313030",
+                        "tertiary-fixed": "#6ffbbe",
+                        "primary": "#b8c3ff",
+                        "tertiary-container": "#007e56",
+                        "surface-tint": "#b8c3ff",
+                        "tertiary": "#4edea3",
+                        "inverse-surface": "#e5e2e1",
+                        "inverse-primary": "#124aef",
+                        "on-primary-container": "#f0f0ff",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-primary-fixed-variant": "#0035bd",
+                        "surface": "#131313",
+                        "on-primary-fixed": "#001355",
+                        "secondary": "#c8c6c5",
+                        "on-surface-variant": "#c4c5d9",
+                        "on-secondary-container": "#b7b5b4",
+                        "primary-fixed-dim": "#b8c3ff",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-bright": "#3a3939",
+                        "surface-variant": "#353534",
+                        "outline": "#8e90a2",
+                        "background": "#131313",
+                        "surface-dim": "#131313",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-background": "#e5e2e1",
+                        "outline-variant": "#434656",
+                        "secondary-fixed": "#e4e2e1",
+                        "on-secondary": "#303030",
+                        "on-secondary-fixed-variant": "#474746",
+                        "surface-container-low": "#1c1b1b",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "surface-container": "#201f1f",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-secondary-fixed": "#1b1c1c",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#353534",
+                        "on-error-container": "#ffdad6"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #131313;
+            color: #e5e2e1;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary/30 antialiased overflow-hidden">
+<!-- Left Side Navigation -->
+<nav class="h-screen w-64 fixed left-0 top-0 flex flex-col bg-neutral-900 dark:bg-[#1C1B1B] font-['Inter'] antialiased text-sm font-medium p-4 z-50">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-bold tracking-tight text-neutral-100 dark:text-[#E5E2E1]">Obsidian AI</h1>
+<p class="text-[10px] uppercase tracking-widest text-neutral-500 mt-1">Weekly Planner</p>
+</div>
+<div class="space-y-1 flex-1">
+<div class="flex items-center gap-3 px-3 py-2 text-neutral-500 dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 cursor-pointer rounded-lg group">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span>Dashboard</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-neutral-500 dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 cursor-pointer rounded-lg group">
+<span class="material-symbols-outlined text-lg">calendar_view_week</span>
+<span>Weekly Distribution</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-neutral-500 dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 cursor-pointer rounded-lg group">
+<span class="material-symbols-outlined text-lg">target</span>
+<span>Focused Day</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-neutral-500 dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 cursor-pointer rounded-lg group">
+<span class="material-symbols-outlined text-lg">psychology</span>
+<span>Prep &amp; Brain Dump</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-[#E5E2E1] bg-[#2A2A2A] rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-lg">assessment</span>
+<span>Weekly Evaluation</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-neutral-500 dark:text-[#A1A1A1] hover:bg-[#2A2A2A] transition-colors duration-200 cursor-pointer rounded-lg group">
+<span class="material-symbols-outlined text-lg">settings</span>
+<span>Settings</span>
+</div>
+</div>
+<div class="mt-auto">
+<button class="w-full bg-gradient-to-br from-primary-container to-primary text-on-primary py-2.5 rounded-lg font-semibold text-sm transition-transform active:scale-95">
+                New Plan
+            </button>
+</div>
+</nav>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-14 z-40 bg-neutral-950/80 dark:bg-[#131313]/80 backdrop-blur-xl flex items-center justify-between px-8">
+<div class="flex items-center gap-6">
+<span class="font-['Inter'] text-xs uppercase tracking-widest text-[#B8C3FF] border-b-2 border-[#2F5CFF] pb-1 cursor-pointer">Current Week</span>
+<span class="font-['Inter'] text-xs uppercase tracking-widest text-neutral-400 dark:text-[#E5E2E1]/60 hover:text-white transition-opacity cursor-pointer">Roadmap</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative flex items-center group">
+<span class="material-symbols-outlined text-on-surface-variant absolute left-3 text-lg">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-1.5 text-xs w-48 focus:ring-1 focus:ring-primary transition-all" placeholder="Search tasks..." type="text"/>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-opacity">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-opacity">auto_awesome</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-opacity">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-14 mr-80 p-8 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar">
+<div class="max-w-4xl mx-auto">
+<header class="mb-12">
+<h2 class="text-4xl font-extrabold tracking-tight mb-2">Weekly Evaluation</h2>
+<p class="text-on-surface-variant">Reviewing Sep 18 — Sep 24. Clarity leads to mastery.</p>
+</header>
+<!-- Bento Grid Metrics -->
+<div class="grid grid-cols-12 gap-6 mb-12">
+<!-- Score Card -->
+<div class="col-span-4 bg-surface-container-low p-6 rounded-xl flex flex-col justify-between">
+<span class="text-xs uppercase tracking-widest text-on-surface-variant">Weekly Score</span>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-5xl font-extrabold text-primary">84%</span>
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+</div>
+<div class="mt-4 h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-primary w-[84%]"></div>
+</div>
+</div>
+<!-- Bar Chart: Completed vs Planned -->
+<div class="col-span-8 bg-surface-container-low p-6 rounded-xl">
+<div class="flex justify-between items-center mb-6">
+<span class="text-xs uppercase tracking-widest text-on-surface-variant">Completed vs. Planned</span>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="text-[10px] text-on-surface-variant uppercase">Done</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-surface-variant"></div>
+<span class="text-[10px] text-on-surface-variant uppercase">Plan</span>
+</div>
+</div>
+</div>
+<div class="flex items-end justify-between h-24 gap-4">
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full flex flex-col-reverse gap-0.5 h-20">
+<div class="w-full bg-primary rounded-t-sm h-[70%]"></div>
+<div class="w-full bg-surface-variant h-[30%]"></div>
+</div>
+<span class="text-[10px] text-on-surface-variant">MON</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full flex flex-col-reverse gap-0.5 h-20">
+<div class="w-full bg-primary rounded-t-sm h-[90%]"></div>
+<div class="w-full bg-surface-variant h-[10%]"></div>
+</div>
+<span class="text-[10px] text-on-surface-variant">TUE</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full flex flex-col-reverse gap-0.5 h-20">
+<div class="w-full bg-primary rounded-t-sm h-[40%]"></div>
+<div class="w-full bg-surface-variant h-[60%]"></div>
+</div>
+<span class="text-[10px] text-on-surface-variant">WED</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full flex flex-col-reverse gap-0.5 h-20">
+<div class="w-full bg-primary rounded-t-sm h-[85%]"></div>
+<div class="w-full bg-surface-variant h-[15%]"></div>
+</div>
+<span class="text-[10px] text-on-surface-variant">THU</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full flex flex-col-reverse gap-0.5 h-20">
+<div class="w-full bg-primary rounded-t-sm h-[95%]"></div>
+<div class="w-full bg-surface-variant h-[5%]"></div>
+</div>
+<span class="text-[10px] text-on-surface-variant">FRI</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Reflection Sections -->
+<div class="space-y-12">
+<section>
+<div class="flex items-center gap-3 mb-6">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-xl" style="font-variation-settings: 'FILL' 1;">thumb_up</span>
+</div>
+<h3 class="text-xl font-bold">What went well?</h3>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<div class="bg-surface-container-lowest border-l-2 border-tertiary p-4 rounded-r-lg group hover:bg-surface-container-low transition-colors">
+<p class="text-sm leading-relaxed">Completed the core architecture for the Obsidian project ahead of schedule. Deep focus sessions on Tuesday were highly effective.</p>
+</div>
+<div class="bg-surface-container-lowest border-l-2 border-tertiary p-4 rounded-r-lg group hover:bg-surface-container-low transition-colors">
+<p class="text-sm leading-relaxed">Maintained consistent morning routine every day this week, contributing to better energy levels.</p>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-3 mb-6">
+<div class="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-error text-xl" style="font-variation-settings: 'FILL' 1;">thumb_down</span>
+</div>
+<h3 class="text-xl font-bold">Where did I struggle?</h3>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<div class="bg-surface-container-lowest border-l-2 border-error p-4 rounded-r-lg group hover:bg-surface-container-low transition-colors">
+<p class="text-sm leading-relaxed">Wednesday productivity plummeted due to excessive meetings. I felt overwhelmed and unable to restart deep work.</p>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-3 mb-6">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+</div>
+<h3 class="text-xl font-bold">Lessons learned</h3>
+</div>
+<div class="bg-surface-container-high p-6 rounded-xl">
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<span class="text-primary mt-1 text-sm font-bold">01</span>
+<p class="text-sm text-on-surface-variant">Meeting-heavy days require a "buffer hour" afterwards to recalibrate focus before attempting complex tasks.</p>
+</li>
+<li class="flex items-start gap-3">
+<span class="text-primary mt-1 text-sm font-bold">02</span>
+<p class="text-sm text-on-surface-variant">Front-loading the hardest task on Monday significantly reduces anxiety for the remainder of the week.</p>
+</li>
+</ul>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Right Side AI Assistant -->
+<aside class="fixed right-0 top-0 h-screen w-80 bg-neutral-900 dark:bg-[#1C1B1B] z-30 flex flex-col border-l border-white/5 shadow-2xl shadow-blue-500/5">
+<div class="p-6 border-b border-white/5">
+<div class="flex items-center gap-3 mb-1">
+<span class="text-sm font-semibold text-[#4EDEA3]">AI Assistant</span>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+</div>
+<p class="text-xs text-neutral-500">Productivity Analyst</p>
+</div>
+<!-- Chat Container -->
+<div class="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
+<!-- AI Message -->
+<div class="flex flex-col gap-2 max-w-[90%]">
+<div class="bg-surface-container-high p-3 rounded-2xl rounded-tl-none">
+<p class="text-sm leading-relaxed">Based on your activity data, I've noticed a significant trend. Your output on Wednesday was 45% lower than your average, and your biometric indicators suggest elevated stress.</p>
+</div>
+</div>
+<!-- Burnout Alert -->
+<div class="bg-error-container/20 border border-error/20 p-4 rounded-xl">
+<div class="flex items-center gap-2 text-error mb-2">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-xs font-bold uppercase tracking-wider">Burnout Risk Detected</span>
+</div>
+<p class="text-xs text-on-error-container leading-relaxed">Wednesday metrics indicate a high cognitive load failure. Continuing at this pace may lead to a productivity crash.</p>
+<button class="mt-3 w-full bg-error text-on-error text-[10px] font-bold py-2 rounded uppercase tracking-widest hover:brightness-110 transition-all">
+                    Schedule Rest Day
+                </button>
+</div>
+<!-- AI Suggestion -->
+<div class="flex flex-col gap-2 max-w-[90%]">
+<div class="bg-surface-container-high p-3 rounded-2xl rounded-tl-none">
+<p class="text-sm leading-relaxed">I suggest converting this coming Wednesday into a 'Deep Reset' day. Should I rebalance your roadmap to accommodate this?</p>
+</div>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-4 bg-surface-container-low border-t border-white/5">
+<div class="flex flex-wrap gap-2 mb-4">
+<button class="px-3 py-1.5 bg-surface-container-high hover:bg-surface-variant text-[10px] text-on-surface rounded-full transition-colors">Optimize my schedule</button>
+<button class="px-3 py-1.5 bg-surface-container-high hover:bg-surface-variant text-[10px] text-on-surface rounded-full transition-colors">Analyze my productivity</button>
+<button class="px-3 py-1.5 bg-surface-container-high hover:bg-surface-variant text-[10px] text-on-surface rounded-full transition-colors">Plan my week</button>
+</div>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-lowest border-none rounded-xl py-3 pl-4 pr-12 text-sm focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Ask AI Assistant..." type="text"/>
+<button class="absolute right-2 text-primary hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</aside>
+</body></html>

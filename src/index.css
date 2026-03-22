@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ────────────────────────────────────────────────────────── */
+/* Material Symbols configuration                           */
+/* ────────────────────────────────────────────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* Obsidian Gradients                                       */
+/* ────────────────────────────────────────────────────────── */
+.obsidian-gradient {
+  background: linear-gradient(135deg, #2f5cff 0%, #b8c3ff 100%);
+}
+
+.primary-gradient {
+  background: linear-gradient(135deg, #2f5cff 0%, #b8c3ff 100%);
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* Glass Panel                                              */
+/* ────────────────────────────────────────────────────────── */
+.glass-panel {
+  background: rgba(53, 53, 52, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* Custom Scrollbars                                        */
+/* ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #353534;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* Typography & Selection                                   */
+/* ────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(184, 195, 255, 0.3);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #131313;
+  color: #e5e2e1;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* Animations                                               */
+/* ────────────────────────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
