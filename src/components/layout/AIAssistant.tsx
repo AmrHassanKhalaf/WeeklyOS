@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
+import { useLayoutStore } from '../../store/useLayoutStore'
 
 type Tab = 'insights' | 'stats' | 'activity'
 
@@ -19,6 +20,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   ])
   const { sendMessage } = useAiApi()
   const navigate = useNavigate()
+  const { isRightSidebarOpen, closeSidebarsOnMobile } = useLayoutStore()
 
   const handleSendMessage = async (overrideText?: string) => {
     const msg = (overrideText ?? chatInput).trim()
@@ -32,7 +34,9 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const quickActions = ['Optimize my schedule', 'Analyze my productivity', 'Plan my week']
 
   return (
-    <aside className="fixed right-0 top-0 h-screen w-80 z-30 bg-[#1C1B1B] border-l border-white/5 shadow-2xl shadow-[#2F5CFF]/5 flex flex-col font-['Inter']">
+    <aside className={`fixed right-0 top-0 h-screen w-80 z-50 bg-[#1C1B1B] border-l border-white/5 shadow-2xl shadow-[#2F5CFF]/5 flex flex-col font-['Inter'] transition-transform duration-300 ${
+      isRightSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+    }`}>
       {/* Header */}
       <div className="p-6 pt-20 border-b border-white/5">
         <div className="flex items-center justify-between mb-1">
@@ -82,7 +86,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             </div>
             <p className="text-xs text-on-error-container leading-relaxed">Wednesday metrics indicate a high cognitive load failure. Continuing at this pace may lead to a productivity crash.</p>
             <button
-              onClick={() => navigate('/weekly-distribution')}
+              onClick={() => { navigate('/weekly-distribution'); closeSidebarsOnMobile(); }}
               className="mt-3 w-full bg-error text-on-error text-[10px] font-bold py-2 rounded uppercase tracking-widest hover:brightness-110 transition-all"
             >
               Schedule Rest Day

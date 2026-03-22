@@ -45,6 +45,7 @@ function AppRouter() {
   useEffect(() => {
     if (user) {
       initialize()
+      useSettingsStore.getState().loadFromDb()
       return () => cleanup()
     }
   }, [user, initialize, cleanup])

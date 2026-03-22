@@ -1,10 +1,18 @@
 import { NavLink } from 'react-router-dom'
+import { useLayoutStore } from '../../store/useLayoutStore'
 
 export function TopNav() {
+  const { isLeftSidebarOpen, toggleLeftSidebar, toggleRightSidebar, isMobile } = useLayoutStore()
+
   return (
-    <header className="fixed top-0 right-0 w-[calc(100%-16rem)] h-14 z-40 bg-[#131313]/80 backdrop-blur-xl flex items-center justify-between px-8 border-none">
+    <header className={`fixed top-0 right-0 h-14 z-40 bg-[#131313]/80 backdrop-blur-xl flex items-center justify-between px-8 border-none transition-all duration-300 ${
+      isLeftSidebarOpen && !isMobile ? 'w-[calc(100%-16rem)]' : 'w-full'
+    }`}>
       {/* Left tabs */}
       <div className="flex items-center gap-6 h-full">
+        <button onClick={toggleLeftSidebar} className="text-on-surface-variant hover:text-white transition-colors mr-2">
+          <span className="material-symbols-outlined text-xl">menu</span>
+        </button>
         <NavLink
           to="/dashboard"
           className={({ isActive }) =>
@@ -16,18 +24,6 @@ export function TopNav() {
           }
         >
           Current Week
-        </NavLink>
-        <NavLink
-          to="/roadmap"
-          className={({ isActive }) =>
-            `font-['Inter'] text-xs uppercase tracking-widest cursor-pointer opacity-80 hover:opacity-100 transition-opacity h-full flex items-center ${
-              isActive
-                ? 'text-[#B8C3FF] border-b-2 border-[#2F5CFF]'
-                : 'text-[#E5E2E1]/60 hover:text-white'
-            }`
-          }
-        >
-          Roadmap
         </NavLink>
       </div>
 
@@ -45,7 +41,7 @@ export function TopNav() {
           <button className="hover:text-white transition-colors">
             <span className="material-symbols-outlined">notifications</span>
           </button>
-          <button className="hover:text-white transition-colors">
+          <button onClick={toggleRightSidebar} className="hover:text-white transition-colors">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
           </button>
           <button className="hover:text-white transition-colors">

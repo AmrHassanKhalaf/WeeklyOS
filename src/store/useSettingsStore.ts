@@ -29,6 +29,24 @@ export interface SettingsState {
   setWeeklySummaries: (enabled: boolean) => void
   setAnalyticsEnabled: (enabled: boolean) => void
   exportWeeklyReport: () => void
+  loadFromDb: () => Promise<void>
+}
+
+const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const payload: any = { user_id: user.id }
+    if (updates.theme !== undefined) payload.theme = updates.theme
+    if (updates.dailyReminders !== undefined) payload.daily_reminders = updates.dailyReminders
+    if (updates.weeklySummaries !== undefined) payload.weekly_summaries = updates.weeklySummaries
+    if (updates.analyticsEnabled !== undefined) payload.analytics_enabled = updates.analyticsEnabled
+    if (updates.fallbackEnabled !== undefined) payload.fallback_enabled = updates.fallbackEnabled
+    
+    await supabase.from('user_settings' as any).upsert(payload)
+  } catch (e) {
+    console.warn('Sync failed', e)
+  }
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -57,11 +75,29 @@ export const useSettingsStore = create<SettingsState>()(
         } catch (e) { console.warn('Supabase ai_keys sync failed', e) }
       },
       setActiveProvider: (provider) => set({ activeProvider: provider }),
-      setFallbackEnabled: (enabled) => set({ fallbackEnabled: enabled }),
-      setTheme: (theme) => set({ theme }),
-      setDailyReminders: (enabled) => set({ dailyReminders: enabled }),
-      setWeeklySummaries: (enabled) => set({ weeklySummaries: enabled }),
-      setAnalyticsEnabled: (enabled) => set({ analyticsEnabled: enabled }),
+      setFallbackEnabled: (enabled) => { set({ fallbackEnabled: enabled }); syncSettingsToDb({ fallbackEnabled: enabled }) },
+      setTheme: (theme) => { set({ theme }); syncSettingsToDb({ theme }) },
+      setDailyReminders: (enabled) => { set({ dailyReminders: enabled }); syncSettingsToDb({ dailyReminders: enabled }) },
+      setWeeklySummaries: (enabled) => { set({ weeklySummaries: enabled }); syncSettingsToDb({ weeklySummaries: enabled }) },
+      setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); syncSettingsToDb({ analyticsEnabled: enabled }) },
+
+      loadFromDb: async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
+          const { data } = await supabase.from('user_settings' as any).select().eq('user_id', user.id).maybeSingle()
+          const dbData = data as any
+          if (dbData) {
+            set({
+              theme: dbData.theme,
+              dailyReminders: dbData.daily_reminders,
+              weeklySummaries: dbData.weekly_summaries,
+              analyticsEnabled: dbData.analytics_enabled,
+              fallbackEnabled: dbData.fallback_enabled
+            })
+          }
+        } catch (e) { console.warn('Load settings failed', e) }
+      },
 
       exportWeeklyReport: () => {
         const state = get()

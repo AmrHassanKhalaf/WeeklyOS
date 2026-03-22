@@ -2,6 +2,7 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { useSettingsStore, AIProvider } from '../store/useSettingsStore'
 import { useState, useRef } from 'react'
 import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
 
 export function Settings() {
@@ -21,11 +22,16 @@ export function Settings() {
         useCORS: true,
         backgroundColor: '#131313'
       })
-      const dataUrl = canvas.toDataURL('image/png')
-      const link = document.createElement('a')
-      link.download = 'weekly_os_report.png'
-      link.href = dataUrl
-      link.click()
+      const imgData = canvas.toDataURL('image/png')
+      
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+      
+      // If height is larger than 1 page, jsPDF handles it if we don't care about page breaks on perfectly formatted reports,
+      // but usually scaling to width is enough for a cohesive report snapshot.
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, Math.min(pdfHeight, pdf.internal.pageSize.getHeight()))
+      pdf.save('weekly_os_report.pdf')
     } catch (e) {
       console.error('Export failed:', e)
     } finally {

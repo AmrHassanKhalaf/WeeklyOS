@@ -98,6 +98,9 @@ interface WeekStore {
   stopPomodoro: () => void
   tickPomodoro: () => void
   setFocusedDay: (_index: number) => void
+
+  // Reset
+  startNewPlan: () => Promise<void>
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -315,7 +318,30 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }
   },
 
-  // ── Task CRUD ──────────────────────────────────────────────────────────────
+  startNewPlan: async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    set({ isLoadingWeek: true })
+    try {
+      const state = get()
+      if (state.currentWeek) {
+        // Wipe all tasks for the current week
+        await supabase.from('tasks').delete().eq('week_id', state.currentWeek.id)
+        // Wipe brain dump
+        await supabase.from('brain_dump').delete().eq('user_id', user.id)
+      }
+      
+      // Re-initialize to fetch clean state
+      await get().initialize()
+    } catch (e) {
+      console.error('Failed to reset plan:', e)
+    } finally {
+      set({ isLoadingWeek: false })
+    }
+  },
+
+  // ─── Task CRUD ────────────────────────────────────────────────────────────
 
   toggleTaskComplete: async (taskId) => {
     const week = get().currentWeek
