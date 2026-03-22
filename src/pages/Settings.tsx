@@ -70,20 +70,45 @@ export function Settings() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Primary Provider</label>
-                <select 
-                  value={settings.activeProvider}
-                  onChange={e => settings.setActiveProvider(e.target.value as AIProvider)}
-                  className="w-full bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface"
-                >
-                  <option value="openai">OpenAI (GPT-4o)</option>
-                  <option value="gemini">Google Gemini</option>
-                  <option value="grok">Grok (xAI)</option>
-                </select>
+                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Primary Model Selection</label>
+                <div className="flex gap-4">
+                  <select 
+                    value={settings.activeProvider}
+                    onChange={e => {
+                      const p = e.target.value as AIProvider;
+                      settings.setActiveProvider(p);
+                      if (p === 'grok') settings.setActiveModel('grok-2-mini');
+                      if (p === 'gemini') settings.setActiveModel('gemini-1.5-flash');
+                    }}
+                    className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface"
+                  >
+                    <option value="gemini">Google Gemini</option>
+                    <option value="grok">Grok (xAI)</option>
+                  </select>
+                  
+                  <select
+                    value={settings.activeModel}
+                    onChange={e => settings.setActiveModel(e.target.value)}
+                    className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface text-tertiary font-medium"
+                  >
+                    {settings.activeProvider === 'grok' && (
+                      <>
+                        <option value="grok-2">grok-2</option>
+                        <option value="grok-2-mini">grok-2-mini</option>
+                      </>
+                    )}
+                    {settings.activeProvider === 'gemini' && (
+                      <>
+                         <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                         <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                         <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                      </>
+                    )}
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-4 py-4 border-y border-white/5">
-                <ProviderInput provider="openai" label="OpenAI" settings={settings} />
                 <ProviderInput provider="gemini" label="Google Gemini" settings={settings} />
                 <ProviderInput provider="grok" label="xAI Grok" settings={settings} />
               </div>

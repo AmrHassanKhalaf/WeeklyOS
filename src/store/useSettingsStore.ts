@@ -2,12 +2,13 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 
-export type AIProvider = 'openai' | 'gemini' | 'grok' | 'anthropic'
+export type AIProvider = 'gemini' | 'grok'
 
 export interface SettingsState {
   // AI Settings
   aiKeys: Partial<Record<AIProvider, string>>
   activeProvider: AIProvider
+  activeModel: string
   fallbackEnabled: boolean
 
   // UI Settings
@@ -23,6 +24,7 @@ export interface SettingsState {
   // Actions
   setAiKey: (provider: AIProvider, key: string) => void
   setActiveProvider: (provider: AIProvider) => void
+  setActiveModel: (model: string) => void
   setFallbackEnabled: (enabled: boolean) => void
   setTheme: (theme: 'dark' | 'light' | 'system') => void
   setDailyReminders: (enabled: boolean) => void
@@ -52,7 +54,8 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       aiKeys: {},
-      activeProvider: 'openai',
+      activeProvider: 'gemini',
+      activeModel: 'gemini-1.5-flash',
       fallbackEnabled: true,
       theme: 'dark',
       dailyReminders: true,
@@ -84,6 +87,7 @@ export const useSettingsStore = create<SettingsState>()(
           }
         } catch (e) {}
       },
+      setActiveModel: (model) => set({ activeModel: model }),
       setFallbackEnabled: async (enabled) => {
         set({ fallbackEnabled: enabled })
         try {

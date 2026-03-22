@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { useSettingsStore } from '../store/useSettingsStore'
 
 export function useAiApi() {
   const sendMessage = async (type: string, input: string, context: any = {}, overrideProvider?: string, audioBase64?: string) => {
@@ -9,8 +10,10 @@ export function useAiApi() {
         throw new Error('Your login session has expired. Please refresh the page or sign in again.')
       }
 
+      const state = useSettingsStore.getState()
+      
       const { data, error } = await supabase.functions.invoke('ai-handler', {
-        body: { type, input, context, overrideProvider, audioBase64 }
+        body: { type, input, context, overrideProvider, audioBase64, model: state.activeModel }
       })
 
       if (error) {
