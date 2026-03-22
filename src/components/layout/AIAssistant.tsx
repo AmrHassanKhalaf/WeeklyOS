@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
+import { useWeekStore } from '../../store/useWeekStore'
 
 type Tab = 'insights' | 'stats' | 'activity'
 
@@ -12,6 +13,7 @@ interface AIAssistantProps {
 export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const [activeTab, setActiveTab] = useState<Tab>('insights')
   const [chatInput, setChatInput] = useState('')
+  const [isAiTyping, setIsAiTyping] = useState(false)
   const [chatMessages, setChatMessages] = useState<{ role: 'ai' | 'user'; text: string }[]>([
     {
       role: 'ai',
@@ -21,16 +23,45 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const { sendMessage } = useAiApi()
   const navigate = useNavigate()
   const { isRightSidebarOpen, isFocusMode, toggleRightSidebar, closeSidebarsOnMobile } = useLayoutStore()
+  const { currentWeek } = useWeekStore()
 
   const isActuallyOpen = isRightSidebarOpen && !isFocusMode
 
+  // Dynamic Insights calculation
+  const getActivityInsights = () => {
+    if (!currentWeek) return { peakDay: 'Monday', riskDay: 'None', riskCount: 0 }
+    let maxDone = -1
+    let peakDay = '...'
+    let maxPending = -1
+    let riskDay = '...'
+    currentWeek.days.forEach(d => {
+      const doneQty = (d.highTask?.status==='done'?1:0) + d.mediumTasks.filter(t=>t.status==='done').length + d.smallTasks.filter(t=>t.status==='done').length
+      if(doneQty > maxDone) { maxDone = doneQty; peakDay = d.shortName }
+      const pendingQty = (d.highTask?.status==='pending'?1:0) + d.mediumTasks.filter(t=>t.status==='pending').length + d.smallTasks.filter(t=>t.status==='pending').length
+      if(pendingQty > maxPending) { maxPending = pendingQty; riskDay = d.shortName }
+    })
+    return { peakDay, riskDay, riskCount: maxPending }
+  }
+  const insightsData = getActivityInsights()
+
   const handleSendMessage = async (overrideText?: string) => {
     const msg = (overrideText ?? chatInput).trim()
-    if (!msg) return
+    if (!msg || isAiTyping) return
     setChatInput('')
     setChatMessages(prev => [...prev, { role: 'user', text: msg }])
-    const res = await sendMessage('chat', msg, {})
-    setChatMessages(prev => [...prev, { role: 'ai', text: res.response }])
+    
+    setIsAiTyping(true)
+    try {
+      const { currentWeek } = useWeekStore.getState()
+      const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score, days: currentWeek.days } : {}
+      
+      const res = await sendMessage('chat', msg, context)
+      setChatMessages(prev => [...prev, { role: 'ai', text: res.response }])
+    } catch (e: any) {
+      setChatMessages(prev => [...prev, { role: 'ai', text: `System Error: ${e.message}` }])
+    } finally {
+      setIsAiTyping(false)
+    }
   }
 
   const quickActions = ['Optimize my schedule', 'Analyze my productivity', 'Plan my week']
@@ -81,6 +112,16 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               </div>
             </div>
           ))}
+          {isAiTyping && (
+            <div className="flex flex-col gap-2 max-w-[90%]">
+              <div className="p-3 bg-surface-container-high rounded-2xl rounded-tl-none text-sm text-neutral-400">
+                <span className="animate-pulse flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">smart_toy</span>
+                  Thinking...
+                </span>
+              </div>
+            </div>
+          )}
           {/* Burnout alert */}
           <div className="bg-error-container/20 border border-error/20 p-4 rounded-xl">
             <div className="flex items-center gap-2 text-error mb-2">
@@ -106,31 +147,42 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
                   <span className="material-symbols-outlined text-sm">bolt</span>
                   <span className="text-[10px] font-black uppercase tracking-tighter">Energy Level Peak</span>
                 </div>
-                <p className="text-xs text-on-surface/80 leading-relaxed">Based on last week, your creative output peaks between 9 AM and 11 AM. Tomorrow is blocked for focus work.</p>
+                <p className="text-xs text-on-surface/80 leading-relaxed">Based on this week's data, your output volume peaked on {insightsData.peakDay}. Consider reserving that day for deep work next week.</p>
               </div>
-              <div className="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-primary/40">
-                <div className="flex items-center gap-2 text-primary">
-                  <span className="material-symbols-outlined text-sm">warning</span>
-                  <span className="text-[10px] font-black uppercase tracking-tighter">Deadline Risk</span>
+              
+              {insightsData.riskCount > 0 ? (
+                <div className="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-primary/40">
+                  <div className="flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined text-sm">warning</span>
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Deadline Risk</span>
+                  </div>
+                  <p className="text-xs text-on-surface/80 leading-relaxed">{insightsData.riskDay} has {insightsData.riskCount} pending tasks remaining. Batch these soon to prevent spillover.</p>
                 </div>
-                <p className="text-xs text-on-surface/80 leading-relaxed">Friday's "Client Presentations" task has 4 subtasks pending. Start prep 1 hour earlier.</p>
-              </div>
+              ) : (
+                <div className="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-surface-variant">
+                  <div className="flex items-center gap-2 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-sm">check_circle</span>
+                    <span className="text-[10px] font-black uppercase tracking-tighter">All Clear</span>
+                  </div>
+                  <p className="text-xs text-on-surface/80 leading-relaxed">You have zero outstanding risks tracked across your days. Excellent pacing.</p>
+                </div>
+              )}
+              
               <div className="space-y-4 pt-4">
                 <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Recent Activity</h3>
                 <div className="space-y-3">
-                  {[
-                    { text: '"Bento Layout" completed', time: '24m ago', done: true },
-                    { text: '"Color Tokens" completed', time: '1h ago', done: true },
-                    { text: 'New plan: "Spring Sprint"', time: '3h ago', done: false },
-                  ].map((item, i) => (
-                    <div key={i} className="flex gap-3 text-xs">
+                  {currentWeek?.activities?.slice(0, 3).map((item) => (
+                    <div key={item.id} className="flex gap-3 text-xs">
                       <div className={`w-1.5 h-1.5 rounded-full mt-1 ${item.done ? 'bg-tertiary' : 'bg-neutral-600'}`} />
                       <div>
                         <p className="text-on-surface">{item.text}</p>
-                        <p className="text-[10px] text-neutral-500">{item.time}</p>
+                        <p className="text-[10px] text-neutral-500">{Math.floor((Date.now() - item.time) / 60000)}m ago</p>
                       </div>
                     </div>
                   ))}
+                  {(!currentWeek?.activities || currentWeek.activities.length === 0) && (
+                    <p className="text-xs text-neutral-500">No recent activity.</p>
+                  )}
                 </div>
               </div>
             </>
@@ -139,40 +191,42 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-container-lowest p-3 rounded-lg border border-white/5">
-                  <div className="text-xl font-bold">84%</div>
+                  <div className="text-xl font-bold">{currentWeek?.score || 0}%</div>
                   <div className="text-[10px] text-neutral-500 uppercase">Focus Score</div>
                 </div>
                 <div className="bg-surface-container-lowest p-3 rounded-lg border border-white/5">
-                  <div className="text-xl font-bold">4.2h</div>
-                  <div className="text-[10px] text-neutral-500 uppercase">Deep Work</div>
+                  <div className="text-xl font-bold">{currentWeek?.totalCompleted || 0}</div>
+                  <div className="text-[10px] text-neutral-500 uppercase">Tasks Done</div>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-neutral-500 px-1">
                   <span>Weekly Progress</span>
-                  <span>64%</span>
+                  <span>{currentWeek ? Math.round((currentWeek.totalCompleted / (currentWeek.totalPlanned || 1)) * 100) : 0}%</span>
                 </div>
                 <div className="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
-                  <div className="h-full bg-tertiary w-[64%] shadow-[0_0_8px_#4edea3]" />
+                  <div className="h-full bg-tertiary shadow-[0_0_8px_#4edea3] transition-all" style={{ width: `${currentWeek ? Math.round((currentWeek.totalCompleted / (currentWeek.totalPlanned || 1)) * 100) : 0}%` }} />
                 </div>
               </div>
             </div>
           )}
           {activeTab === 'activity' && (
             <div className="space-y-3">
-              {[
-                { text: 'Completed "UI Audit"', time: 'Just now', done: true },
-                { text: 'Started Pomodoro #3', time: '25m ago', done: false },
-                { text: '"Color Tokens" marked done', time: '1h ago', done: true },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm">
-                  <div className={`w-1.5 h-1.5 rounded-full ${item.done ? 'bg-tertiary' : 'bg-neutral-600'}`} />
-                  <div>
-                    <p className="text-on-surface-variant">{item.text}</p>
-                    <p className="text-[10px] text-neutral-500">{item.time}</p>
+              {currentWeek?.activities && currentWeek.activities.length > 0 ? (
+                currentWeek.activities.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 text-sm">
+                    <div className={`w-1.5 h-1.5 rounded-full ${item.done ? 'bg-tertiary' : 'bg-neutral-600'}`} />
+                    <div>
+                      <p className="text-on-surface-variant">{item.text}</p>
+                      <p className="text-[10px] text-neutral-500">
+                        {Math.floor((Date.now() - item.time) / 60000) > 0 ? `${Math.floor((Date.now() - item.time) / 60000)}m ago` : 'Just now'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-neutral-500">No activity logged yet.</p>
+              )}
             </div>
           )}
         </div>

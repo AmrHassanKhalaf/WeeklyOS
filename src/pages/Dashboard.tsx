@@ -1,6 +1,8 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { DayCard } from '../components/DayCard'
 import { useWeekStore } from '../store/useWeekStore'
+import { useAiApi } from '../hooks/useApi'
+import { useState } from 'react'
 
 function LoadingCard() {
   return (
@@ -10,14 +12,36 @@ function LoadingCard() {
 
 export function Dashboard() {
   const { currentWeek, isLoadingWeek } = useWeekStore()
+  const { sendMessage } = useAiApi()
+  const [insight, setInsight] = useState<string>('')
+  const [isInsightLoading, setIsInsightLoading] = useState(false)
 
-  const deepWorkData = [
-    { day: 'M', height: 128 },
-    { day: 'T', height: 144 },
-    { day: 'W', height: 160, isToday: true },
-    { day: 'T', height: 96 },
-    { day: 'F', height: 96 },
-  ]
+  const fetchInsight = async () => {
+    if (!currentWeek || isInsightLoading) return
+    setIsInsightLoading(true)
+    const context = { title: currentWeek.title, score: currentWeek.score, completed: currentWeek.totalCompleted, planned: currentWeek.totalPlanned }
+    try {
+      const res = await sendMessage('insight', 'Give me a very short 2-sentence encouraging insight about my productivity this week based on the context data. Do not use quotes.', context)
+      setInsight(res.response)
+    } catch {
+      setInsight("You're on track. Batch your remaining tasks to clear your schedule.")
+    } finally {
+      setIsInsightLoading(false)
+    }
+  }
+
+  const deepWorkData = currentWeek ? currentWeek.days.map(d => {
+    let completedCount = 0
+    if (d.highTask?.status === 'done') completedCount++
+    completedCount += d.mediumTasks.filter(t => t.status === 'done').length
+    completedCount += d.smallTasks.filter(t => t.status === 'done').length
+
+    return {
+      day: d.shortName.charAt(0),
+      height: Math.min(160, 24 + (completedCount * 32)),
+      isToday: !!d.isToday
+    }
+  }) : []
 
   if (isLoadingWeek || !currentWeek) {
     return (
@@ -127,10 +151,15 @@ export function Dashboard() {
           <div className="bg-tertiary-container text-on-tertiary-container rounded-xl p-8 relative overflow-hidden flex flex-col">
             <span className="material-symbols-outlined absolute top-[-20px] right-[-20px] text-9xl opacity-10 rotate-12">bolt</span>
             <h3 className="text-xl font-bold mb-4">Focus Mode</h3>
-            <p className="text-sm opacity-90 mb-8 leading-relaxed">You're on track. Batch your remaining tasks to clear your schedule.</p>
+            <p className="text-sm opacity-90 mb-8 leading-relaxed">
+              {isInsightLoading ? 'Analyzing week data...' : (insight || "You're on track. Batch your remaining tasks to clear your schedule.")}
+            </p>
             <div className="mt-auto">
-              <button className="w-full bg-on-tertiary-container text-tertiary-container py-3 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">
-                Optimize Schedule
+              <button 
+                onClick={fetchInsight}
+                disabled={isInsightLoading}
+                className="w-full bg-on-tertiary-container text-tertiary-container py-3 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+                {isInsightLoading ? 'Generating...' : 'Analyze My Week'}
               </button>
             </div>
           </div>

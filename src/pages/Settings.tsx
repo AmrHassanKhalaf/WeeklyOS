@@ -100,7 +100,6 @@ export function Settings() {
                   <option value="openai">OpenAI (GPT-4o)</option>
                   <option value="gemini">Google Gemini</option>
                   <option value="grok">Grok (xAI)</option>
-                  <option value="anthropic">Anthropic (Claude)</option>
                 </select>
               </div>
 

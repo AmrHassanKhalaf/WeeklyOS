@@ -41,7 +41,6 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
     if (updates.dailyReminders !== undefined) payload.daily_reminders = updates.dailyReminders
     if (updates.weeklySummaries !== undefined) payload.weekly_summaries = updates.weeklySummaries
     if (updates.analyticsEnabled !== undefined) payload.analytics_enabled = updates.analyticsEnabled
-    if (updates.fallbackEnabled !== undefined) payload.fallback_enabled = updates.fallbackEnabled
     
     await supabase.from('user_settings' as any).upsert(payload)
   } catch (e) {
@@ -62,20 +61,38 @@ export const useSettingsStore = create<SettingsState>()(
 
       setAiKey: async (provider, key) => {
         set((state) => ({ aiKeys: { ...state.aiKeys, [provider]: key } }))
-        // Best effort sync to Supabase if table exists
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            await supabase.from('ai_keys' as any).upsert({ 
-              user_id: user.id, 
-              provider, 
-              key_value: key 
-            })
+            // Check if key exists for this provider
+            const { data: existingData } = await supabase.from('ai_keys' as any).select('id').eq('provider', provider).eq('user_id', user.id).maybeSingle()
+            const existing = existingData as any
+            if (existing) {
+              await supabase.from('ai_keys' as any).update({ api_key: key }).eq('id', existing.id)
+            } else {
+              await supabase.from('ai_keys' as any).insert({ user_id: user.id, provider, api_key: key })
+            }
           }
         } catch (e) { console.warn('Supabase ai_keys sync failed', e) }
       },
-      setActiveProvider: (provider) => set({ activeProvider: provider }),
-      setFallbackEnabled: (enabled) => { set({ fallbackEnabled: enabled }); syncSettingsToDb({ fallbackEnabled: enabled }) },
+      setActiveProvider: async (provider) => {
+        set({ activeProvider: provider })
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await supabase.from('ai_settings' as any).upsert({ user_id: user.id, default_provider: provider })
+          }
+        } catch (e) {}
+      },
+      setFallbackEnabled: async (enabled) => {
+        set({ fallbackEnabled: enabled })
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await supabase.from('ai_settings' as any).upsert({ user_id: user.id, fallback_enabled: enabled })
+          }
+        } catch (e) {}
+      },
       setTheme: (theme) => { set({ theme }); syncSettingsToDb({ theme }) },
       setDailyReminders: (enabled) => { set({ dailyReminders: enabled }); syncSettingsToDb({ dailyReminders: enabled }) },
       setWeeklySummaries: (enabled) => { set({ weeklySummaries: enabled }); syncSettingsToDb({ weeklySummaries: enabled }) },
@@ -85,16 +102,36 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (!user) return
-          const { data } = await supabase.from('user_settings' as any).select().eq('user_id', user.id).maybeSingle()
-          const dbData = data as any
+          // Load User Settings
+          const { data: userSettings } = await supabase.from('user_settings' as any).select().eq('user_id', user.id).maybeSingle()
+          const dbData = userSettings as any
           if (dbData) {
-            set({
-              theme: dbData.theme,
-              dailyReminders: dbData.daily_reminders,
-              weeklySummaries: dbData.weekly_summaries,
-              analyticsEnabled: dbData.analytics_enabled,
-              fallbackEnabled: dbData.fallback_enabled
+            set(state => ({
+              ...state,
+              theme: dbData.theme ?? state.theme,
+              dailyReminders: dbData.daily_reminders ?? state.dailyReminders,
+              weeklySummaries: dbData.weekly_summaries ?? state.weeklySummaries,
+              analyticsEnabled: dbData.analytics_enabled ?? state.analyticsEnabled
+            }))
+          }
+          // Load AI Settings
+          const { data: aiSettings } = await supabase.from('ai_settings' as any).select().eq('user_id', user.id).maybeSingle()
+          const aiData = aiSettings as any
+          if (aiData) {
+            set(state => ({
+              ...state,
+              activeProvider: aiData.default_provider ?? state.activeProvider,
+              fallbackEnabled: aiData.fallback_enabled ?? state.fallbackEnabled
+            }))
+          }
+          // Load AI Keys
+          const { data: keysData } = await supabase.from('ai_keys' as any).select('provider, api_key').eq('user_id', user.id)
+          if (keysData && keysData.length > 0) {
+            const keysObj: Partial<Record<AIProvider, string>> = {}
+            keysData.forEach((k: any) => {
+              if (k.api_key) keysObj[k.provider as AIProvider] = k.api_key
             })
+            set(state => ({ ...state, aiKeys: { ...state.aiKeys, ...keysObj } }))
           }
         } catch (e) { console.warn('Load settings failed', e) }
       },
