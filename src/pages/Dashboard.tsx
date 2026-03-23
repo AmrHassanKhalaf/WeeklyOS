@@ -16,6 +16,8 @@ export function Dashboard() {
   const [insight, setInsight] = useState<string>('')
   const [isInsightLoading, setIsInsightLoading] = useState(false)
   const [isGeneratingChallenge, setIsGeneratingChallenge] = useState(false)
+  const [isEditingChallenge, setIsEditingChallenge] = useState(false)
+  const [manualChallenge, setManualChallenge] = useState('')
 
   const generateChallenge = async () => {
     if (!currentWeek || isGeneratingChallenge) return
@@ -107,24 +109,34 @@ export function Dashboard() {
         </section>
 
         {/* Weekly Challenge */}
-        {currentWeek.challengeTitle ? (
+        {currentWeek.challengeTitle && !isEditingChallenge ? (
           <section>
             <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <span className="material-symbols-outlined text-6xl text-primary">emoji_events</span>
               </div>
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-1">
+                <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Weekly Challenge</span>
                     <span className="w-1 h-1 rounded-full bg-primary/40" />
                     <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">
                       Ends in {currentWeek.challengeEndsIn}
                     </span>
+                    <button 
+                      onClick={() => { setManualChallenge(currentWeek.challengeTitle || ''); setIsEditingChallenge(true); }}
+                      className="ml-2 text-primary hover:text-white transition-colors flex items-center justify-center w-5 h-5 rounded-full hover:bg-white/10"
+                      title="Edit Challenge"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">edit</span>
+                    </button>
                   </div>
                   <h3 className="text-xl font-bold text-on-surface">{currentWeek.challengeTitle}</h3>
+                  {currentWeek.challengeDescription && (
+                    <p className="text-sm text-on-surface-variant mt-2 max-w-xl">{currentWeek.challengeDescription}</p>
+                  )}
                 </div>
-                <div className="w-full md:w-64 space-y-2">
+                <div className="w-full md:w-64 space-y-2 shrink-0">
                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-primary">
                     <span>Progress</span>
                     <span>{currentWeek.challengeProgress}%</span>
@@ -138,20 +150,63 @@ export function Dashboard() {
           </section>
         ) : (
           <section>
-            <div className="bg-surface-container-low rounded-xl border border-dashed border-white/20 p-6 flex flex-col items-center justify-center gap-4 text-center">
-              <span className="material-symbols-outlined text-4xl text-neutral-600">psychology</span>
-              <div>
-                <h3 className="text-on-surface font-bold text-lg">No Active Challenge</h3>
-                <p className="text-sm text-on-surface-variant max-w-sm">Let AI analyze your week and generate a custom challenge to boost your productivity.</p>
+            <div className="bg-surface-container-low rounded-xl border border-dashed border-white/20 p-6 flex flex-col gap-5">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-2xl text-primary">psychology</span>
+                <div>
+                  <h3 className="text-on-surface font-bold text-lg">Define Weekly Challenge</h3>
+                  <p className="text-sm text-on-surface-variant">Set a goal manually or let AI generate one based on your pending tasks.</p>
+                </div>
               </div>
-              <button 
-                onClick={generateChallenge} 
-                disabled={isGeneratingChallenge}
-                className="bg-primary/10 text-primary font-bold px-6 py-2 rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                {isGeneratingChallenge ? 'Generating...' : 'Generate Weekly Challenge'}
-              </button>
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  value={manualChallenge}
+                  onChange={e => setManualChallenge(e.target.value)}
+                  placeholder="E.g., Clear the backlog or Focus on Priority Project X..."
+                  className="bg-surface-container-highest border border-white/10 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary/50 focus:outline-none w-full"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && manualChallenge.trim()) {
+                      useWeekStore.getState().updateChallenge(manualChallenge.trim(), '')
+                      setIsEditingChallenge(false)
+                    }
+                  }}
+                />
+                <div className="flex flex-wrap gap-3 items-center">
+                  <button 
+                    onClick={() => {
+                      if (manualChallenge.trim()) {
+                        useWeekStore.getState().updateChallenge(manualChallenge.trim(), '')
+                        setIsEditingChallenge(false)
+                      }
+                    }}
+                    disabled={!manualChallenge.trim()}
+                    className="bg-surface-container-highest hover:bg-surface-variant text-on-surface font-bold px-6 py-2 rounded-lg transition-colors text-sm disabled:opacity-50"
+                  >
+                    Save Manual Challenge
+                  </button>
+                  <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">OR</span>
+                  <button 
+                    onClick={async () => {
+                      await generateChallenge()
+                      setIsEditingChallenge(false)
+                    }} 
+                    disabled={isGeneratingChallenge}
+                    className="bg-primary/10 text-primary font-bold px-6 py-2 rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                  >
+                    <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                    {isGeneratingChallenge ? 'Generating...' : 'Auto-Generate via AI'}
+                  </button>
+                  {isEditingChallenge && currentWeek.challengeTitle && (
+                    <button 
+                      onClick={() => setIsEditingChallenge(false)} 
+                      className="ml-auto text-neutral-500 hover:text-white text-sm"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
         )}

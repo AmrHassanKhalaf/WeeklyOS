@@ -87,7 +87,15 @@ export const useSettingsStore = create<SettingsState>()(
           }
         } catch (e) {}
       },
-      setActiveModel: (model) => set({ activeModel: model }),
+      setActiveModel: async (model) => {
+        set({ activeModel: model })
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await supabase.from('ai_settings' as any).upsert({ user_id: user.id, active_model: model })
+          }
+        } catch (e) {}
+      },
       setFallbackEnabled: async (enabled) => {
         set({ fallbackEnabled: enabled })
         try {
@@ -125,6 +133,7 @@ export const useSettingsStore = create<SettingsState>()(
             set(state => ({
               ...state,
               activeProvider: aiData.default_provider ?? state.activeProvider,
+              activeModel: aiData.active_model ?? state.activeModel,
               fallbackEnabled: aiData.fallback_enabled ?? state.fallbackEnabled
             }))
           }

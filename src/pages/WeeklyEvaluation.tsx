@@ -1,8 +1,68 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { useWeekStore } from '../store/useWeekStore'
+import { useAiApi } from '../hooks/useApi'
+import { useState, useEffect } from 'react'
 
 export function WeeklyEvaluation() {
   const { currentWeek, isLoadingWeek } = useWeekStore()
+  const { sendMessage } = useAiApi()
+  const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({})
+
+  // Local state for the inputs to allow snappy typing
+  const [evalState, setEvalState] = useState({
+    wentWell: '',
+    struggle: '',
+    lessons: ''
+  })
+
+  // Sync local state when currentWeek loads
+  useEffect(() => {
+    if (currentWeek) {
+      setEvalState({
+        wentWell: currentWeek.evalWentWell || '',
+        struggle: currentWeek.evalStruggle || '',
+        lessons: currentWeek.evalLessons || ''
+      })
+    }
+  }, [currentWeek?.id, currentWeek?.evalWentWell, currentWeek?.evalStruggle, currentWeek?.evalLessons])
+
+  const handleSave = (type: 'wentWell' | 'struggle' | 'lessons') => {
+    useWeekStore.getState().updateEvaluation(type, evalState[type])
+  }
+
+  const handleGenerate = async (type: 'wentWell' | 'struggle' | 'lessons') => {
+    if (!currentWeek) return
+    setIsGenerating(prev => ({ ...prev, [type]: true }))
+    try {
+      const context = {
+        title: currentWeek.title,
+        score: currentWeek.score,
+        completed: currentWeek.totalCompleted,
+        planned: currentWeek.totalPlanned,
+        days: currentWeek.days.map(d => ({
+          day: d.shortName,
+          completed: (d.highTask?.status === 'done' ? 1 : 0) + d.mediumTasks.filter(t => t.status==='done').length + d.smallTasks.filter(t => t.status==='done').length,
+          planned: (d.highTask ? 1 : 0) + d.mediumTasks.length + d.smallTasks.length
+        }))
+      }
+      
+      let prompt = ''
+      if (type === 'wentWell') prompt = 'Generate a short reflection (1-2 sentences) about what went well this week based on the completion stats. Talk directly to me (e.g. "You did well on..."). Do not use quotes.'
+      if (type === 'struggle') prompt = 'Generate a short reflection (1-2 sentences) about where I might have struggled this week, looking at days where completed < planned. Talk directly to me. Do not use quotes.'
+      if (type === 'lessons') prompt = 'Based on the week\'s stats, generate a short 1-2 sentence lesson learned for future productivity. Do not use quotes.'
+
+      const res = await sendMessage('reflection', prompt, context)
+      
+      const newText = res.response
+      setEvalState(prev => ({ ...prev, [type]: newText }))
+      useWeekStore.getState().updateEvaluation(type, newText)
+      
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setIsGenerating(prev => ({ ...prev, [type]: false }))
+    }
+  }
 
   if (isLoadingWeek || !currentWeek) {
     return (
@@ -86,62 +146,88 @@ export function WeeklyEvaluation() {
           </div>
         </div>
 
-        {/* Reflection Sections – editable placeholders */}
+        {/* Reflection Sections */}
         <div className="space-y-12 pb-16">
+          
+          {/* What went well */}
           <section>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-tertiary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_up</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-tertiary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_up</span>
+                </div>
+                <h3 className="text-xl font-bold">What went well?</h3>
               </div>
-              <h3 className="text-xl font-bold">What went well?</h3>
+              <button 
+                onClick={() => handleGenerate('wentWell')}
+                disabled={isGenerating['wentWell']}
+                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                {isGenerating['wentWell'] ? 'Generating...' : 'Auto-Generate'}
+              </button>
             </div>
-            {currentWeek.totalCompleted > 0 ? (
-              <div className="bg-surface-container-lowest border-l-2 border-tertiary p-4 rounded-r-lg">
-                <p className="text-sm leading-relaxed">
-                  You completed <strong>{currentWeek.totalCompleted}</strong> out of <strong>{currentWeek.totalPlanned}</strong> planned tasks this week ({score}%). Keep this momentum going.
-                </p>
-              </div>
-            ) : (
-              <div className="bg-surface-container-lowest border-l-2 border-surface-variant p-4 rounded-r-lg">
-                <p className="text-sm text-neutral-500 italic">No tasks completed yet this week.</p>
-              </div>
-            )}
+            <textarea
+              value={evalState.wentWell}
+              onChange={e => setEvalState(prev => ({ ...prev, wentWell: e.target.value }))}
+              onBlur={() => handleSave('wentWell')}
+              placeholder="Reflect on your wins and successes this week..."
+              className="w-full h-32 bg-surface-container-lowest border-l-2 border-tertiary p-4 rounded-r-lg text-sm text-on-surface focus:outline-none focus:bg-surface-container-low transition-colors resize-none placeholder:text-neutral-600"
+            />
           </section>
 
+          {/* Where did I struggle */}
           <section>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-error text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_down</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-error text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_down</span>
+                </div>
+                <h3 className="text-xl font-bold">Where did I struggle?</h3>
               </div>
-              <h3 className="text-xl font-bold">Where did I struggle?</h3>
+              <button 
+                onClick={() => handleGenerate('struggle')}
+                disabled={isGenerating['struggle']}
+                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                {isGenerating['struggle'] ? 'Generating...' : 'Auto-Generate'}
+              </button>
             </div>
-            {dailyStats.filter(d => d.planned > 0 && d.completed < d.planned).map(d => (
-              <div key={d.day} className="bg-surface-container-lowest border-l-2 border-error p-4 rounded-r-lg mb-3 hover:bg-surface-container-low transition-colors">
-                <p className="text-sm leading-relaxed">
-                  <strong>{d.day}</strong>: {d.completed}/{d.planned} tasks completed.
-                </p>
-              </div>
-            ))}
-            {dailyStats.every(d => d.planned === 0 || d.completed >= d.planned) && (
-              <div className="bg-surface-container-lowest border-l-2 border-surface-variant p-4 rounded-r-lg">
-                <p className="text-sm text-neutral-500 italic">No incomplete days to report.</p>
-              </div>
-            )}
+            <textarea
+              value={evalState.struggle}
+              onChange={e => setEvalState(prev => ({ ...prev, struggle: e.target.value }))}
+              onBlur={() => handleSave('struggle')}
+              placeholder="Note any roadblocks, distractions, or missed targets..."
+              className="w-full h-32 bg-surface-container-lowest border-l-2 border-error p-4 rounded-r-lg text-sm text-on-surface focus:outline-none focus:bg-surface-container-low transition-colors resize-none placeholder:text-neutral-600"
+            />
           </section>
 
+          {/* Lessons learned */}
           <section>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
+                </div>
+                <h3 className="text-xl font-bold">Lessons learned</h3>
               </div>
-              <h3 className="text-xl font-bold">Lessons learned</h3>
+              <button 
+                onClick={() => handleGenerate('lessons')}
+                disabled={isGenerating['lessons']}
+                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                {isGenerating['lessons'] ? 'Generating...' : 'Auto-Generate'}
+              </button>
             </div>
-            <div className="bg-surface-container-high p-6 rounded-xl">
-              <p className="text-sm text-neutral-500 italic">
-                Reflect on the week in the AI Assistant chat →
-              </p>
-              <p className="text-xs text-neutral-600 mt-2">Ask the AI to help you extract lessons and patterns from your performance data.</p>
-            </div>
+            <textarea
+              value={evalState.lessons}
+              onChange={e => setEvalState(prev => ({ ...prev, lessons: e.target.value }))}
+              onBlur={() => handleSave('lessons')}
+              placeholder="What changes will you make to your workflow next week?"
+              className="w-full h-32 bg-surface-container-low border border-white/5 p-4 rounded-xl text-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all resize-none placeholder:text-neutral-600"
+            />
           </section>
         </div>
       </div>

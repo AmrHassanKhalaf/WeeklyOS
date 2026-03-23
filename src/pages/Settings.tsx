@@ -1,6 +1,6 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { useSettingsStore, AIProvider } from '../store/useSettingsStore'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
@@ -9,6 +9,34 @@ export function Settings() {
   const settings = useSettingsStore()
   const [isExporting, setIsExporting] = useState(false)
   const printRef = useRef<HTMLDivElement>(null)
+
+  // Local state for Model Selection
+  const [localProvider, setLocalProvider] = useState<AIProvider>(settings.activeProvider)
+  const [localModel, setLocalModel] = useState<string>(settings.activeModel)
+  const [isSavingModel, setIsSavingModel] = useState(false)
+  const [savedModel, setSavedModel] = useState(false)
+
+  // Sync local state when store loads
+  useEffect(() => {
+    setLocalProvider(settings.activeProvider)
+    setLocalModel(settings.activeModel)
+  }, [settings.activeProvider, settings.activeModel])
+
+  // Determine if it's a custom model
+  const predefinedGemini = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash']
+  const predefinedGrok = ['grok-2', 'grok-2-mini']
+  const isCustom = localProvider === 'gemini' 
+    ? !predefinedGemini.includes(localModel)
+    : !predefinedGrok.includes(localModel)
+
+  const handleSaveModel = async () => {
+    setIsSavingModel(true)
+    await settings.setActiveProvider(localProvider)
+    await settings.setActiveModel(localModel)
+    setIsSavingModel(false)
+    setSavedModel(true)
+    setTimeout(() => setSavedModel(false), 2000)
+  }
 
   const handleExport = async () => {
     if (!printRef.current || isExporting) return
@@ -71,40 +99,70 @@ export function Settings() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Primary Model Selection</label>
-                <div className="flex gap-4">
-                  <select 
-                    value={settings.activeProvider}
-                    onChange={e => {
-                      const p = e.target.value as AIProvider;
-                      settings.setActiveProvider(p);
-                      if (p === 'grok') settings.setActiveModel('grok-2-mini');
-                      if (p === 'gemini') settings.setActiveModel('gemini-1.5-flash');
-                    }}
-                    className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface"
-                  >
-                    <option value="gemini">Google Gemini</option>
-                    <option value="grok">Grok (xAI)</option>
-                  </select>
-                  
-                  <select
-                    value={settings.activeModel}
-                    onChange={e => settings.setActiveModel(e.target.value)}
-                    className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface text-tertiary font-medium"
-                  >
-                    {settings.activeProvider === 'grok' && (
-                      <>
-                        <option value="grok-2">grok-2</option>
-                        <option value="grok-2-mini">grok-2-mini</option>
-                      </>
-                    )}
-                    {settings.activeProvider === 'gemini' && (
-                      <>
-                         <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-                         <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                         <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                      </>
-                    )}
-                  </select>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-4">
+                    <select 
+                      value={localProvider}
+                      onChange={e => {
+                        const p = e.target.value as AIProvider;
+                        setLocalProvider(p)
+                        if (p === 'grok') setLocalModel('grok-2-mini')
+                        if (p === 'gemini') setLocalModel('gemini-1.5-flash')
+                      }}
+                      className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface"
+                    >
+                      <option value="gemini">Google Gemini</option>
+                      <option value="grok">Grok (xAI)</option>
+                    </select>
+                    
+                    <select
+                      value={isCustom ? 'custom' : localModel}
+                      onChange={e => {
+                        if (e.target.value !== 'custom') {
+                          setLocalModel(e.target.value)
+                        } else {
+                          setLocalModel('') // clear for custom typing
+                        }
+                      }}
+                      className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface text-tertiary font-medium"
+                    >
+                      {localProvider === 'grok' && (
+                        <>
+                          <option value="grok-2">grok-2</option>
+                          <option value="grok-2-mini">grok-2-mini</option>
+                        </>
+                      )}
+                      {localProvider === 'gemini' && (
+                        <>
+                           <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                           <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                           <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                        </>
+                      )}
+                      <option value="custom">Other (Custom...)</option>
+                    </select>
+                  </div>
+
+                  {isCustom && (
+                    <input
+                      type="text"
+                      value={localModel}
+                      onChange={e => setLocalModel(e.target.value)}
+                      placeholder={`Enter custom ${localProvider} model name...`}
+                      className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface font-mono focus:border-tertiary/50 transition-colors"
+                    />
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={handleSaveModel}
+                      disabled={isSavingModel || (!localModel.trim()) || (localProvider === settings.activeProvider && localModel === settings.activeModel)}
+                      className="px-6 py-2.5 rounded-lg font-bold text-xs bg-tertiary/10 text-tertiary hover:bg-tertiary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors tracking-widest uppercase"
+                    >
+                      {isSavingModel ? 'Saving...' : savedModel ? 'Saved!' : 'Save Model Selection'}
+                    </button>
+                    {savedModel && <span className="text-tertiary text-[10px] font-medium uppercase tracking-widest">Successfully updated</span>}
+                  </div>
                 </div>
               </div>
 

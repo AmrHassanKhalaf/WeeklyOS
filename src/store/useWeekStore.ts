@@ -65,8 +65,12 @@ export interface WeekData {
   totalPlanned: number
   days: DayPlan[]
   challengeTitle?: string
+  challengeDescription?: string
   challengeProgress?: number
   challengeEndsIn?: string
+  evalWentWell?: string
+  evalStruggle?: string
+  evalLessons?: string
   activities?: ActivityItem[]
 }
 
@@ -111,8 +115,9 @@ interface WeekStore {
   // Reset
   startNewPlan: () => Promise<void>
 
-  // Challenge
+  // Challenge & Evaluation
   updateChallenge: (title: string, desc?: string) => Promise<void>
+  updateEvaluation: (type: 'wentWell' | 'struggle' | 'lessons', text: string) => Promise<void>
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -233,8 +238,12 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
     totalPlanned,
     days: dayPlans,
     challengeTitle: (dbWeek.challenge_title as string | null) ?? undefined,
+    challengeDescription: (dbWeek.challenge_description as string | null) ?? undefined,
     challengeProgress: (dbWeek.challenge_progress as number | null) ?? undefined,
     challengeEndsIn: (dbWeek.challenge_ends_in as string | null) ?? undefined,
+    evalWentWell: (dbWeek.eval_went_well as string | null) ?? undefined,
+    evalStruggle: (dbWeek.eval_struggle as string | null) ?? undefined,
+    evalLessons: (dbWeek.eval_lessons as string | null) ?? undefined,
     activities,
   }
 }
@@ -366,7 +375,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
       if (!bdErr && bdItems) {
         set({
-          brainDumpItems: bdItems.map(b => ({ id: b.id, title: b.content ?? '' })),
+          brainDumpItems: bdItems.map(b => ({ id: b.id, title: b.content ?? '', tags: b.tags || [] })),
           isLoadingBrainDump: false,
         })
       } else {
@@ -520,14 +529,19 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
 
       // Optimistic update
+      const localUpdates = { ...updates }
+      if (localUpdates.day === null) {
+        localUpdates.day = undefined
+      }
+
       set(state => ({
         currentWeek: state.currentWeek ? {
           ...state.currentWeek,
           days: state.currentWeek.days.map(d => ({
             ...d,
-            highTask: d.highTask?.id === taskId ? { ...d.highTask, ...updates } : d.highTask,
-            mediumTasks: d.mediumTasks.map(t => t.id === taskId ? { ...t, ...updates } : t),
-            smallTasks: d.smallTasks.map(t => t.id === taskId ? { ...t, ...updates } : t),
+            highTask: d.highTask?.id === taskId ? { ...d.highTask, ...localUpdates } as any : d.highTask,
+            mediumTasks: d.mediumTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as any : t),
+            smallTasks: d.smallTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as any : t),
           })),
         } : null,
       }))
@@ -645,21 +659,46 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       set(state => ({ brainDumpItems: state.brainDumpItems.filter(i => !i.selected) }))
     },
 
-    updateChallenge: async (title: string, _desc?: string) => {
+    updateChallenge: async (title: string, desc?: string) => {
       const { currentWeek } = get()
       if (!currentWeek) return
       
       set(state => ({
-        currentWeek: state.currentWeek ? { ...state.currentWeek, challengeTitle: title, challengeProgress: 0, challengeEndsIn: '3 Days' } : null
+        currentWeek: state.currentWeek ? { 
+          ...state.currentWeek, 
+          challengeTitle: title, 
+          challengeDescription: desc,
+          challengeProgress: state.currentWeek.challengeProgress || 0, 
+          challengeEndsIn: state.currentWeek.challengeEndsIn || '3 Days' 
+        } : null
       }))
 
       const { error } = await supabase.from('weeks').update({
         challenge_title: title,
-        challenge_progress: 0,
-        challenge_ends_in: '3 Days'
+        challenge_description: desc || null,
+        challenge_progress: currentWeek.challengeProgress || 0,
+        challenge_ends_in: currentWeek.challengeEndsIn || '3 Days'
       }).eq('id', currentWeek.id)
 
       if (error) console.error('updateChallenge error', error)
+    },
+
+    updateEvaluation: async (type: 'wentWell' | 'struggle' | 'lessons', text: string) => {
+      const { currentWeek } = get()
+      if (!currentWeek) return
+      
+      const localKey = type === 'wentWell' ? 'evalWentWell' : type === 'struggle' ? 'evalStruggle' : 'evalLessons'
+      const dbKey = type === 'wentWell' ? 'eval_went_well' : type === 'struggle' ? 'eval_struggle' : 'eval_lessons'
+
+      set(state => ({
+        currentWeek: state.currentWeek ? { ...state.currentWeek, [localKey]: text } : null
+      }))
+
+      const { error } = await supabase.from('weeks').update({
+        [dbKey]: text
+      }).eq('id', currentWeek.id)
+
+      if (error) console.error('updateEvaluation error', error)
     },
 
     // ── Pomodoro (local) ───────────────────────────────────────────────────────
