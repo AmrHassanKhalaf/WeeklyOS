@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { getISOWeek, getISOWeekYear } from 'date-fns'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -136,11 +137,7 @@ const DAY_SHORT = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
 function getCurrentWeekInfo(): { weekNumber: number; year: number } {
   const now = new Date()
-  const startOfYear = new Date(now.getFullYear(), 0, 1)
-  const weekNumber = Math.ceil(
-    ((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7,
-  )
-  return { weekNumber, year: now.getFullYear() }
+  return { weekNumber: getISOWeek(now), year: getISOWeekYear(now) }
 }
 
 /** Get the Saturday of a given ISO week. */
@@ -366,7 +363,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
                 .single()
 
               if (refreshedTasks && refreshedWeek) {
-                set(state => ({
+                set(_state => ({
                   currentWeek: buildWeekData(refreshedWeek as Record<string, unknown>, refreshedTasks as Record<string, unknown>[]),
                 }))
               }
@@ -429,6 +426,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     toggleTaskComplete: async (taskId: string) => {
       const { currentWeek } = get()
       if (!currentWeek) return
+      const snapshot = get().currentWeek // rollback snapshot
       let foundTask: Task | null = null
       const nextDays = currentWeek.days.map(d => {
         const high = d.highTask?.id === taskId ? { ...d.highTask, status: d.highTask.status === 'done' ? 'pending' : 'done' } as Task : d.highTask
@@ -465,7 +463,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       set({ currentWeek: { ...currentWeek, days: nextDays, activities }, isSyncing: true })
       await syncToDb()
 
-      // Find existing status
+      // Find existing status for the actual DB update
       let currentStatus: TaskStatus = 'pending'
       for (const d of currentWeek.days) {
         const all = [d.highTask, ...d.mediumTasks, ...d.smallTasks].filter(Boolean)
@@ -474,7 +472,11 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
 
       const newStatus: TaskStatus = currentStatus === 'done' ? 'pending' : 'done'
-      await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
+      const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
+      if (error) {
+        console.error('[toggleTaskComplete] DB write failed, reverting:', error)
+        set({ currentWeek: snapshot })
+      }
     },
 
     createTask: async (task) => {
@@ -499,7 +501,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
       // Optimistic update
       const newTask: Task = {
-        id: `temp-${Date.now()}`, 
+        id: `temp-${Date.now()}`,
         title: task.title,
         priority: task.priority,
         status: 'pending',
@@ -512,7 +514,6 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
       const allTasks = currentWeek.days.flatMap(d => [d.highTask, ...d.mediumTasks, ...d.smallTasks].filter(Boolean) as Task[])
       const updatedTasks = [...allTasks, newTask]
-
       const nextDays = currentWeek.days.map(d => processTasksForDay(d, updatedTasks))
       
       const activities = [{
@@ -522,6 +523,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         done: false
       }, ...(currentWeek.activities || [])].slice(0, 50)
 
+      const snapshot = get().currentWeek // rollback snapshot
       set({ currentWeek: { ...currentWeek, days: nextDays, activities }, isSyncing: true })
       await syncToDb()
 
@@ -537,11 +539,14 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         estimated_duration: task.estimatedTime ?? null,
       })
 
-      if (error) console.error('[createTask]', error)
+      if (error) {
+        console.error('[createTask] DB write failed, reverting:', error)
+        set({ currentWeek: snapshot })
+      }
     },
 
     updateTask: async (taskId, updates) => {
-      const payload: Record<string, any> = { ...updates }
+      const payload: Record<string, unknown> = { ...updates }
       if (updates.startTime !== undefined) {
         payload.start_time = updates.startTime
         delete payload.startTime
@@ -551,33 +556,33 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         delete payload.estimatedTime
       }
 
-      // Optimistic update
+      // Optimistic update with rollback
+      const snapshot = get().currentWeek
       const localUpdates = { ...updates }
-      if (localUpdates.day === null) {
-        localUpdates.day = undefined
-      }
+      if (localUpdates.day === null) localUpdates.day = undefined
 
       set(state => ({
         currentWeek: state.currentWeek ? {
           ...state.currentWeek,
           days: state.currentWeek.days.map(d => ({
             ...d,
-            highTask: d.highTask?.id === taskId ? { ...d.highTask, ...localUpdates } as any : d.highTask,
-            mediumTasks: d.mediumTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as any : t),
-            smallTasks: d.smallTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as any : t),
+            highTask: d.highTask?.id === taskId ? { ...d.highTask, ...localUpdates } as Task : d.highTask,
+            mediumTasks: d.mediumTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as Task : t),
+            smallTasks: d.smallTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as Task : t),
           })),
         } : null,
       }))
 
       const { error } = await supabase.from('tasks').update(payload).eq('id', taskId)
-      if (error) console.error('[updateTask]', error)
+      if (error) {
+        console.error('[updateTask] DB write failed, reverting:', error)
+        set({ currentWeek: snapshot })
+      }
     },
 
     deleteTask: async (taskId) => {
-      const { error } = await supabase.from('tasks').delete().eq('id', taskId)
-      if (error) console.error('[deleteTask]', error)
-
-      // Optimistic: remove from local state
+      const snapshot = get().currentWeek // rollback snapshot
+      // Optimistic: remove from local state first
       set(state => ({
         currentWeek: state.currentWeek ? {
           ...state.currentWeek,
@@ -589,6 +594,12 @@ export const useWeekStore = create<WeekStore>((set, get) => {
           })),
         } : null,
       }))
+
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+      if (error) {
+        console.error('[deleteTask] DB write failed, reverting:', error)
+        set({ currentWeek: snapshot })
+      }
     },
 
     markDayComplete: async (day) => {

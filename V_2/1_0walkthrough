@@ -1,0 +1,105 @@
+# WeeklyOS Fix Walkthrough
+
+## Summary
+All **11 AI-automatable fixes** from the project review have been implemented and verified. `npx tsc --noEmit` passes with **zero errors**.
+
+---
+
+## Group A — Database Migrations ✅
+
+### A1. RLS Policy Performance Fix ([docs](https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan))
+- **Migration:** `fix_rls_auth_uid_initplan`
+- **Changed:** All 25 RLS policies across 7 tables now use `(select auth.uid())` instead of bare `auth.uid()`
+- **Impact:** Postgres evaluates the auth function once per query, not once per row. Eliminates all 30 WARN entries from the Supabase performance advisor.
+
+### A2. Missing Index on `tasks.week_id`
+- **Migration:** `add_tasks_week_id_index`
+- **Changed:** `CREATE INDEX tasks_week_id_idx ON public.tasks (week_id)`
+- **Impact:** The most common query (`SELECT * FROM tasks WHERE week_id = ?`) now uses an index scan instead of a sequential scan.
+
+### A3. `weeks.activities` Column → `jsonb`
+- **Migration:** `weeks_activities_column_to_jsonb`
+- **Changed:** Column type from `text` to `jsonb` with a safe CASE cast for NULLs/empty strings
+- **Impact:** Consistent with `daily_notes` (already jsonb). Postgres can now query into activity data.
+- **Also updated:** `database.types.ts` — `activities` type changed from `string | null` to `Json | null` in Row, Insert, and Update shapes.
+
+---
+
+## Group B — Config & Security ✅
+
+### B1. Hardcoded Credentials Removed from Source
+- **File:** `src/lib/supabase.ts`
+- **Changed:** Replaced hardcoded URL and anon key strings with `import.meta.env.VITE_SUPABASE_URL` and `import.meta.env.VITE_SUPABASE_ANON_KEY`
+- **Also fixed:** Added `"types": ["vite/client"]` to `tsconfig.json` so `import.meta.env` is typed correctly
+
+### B2. HTTP Security Headers
+- **File:** `vercel.json`
+- **Added 5 headers** on all routes:
+  - `X-Frame-Options: DENY` — prevents clickjacking
+  - `X-Content-Type-Options: nosniff` — prevents MIME sniffing
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy` — restricts camera/geolocation, allows mic (for voice feature)
+  - `Content-Security-Policy` — allows Supabase, Google Fonts, inline styles (needed for Tailwind)
+
+---
+
+## Group C — Frontend Code Fixes ✅
+
+### C1. Removed all `as any` Casts — `useSettingsStore.ts`
+- **File:** `src/store/useSettingsStore.ts` (full rewrite)
+- All Supabase calls now use the properly typed client generated from `database.types.ts`
+- `syncSettingsToDb` now passes a typed `user_settings` Insert object
+- Empty catch blocks use `_e` (silent) with a comment instead of bare `{}`
+
+### C2. Optimistic Update Rollback — `useWeekStore.ts`
+- **Functions fixed:** `toggleTaskComplete`, `createTask`, `updateTask`, `deleteTask`
+- Each now snapshots `currentWeek` before mutation; on DB error, it reverts state and logs the error
+- Prevents permanent UI/DB desync when a write fails silently
+
+### C3. Replaced `alert()` with Inline Error Banner — `Dashboard.tsx`
+- Added `aiError` state
+- Both `generateChallenge` and `fetchInsight` set this state on failure
+- Error renders as a dismissible red banner at the top of the page — non-blocking, styled
+
+### C4. `BrowserRouter` Hoisted to App Root — `App.tsx`
+- `BrowserRouter` now wraps the entire app (above `AuthProvider`)
+- Enables future public routes (password reset, invite links, landing page) without refactoring
+
+### C5. Global `ErrorBoundary` — `src/components/ErrorBoundary.tsx` (new file)
+- Class component with `getDerivedStateFromError` + `componentDidCatch`
+- Fallback renders a styled error UI with a collapsible error detail and a "Reload App" button
+- Wraps `AuthProvider` + `AppRouter` in `App.tsx`
+
+### C6. AI Keys Stripped from Weekly Report Export — `useSettingsStore.ts`
+- `exportWeeklyReport()` now destructures `aiKeys` out of state before serializing
+- Downloaded JSON file no longer contains user's Gemini/Grok API keys
+
+### C7. Week Number via `date-fns` — `useWeekStore.ts`
+- Installed `date-fns` package
+- `getCurrentWeekInfo()` now uses `getISOWeek(now)` and `getISOWeekYear(now)`
+- Eliminates the fragile manual calculation that could drift around year boundaries
+
+---
+
+## Verification
+
+```
+npx tsc --noEmit
+→ ✅ No output = zero TypeScript errors
+```
+
+---
+
+## Remaining Manual Tasks
+
+These require product/architecture decisions and cannot be auto-applied:
+
+| Task | Notes |
+|---|---|
+| Encrypt AI keys at rest | Use [Supabase Vault](https://supabase.com/docs/guides/database/vault) to store API keys encrypted |
+| Enable leaked password protection | Supabase Dashboard → Auth → Password Security → toggle on |
+| Split `useWeekStore.ts` into domain slices | Large refactor: `useBrainDumpStore`, `useEvaluationStore`, etc. |
+| Decide fate of `daily_logs` table | Build the daily log feature or drop the table |
+| Make rest days user-configurable | Add `rest_days` to `user_settings` schema + settings UI |
+| Build or remove Roadmap page | Currently a "Coming Soon" placeholder in the live nav |
+| Implement challenge progress increment UI | Slider or stepper to update `challenge_progress` % |
