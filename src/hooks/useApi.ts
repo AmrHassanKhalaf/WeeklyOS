@@ -18,10 +18,17 @@ export function useAiApi() {
 
       if (error) {
         console.error('Edge Function Error Response:', error)
-        throw new Error(error.message || 'AI Edge Function failed with a non-2xx status code.')
+        // If it's a 401, it means the JWT token expired or is invalid
+        if (error.message && error.message.includes('non-2xx status code') || error.status === 401) {
+          throw new Error('Your login session appears to have expired. Please sign out and sign back in to use AI features.')
+        }
+        throw new Error(error.message || 'AI Edge Function failed.')
       }
 
       if (data?.error) {
+        if (data.error === 'Unauthorized') {
+           throw new Error('Your login session appears to have expired. Please sign out and sign back in.')
+        }
         throw new Error(data.error)
       }
 
