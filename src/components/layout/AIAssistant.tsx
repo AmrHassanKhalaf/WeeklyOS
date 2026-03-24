@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
-import { GeminiLiveChat } from '../ai/GeminiLiveChat'
+import { GeminiLiveAssistant } from '../ai/GeminiLiveAssistant'
 
 type Tab = 'insights' | 'stats' | 'activity' | 'chat' | 'live'
 type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
@@ -402,7 +402,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             </div>
           )}
           {activeTab === 'live' && (
-            <GeminiLiveChat />
+            <GeminiLiveAssistant />
           )}
           {activeTab === 'chat' && (
             <div className="space-y-6 pb-4">
