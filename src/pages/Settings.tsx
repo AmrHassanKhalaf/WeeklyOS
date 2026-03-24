@@ -78,7 +78,7 @@ export function Settings() {
   }
 
   const Toggle = ({ label, desc, checked, onChange }: { label: string, desc: string, checked: boolean, onChange: (c: boolean) => void }) => (
-    <div className="flex items-center justify-between p-4 bg-surface-container-none rounded-xl border border-white/5">
+    <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border border-white/5">
       <div>
         <p className="font-bold text-on-surface text-sm">{label}</p>
         <p className="text-xs text-neutral-500 mt-0.5">{desc}</p>

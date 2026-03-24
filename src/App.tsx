@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useWeekStore } from './store/useWeekStore'
 import { useSettingsStore } from './store/useSettingsStore'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { SignIn } from './pages/SignIn'
 import { Dashboard } from './pages/Dashboard'
 import { WeeklyDistribution } from './pages/WeeklyDistribution'
@@ -59,26 +60,29 @@ function AppRouter() {
   if (!user) return <SignIn />
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/weekly-distribution" element={<WeeklyDistribution />} />
-        <Route path="/focused-day" element={<FocusedDay />} />
-        <Route path="/roadmap" element={<RoadmapPlaceholder />} />
-        <Route path="/brain-dump" element={<BrainDump />} />
-        <Route path="/weekly-evaluation" element={<WeeklyEvaluation />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/weekly-distribution" element={<WeeklyDistribution />} />
+      <Route path="/focused-day" element={<FocusedDay />} />
+      <Route path="/roadmap" element={<RoadmapPlaceholder />} />
+      <Route path="/brain-dump" element={<BrainDump />} />
+      <Route path="/weekly-evaluation" element={<WeeklyEvaluation />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   )
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRouter />
-    </AuthProvider>
+    <BrowserRouter>
+      <ErrorBoundary>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </ErrorBoundary>
+    </BrowserRouter>
   )
 }
+

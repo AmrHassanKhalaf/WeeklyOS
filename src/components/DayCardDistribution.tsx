@@ -228,15 +228,19 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
           priority={priority}
           day={day.day as DayOfWeek}
           onSave={async (taskUpdates) => {
-            await createTask({ 
-              title: taskUpdates.title!, 
-              priority: taskUpdates.priority || priority, 
-              day: taskUpdates.day || (day.day as DayOfWeek), 
-              startTime: taskUpdates.startTime, 
-              estimatedTime: taskUpdates.estimatedTime,
-              description: taskUpdates.description
-            })
-            setAddingFor(null)
+            try {
+              await createTask({ 
+                title: taskUpdates.title!, 
+                priority: taskUpdates.priority || priority, 
+                day: taskUpdates.day || (day.day as DayOfWeek), 
+                startTime: taskUpdates.startTime, 
+                estimatedTime: taskUpdates.estimatedTime,
+                description: taskUpdates.description
+              })
+              setAddingFor(null)
+            } catch (e: any) {
+              alert(e.message)
+            }
           }}
           onCancel={() => setAddingFor(null)}
         />
@@ -358,8 +362,9 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               <div className="flex items-center gap-2">
                 <span>{highFilled}/{highSlots}</span>
                 <span
-                  className="material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors"
-                  onClick={() => startAdd('high')}
+                  className={`material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors ${highFilled >= highSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                  onClick={() => highFilled < highSlots && startAdd('high')}
+                  title={highFilled >= highSlots ? "Limit reached (1 High task)" : "Add High Impact Task"}
                 >add</span>
               </div>
             </div>
@@ -374,8 +379,9 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               <div className="flex items-center gap-2">
                 <span>{medFilled}/{medSlots}</span>
                 <span
-                  className="material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors"
-                  onClick={() => startAdd('medium')}
+                  className={`material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors ${medFilled >= medSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                  onClick={() => medFilled < medSlots && startAdd('medium')}
+                  title={medFilled >= medSlots ? "Limit reached (3 Medium tasks)" : "Add Medium Priority Task"}
                 >add</span>
               </div>
             </div>
@@ -392,8 +398,9 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               <div className="flex items-center gap-2">
                 <span>{smallFilled}/{smallSlots}</span>
                 <span
-                  className="material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors"
-                  onClick={() => startAdd('low')}
+                  className={`material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors ${smallFilled >= smallSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                  onClick={() => smallFilled < smallSlots && startAdd('low')}
+                  title={smallFilled >= smallSlots ? "Limit reached (5 Small tasks)" : "Add Small Task"}
                 >add</span>
               </div>
             </div>

@@ -11,7 +11,7 @@ function LoadingCard() {
 }
 
 export function Dashboard() {
-  const { currentWeek, isLoadingWeek } = useWeekStore()
+  const { currentWeek, isLoadingWeek, deleteWeekData, toggleChallengeComplete } = useWeekStore()
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
   const [isInsightLoading, setIsInsightLoading] = useState(false)
@@ -105,6 +105,18 @@ export function Dashboard() {
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Completed</p>
               <p className="text-3xl font-mono font-bold text-primary">{currentWeek.totalCompleted}/{currentWeek.totalPlanned}</p>
             </div>
+            <div className="w-px h-10 bg-surface-variant" />
+            <button 
+              onClick={() => {
+                if (confirm('Are you sure you want to clear ALL data for this week? this includes all tasks and notes.')) {
+                  deleteWeekData()
+                }
+              }}
+              className="p-3 text-on-surface-variant hover:text-error transition-colors rounded-xl hover:bg-error/5 group"
+              title="Clear Entire Week Data"
+            >
+              <span className="material-symbols-outlined text-2xl group-active:scale-95 transition-transform">delete_forever</span>
+            </button>
           </div>
         </section>
 
@@ -137,8 +149,18 @@ export function Dashboard() {
                   )}
                 </div>
                 <div className="w-full md:w-64 space-y-2 shrink-0">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-primary">
-                    <span>Progress</span>
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-primary">
+                    <div className="flex items-center gap-4">
+                      <span>Progress</span>
+                      <div className="flex items-center gap-2 group cursor-pointer" onClick={() => toggleChallengeComplete()}>
+                        <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${currentWeek.challengeCompleted ? 'bg-primary border-primary text-background' : 'border-primary/40 hover:border-primary'}`}>
+                          {currentWeek.challengeCompleted && <span className="material-symbols-outlined text-[10px] font-bold">check</span>}
+                        </div>
+                        <span className={currentWeek.challengeCompleted ? 'text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors'}>
+                          {currentWeek.challengeCompleted ? 'DONE FOR TODAY' : 'NOT DONE TODAY'}
+                        </span>
+                      </div>
+                    </div>
                     <span>{currentWeek.challengeProgress}%</span>
                   </div>
                   <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">

@@ -45,6 +45,7 @@ export interface DayPlan {
   highTask?: Task
   mediumTasks: Task[]
   smallTasks: Task[]
+  dailyNote?: string
 }
 
 export interface ActivityItem {
@@ -72,6 +73,8 @@ export interface WeekData {
   evalStruggle?: string
   evalLessons?: string
   activities?: ActivityItem[]
+  dailyNotes?: Record<string, string>
+  challengeCompleted?: boolean
 }
 
 // ─── Store interface ──────────────────────────────────────────────────────────
@@ -95,9 +98,13 @@ interface WeekStore {
   // Tasks CRUD
   toggleTaskComplete: (taskId: string) => Promise<void>
   createTask: (task: { title: string; priority: Priority; day?: DayOfWeek; description?: string; startTime?: string; estimatedTime?: string }) => Promise<void>
-  updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string; estimatedTime: string; tags: string[] }>) => Promise<void>
+  updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string; estimatedTime: string; startTime: string; tags: string[] }>) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
   markDayComplete: (day: DayOfWeek) => Promise<void>
+  deleteDayData: (day: DayOfWeek) => Promise<void>
+  deleteWeekData: () => Promise<void>
+  updateDailyNote: (day: DayOfWeek, note: string) => Promise<void>
+  toggleChallengeComplete: () => Promise<void>
 
   // Brain dump CRUD
   addBrainDumpItem: (content: string) => Promise<void>
@@ -195,10 +202,11 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
 
   const mappedTasks = tasks.map(mapDbTask)
 
-  const dayPlans: DayPlan[] = DAYS.map((day, idx) => {
+    const dayPlans: DayPlan[] = DAYS.map((day, idx) => {
     const dayDate = new Date(startDate)
     dayDate.setDate(startDate.getDate() + idx)
     const dateStr = dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const dailyNotes = (dbWeek.daily_notes as Record<string, string>) || {}
 
     const baseDayPlan = {
       day,
@@ -206,10 +214,11 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
       shortName: DAY_SHORT[idx],
       isToday: isCurrentWeek && idx === todayIdx,
       isRestDay: day === 'friday',
-      progress: 0, // Will be calculated by processTasksForDay
+      progress: 0, 
       highTask: undefined,
       mediumTasks: [],
       smallTasks: [],
+      dailyNote: dailyNotes[day] || '',
     }
     return processTasksForDay(baseDayPlan, mappedTasks)
   })
@@ -245,6 +254,8 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
     evalStruggle: (dbWeek.eval_struggle as string | null) ?? undefined,
     evalLessons: (dbWeek.eval_lessons as string | null) ?? undefined,
     activities,
+    dailyNotes: (dbWeek.daily_notes as Record<string, string>) || {},
+    challengeCompleted: !!dbWeek.challenge_completed,
   }
 }
 
@@ -472,10 +483,23 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
       const currentWeek = get().currentWeek
       if (!currentWeek) return
+      
+      const day = task.day || 'monday'
+      const tasksForDay = currentWeek.days.find(d => d.day === day)
+      
+      if (task.priority === 'high' && tasksForDay?.highTask) {
+        throw new Error('Limit reached: Only 1 High priority task allowed per day.')
+      }
+      if (task.priority === 'medium' && (tasksForDay?.mediumTasks?.length || 0) >= 3) {
+        throw new Error('Limit reached: Only 3 Medium priority tasks allowed per day.')
+      }
+      if (task.priority === 'low' && (tasksForDay?.smallTasks?.length || 0) >= 5) {
+        throw new Error('Limit reached: Only 5 Small priority tasks allowed per day.')
+      }
 
       // Optimistic update
       const newTask: Task = {
-        id: `temp-${Date.now()}`, // Temporary ID for optimistic update
+        id: `temp-${Date.now()}`, 
         title: task.title,
         priority: task.priority,
         status: 'pending',
@@ -490,7 +514,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       const updatedTasks = [...allTasks, newTask]
 
       const nextDays = currentWeek.days.map(d => processTasksForDay(d, updatedTasks))
-
+      
       const activities = [{
         id: Date.now().toString() + '_add',
         text: `Added new task: "${task.title}"`,
@@ -514,7 +538,6 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       })
 
       if (error) console.error('[createTask]', error)
-      // Real-time will refresh the week data and replace temp ID
     },
 
     updateTask: async (taskId, updates) => {
@@ -599,6 +622,89 @@ export const useWeekStore = create<WeekStore>((set, get) => {
           ),
         } : null,
       }))
+    },
+
+    deleteDayData: async (day) => {
+      const week = get().currentWeek
+      if (!week) return
+      
+      const { error } = await supabase.from('tasks').delete().eq('week_id', week.id).eq('day', day)
+      if (error) console.error('[deleteDayData]', error)
+      
+      set(state => ({
+        currentWeek: state.currentWeek ? {
+          ...state.currentWeek,
+          days: state.currentWeek.days.map(d =>
+            d.day === day ? {
+              ...d,
+              progress: 0,
+              highTask: undefined,
+              mediumTasks: [],
+              smallTasks: [],
+            } : d
+          ),
+        } : null,
+      }))
+    },
+
+    deleteWeekData: async () => {
+      const week = get().currentWeek
+      if (!week) return
+      
+      const { error } = await supabase.from('tasks').delete().eq('week_id', week.id)
+      if (error) console.error('[deleteWeekData]', error)
+      
+      await supabase.from('weeks').update({ score: 0, activities: '[]', daily_notes: '{}', challenge_completed: false }).eq('id', week.id)
+      
+      set(state => ({
+        currentWeek: state.currentWeek ? {
+          ...state.currentWeek,
+          score: 0,
+          activities: [],
+          dailyNotes: {},
+          challengeCompleted: false,
+          days: state.currentWeek.days.map(d => ({
+            ...d,
+            progress: 0,
+            highTask: undefined,
+            mediumTasks: [],
+            smallTasks: [],
+            dailyNote: '',
+          })),
+        } : null,
+      }))
+    },
+
+    updateDailyNote: async (day, note) => {
+      const week = get().currentWeek
+      if (!week) return
+      
+      const nextNotes = { ...(week.dailyNotes || {}), [day]: note }
+      
+      set(state => ({
+        currentWeek: state.currentWeek ? {
+          ...state.currentWeek,
+          dailyNotes: nextNotes,
+          days: state.currentWeek.days.map(d => d.day === day ? { ...d, dailyNote: note } : d)
+        } : null
+      }))
+      
+      const { error } = await supabase.from('weeks').update({ daily_notes: nextNotes }).eq('id', week.id)
+      if (error) console.error('[updateDailyNote]', error)
+    },
+
+    toggleChallengeComplete: async () => {
+      const week = get().currentWeek
+      if (!week) return
+      
+      const newValue = !week.challengeCompleted
+      
+      set(state => ({
+        currentWeek: state.currentWeek ? { ...state.currentWeek, challengeCompleted: newValue } : null
+      }))
+      
+      const { error } = await supabase.from('weeks').update({ challenge_completed: newValue }).eq('id', week.id)
+      if (error) console.error('[toggleChallengeComplete]', error)
     },
 
     // ── Brain dump CRUD ────────────────────────────────────────────────────────

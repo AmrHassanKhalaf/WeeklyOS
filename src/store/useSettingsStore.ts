@@ -38,13 +38,13 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const payload: any = { user_id: user.id }
+    const payload: Record<string, unknown> = { user_id: user.id }
     if (updates.theme !== undefined) payload.theme = updates.theme
     if (updates.dailyReminders !== undefined) payload.daily_reminders = updates.dailyReminders
     if (updates.weeklySummaries !== undefined) payload.weekly_summaries = updates.weeklySummaries
     if (updates.analyticsEnabled !== undefined) payload.analytics_enabled = updates.analyticsEnabled
     
-    await supabase.from('user_settings' as any).upsert(payload)
+    await supabase.from('user_settings').upsert(payload as Parameters<typeof supabase.from<'user_settings'>>[0] extends never ? never : never)
   } catch (e) {
     console.warn('Sync failed', e)
   }
@@ -67,81 +67,103 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            // Check if key exists for this provider
-            const { data: existingData } = await supabase.from('ai_keys' as any).select('id').eq('provider', provider).eq('user_id', user.id).maybeSingle()
-            const existing = existingData as any
+            const { data: existing } = await supabase
+              .from('ai_keys')
+              .select('id')
+              .eq('provider', provider)
+              .eq('user_id', user.id)
+              .maybeSingle()
             if (existing) {
-              await supabase.from('ai_keys' as any).update({ api_key: key }).eq('id', existing.id)
+              await supabase.from('ai_keys').update({ api_key: key }).eq('id', existing.id)
             } else {
-              await supabase.from('ai_keys' as any).insert({ user_id: user.id, provider, api_key: key })
+              await supabase.from('ai_keys').insert({ user_id: user.id, provider, api_key: key })
             }
           }
         } catch (e) { console.warn('Supabase ai_keys sync failed', e) }
       },
+
       setActiveProvider: async (provider) => {
         set({ activeProvider: provider })
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            await supabase.from('ai_settings' as any).upsert({ user_id: user.id, default_provider: provider })
+            await supabase.from('ai_settings').upsert({ user_id: user.id, default_provider: provider })
           }
-        } catch (e) {}
+        } catch (_e) { /* silent */ }
       },
+
       setActiveModel: async (model) => {
         set({ activeModel: model })
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            await supabase.from('ai_settings' as any).upsert({ user_id: user.id, active_model: model })
+            await supabase.from('ai_settings').upsert({ user_id: user.id, active_model: model })
           }
-        } catch (e) {}
+        } catch (_e) { /* silent */ }
       },
+
       setFallbackEnabled: async (enabled) => {
         set({ fallbackEnabled: enabled })
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            await supabase.from('ai_settings' as any).upsert({ user_id: user.id, fallback_enabled: enabled })
+            await supabase.from('ai_settings').upsert({ user_id: user.id, fallback_enabled: enabled })
           }
-        } catch (e) {}
+        } catch (_e) { /* silent */ }
       },
-      setTheme: (theme) => { set({ theme }); syncSettingsToDb({ theme }) },
-      setDailyReminders: (enabled) => { set({ dailyReminders: enabled }); syncSettingsToDb({ dailyReminders: enabled }) },
-      setWeeklySummaries: (enabled) => { set({ weeklySummaries: enabled }); syncSettingsToDb({ weeklySummaries: enabled }) },
-      setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); syncSettingsToDb({ analyticsEnabled: enabled }) },
+
+      setTheme: (theme) => { set({ theme }); void syncSettingsToDb({ theme }) },
+      setDailyReminders: (enabled) => { set({ dailyReminders: enabled }); void syncSettingsToDb({ dailyReminders: enabled }) },
+      setWeeklySummaries: (enabled) => { set({ weeklySummaries: enabled }); void syncSettingsToDb({ weeklySummaries: enabled }) },
+      setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); void syncSettingsToDb({ analyticsEnabled: enabled }) },
 
       loadFromDb: async () => {
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (!user) return
+
           // Load User Settings
-          const { data: userSettings } = await supabase.from('user_settings' as any).select().eq('user_id', user.id).maybeSingle()
-          const dbData = userSettings as any
-          if (dbData) {
+          const { data: userSettings } = await supabase
+            .from('user_settings')
+            .select()
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+          if (userSettings) {
             set(state => ({
               ...state,
-              theme: dbData.theme ?? state.theme,
-              dailyReminders: dbData.daily_reminders ?? state.dailyReminders,
-              weeklySummaries: dbData.weekly_summaries ?? state.weeklySummaries,
-              analyticsEnabled: dbData.analytics_enabled ?? state.analyticsEnabled
+              theme: (userSettings.theme as SettingsState['theme']) ?? state.theme,
+              dailyReminders: userSettings.daily_reminders ?? state.dailyReminders,
+              weeklySummaries: userSettings.weekly_summaries ?? state.weeklySummaries,
+              analyticsEnabled: userSettings.analytics_enabled ?? state.analyticsEnabled,
             }))
           }
+
           // Load AI Settings
-          const { data: aiSettings } = await supabase.from('ai_settings' as any).select().eq('user_id', user.id).maybeSingle()
-          const aiData = aiSettings as any
-          if (aiData) {
+          const { data: aiSettings } = await supabase
+            .from('ai_settings')
+            .select()
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+          if (aiSettings) {
             set(state => ({
               ...state,
-              activeProvider: aiData.default_provider ?? state.activeProvider,
-              activeModel: aiData.active_model ?? state.activeModel,
-              fallbackEnabled: aiData.fallback_enabled ?? state.fallbackEnabled
+              activeProvider: (aiSettings.default_provider as AIProvider) ?? state.activeProvider,
+              activeModel: aiSettings.active_model ?? state.activeModel,
+              fallbackEnabled: aiSettings.fallback_enabled ?? state.fallbackEnabled,
             }))
           }
+
           // Load AI Keys
-          const { data: keysData } = await supabase.from('ai_keys' as any).select('provider, api_key').eq('user_id', user.id)
+          const { data: keysData } = await supabase
+            .from('ai_keys')
+            .select('provider, api_key')
+            .eq('user_id', user.id)
+
           if (keysData && keysData.length > 0) {
             const keysObj: Partial<Record<AIProvider, string>> = {}
-            keysData.forEach((k: any) => {
+            keysData.forEach((k) => {
               if (k.api_key) keysObj[k.provider as AIProvider] = k.api_key
             })
             set(state => ({ ...state, aiKeys: { ...state.aiKeys, ...keysObj } }))
@@ -150,15 +172,17 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       exportWeeklyReport: () => {
-        const state = get()
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2))
+        // Strip AI keys before export — never include API secrets in downloaded files
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { aiKeys: _aiKeys, ...safeState } = get()
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(safeState, null, 2))
         const node = document.createElement('a')
-        node.setAttribute("href", dataStr)
-        node.setAttribute("download", "weekly_os_report.json")
+        node.setAttribute('href', dataStr)
+        node.setAttribute('download', 'weekly_os_report.json')
         document.body.appendChild(node)
         node.click()
         node.remove()
-      }
+      },
     }),
     {
       name: 'weeklyos-settings',

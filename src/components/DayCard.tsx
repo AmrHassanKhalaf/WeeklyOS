@@ -1,4 +1,6 @@
-import type { DayPlan } from '../data/mockData'
+import type { DayPlan, DayOfWeek } from '../data/mockData'
+import { useWeekStore } from '../store/useWeekStore'
+import { useState, useEffect } from 'react'
 
 interface DayCardProps {
   day: DayPlan
@@ -6,6 +8,25 @@ interface DayCardProps {
 }
 
 export function DayCard({ day, isCompact = false }: DayCardProps) {
+  const { updateDailyNote, deleteDayData } = useWeekStore()
+  const [note, setNote] = useState(day.dailyNote || '')
+  
+  useEffect(() => {
+    setNote(day.dailyNote || '')
+  }, [day.dailyNote])
+
+  const handleNoteBlur = () => {
+    if (note !== (day.dailyNote || '')) {
+      updateDailyNote(day.day as DayOfWeek, note)
+    }
+  }
+
+  const handleDeleteDay = async () => {
+    if (confirm(`Are you sure you want to clear all data for ${day.day}?`)) {
+      await deleteDayData(day.day as DayOfWeek)
+    }
+  }
+
   const progressColor = day.progress === 100 ? 'bg-tertiary' : day.isToday ? 'obsidian-gradient' : 'bg-primary'
 
   if (isCompact) {
@@ -34,7 +55,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
 
   return (
     <div
-      className={`rounded-xl overflow-hidden flex transition-all duration-300 ${
+      className={`rounded-xl overflow-hidden flex flex-col md:flex-row transition-all duration-300 ${
         isToday
           ? 'bg-surface-container-high ring-1 ring-primary/30 shadow-2xl shadow-primary/5'
           : 'bg-surface-container-low border border-white/5 hover:border-white/10'
@@ -42,7 +63,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
     >
       {/* Day column */}
       <div
-        className={`w-32 p-6 flex flex-col justify-center items-center border-r border-white/5 shrink-0 relative ${
+        className={`w-full md:w-32 p-6 flex md:flex-col justify-between items-center border-b md:border-b-0 md:border-r border-white/5 shrink-0 relative ${
           isToday ? 'bg-primary/5' : 'bg-surface-container'
         }`}
       >
@@ -51,9 +72,12 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             Current
           </div>
         )}
-        <h3 className={`font-bold text-2xl ${isToday ? 'text-primary' : ''}`}>{day.shortName}</h3>
-        <p className="text-xs text-on-surface-variant">{day.date}</p>
-        <div className={`mt-4 w-8 h-8 rounded-full flex items-center justify-center ${
+        <div className="flex flex-col items-center">
+          <h3 className={`font-bold text-2xl ${isToday ? 'text-primary' : ''}`}>{day.shortName}</h3>
+          <p className="text-xs text-on-surface-variant">{day.date}</p>
+        </div>
+        
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
           day.progress === 100 ? 'bg-tertiary/10' : 'bg-primary/10'
         }`}>
           <span
@@ -63,9 +87,17 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             {day.progress === 100 ? 'check_circle' : 'pending'}
           </span>
         </div>
+
+        <button 
+          onClick={handleDeleteDay}
+          className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/5 group"
+          title="Clear Day Data"
+        >
+          <span className="material-symbols-outlined text-sm">delete_sweep</span>
+        </button>
       </div>
 
-      {/* Content */}
+      {/* Content Area */}
       <div className="flex-1 p-6 flex flex-col">
         {/* Progress bar */}
         <div className="flex justify-between items-center mb-6">
@@ -81,7 +113,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
         </div>
 
         {/* 3-col task grid */}
-        <div className="grid grid-cols-3 gap-8 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
           {/* Strategic */}
           <div>
             <p className="text-[10px] uppercase tracking-widest text-primary mb-3 font-black">Strategic</p>
@@ -111,7 +143,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             )}
           </div>
 
-          {/* Tasks */}
+          {/* Small Tasks */}
           <div>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">
               Tasks {day.smallTasks.length > 0 ? `(${day.smallTasks.length})` : ''}
@@ -129,6 +161,23 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
               <p className="text-xs text-on-surface-variant italic">No minor tasks listed</p>
             )}
           </div>
+        </div>
+
+        {/* Daily Note Area */}
+        <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">
+            <span className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-xs">edit_note</span>
+              Daily Reflections / Constraints
+            </span>
+          </div>
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            onBlur={handleNoteBlur}
+            placeholder="What did you learn today? Any blockers?"
+            className="w-full bg-surface-container-highest/30 border border-white/5 rounded-xl p-4 text-xs text-on-surface-variant outline-none focus:border-primary/30 transition-all resize-none min-h-[80px]"
+          />
         </div>
       </div>
     </div>
