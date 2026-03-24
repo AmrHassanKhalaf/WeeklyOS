@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.0"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,13 +48,48 @@ serve(async (req: Request) => {
     const reqData = await req.json()
     const { type, sessionId, chunkId, chunkData, context, overrideProvider, model } = reqData
 
+    // 1. Common Settings Fetch
+    const [settingsRes, keysRes] = await Promise.all([
+      supabaseClient.from('ai_settings').select('default_provider, active_model').eq('user_id', user.id).maybeSingle(),
+      supabaseClient.from('ai_keys').select('provider, api_key').eq('user_id', user.id)
+    ])
+
+    const provider = overrideProvider || settingsRes.data?.default_provider || 'gemini'
+    const apiKey = (keysRes.data || []).find(k => k.provider === provider)?.api_key
+
+    const aiModel = model || settingsRes.data?.active_model || 'gemini-1.5-flash'
+    const systemPrompt = `${GLOBAL_RULES}\nContext: ${JSON.stringify(context || {})}`
+
+    // 2. Interaction Handlers
     if (type === 'chunk' && sessionId && chunkData) {
       const buffer = Uint8Array.from(atob(chunkData), c => c.charCodeAt(0))
       await supabaseClient.storage.from('voice-responses').upload(`chunks/${user.id}/${sessionId}/${chunkId}.webm`, buffer, { contentType: 'audio/webm', upsert: true })
       return new Response(JSON.stringify({ status: 'chunk_received' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } } )
     }
 
+    if (type === 'chat') {
+      if (!apiKey) throw new Error('No key')
+      const { input, history } = reqData
+      const genAI = new GoogleGenerativeAI(apiKey)
+      const geminiModel = genAI.getGenerativeModel({ 
+        model: aiModel,
+        systemInstruction: systemPrompt 
+      })
+
+      const chat = geminiModel.startChat({
+        history: history || [],
+      })
+
+      const result = await chat.sendMessage(input)
+      const responseText = result.response.text()
+
+      return new Response(JSON.stringify({ response: responseText, providerUsed: 'gemini' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     if (type === 'process' && sessionId) {
+      if (!apiKey) throw new Error('No key')
       const { data: files } = await supabaseClient.storage.from('voice-responses').list(`chunks/${user.id}/${sessionId}`)
       if (!files || files.length === 0) throw new Error('No audio found')
 
@@ -65,18 +101,6 @@ serve(async (req: Request) => {
           return btoa(binary)
         })
       )
-
-      const [settingsRes, keysRes] = await Promise.all([
-        supabaseClient.from('ai_settings').select('default_provider, active_model').eq('user_id', user.id).maybeSingle(),
-        supabaseClient.from('ai_keys').select('provider, api_key').eq('user_id', user.id)
-      ])
-
-      const provider = overrideProvider || settingsRes.data?.default_provider || 'gemini'
-      const apiKey = (keysRes.data || []).find(k => k.provider === provider)?.api_key
-      if (!apiKey) throw new Error('No key')
-
-      const aiModel = model || settingsRes.data?.active_model || 'gemini-1.5-flash'
-      const systemPrompt = `${GLOBAL_RULES}\nContext: ${JSON.stringify(context || {})}`
 
       // SSE STREAM
       const encoder = new TextEncoder()
@@ -123,13 +147,10 @@ serve(async (req: Request) => {
                 }
             } else {
                 const data = await response.json()
-                const candidate = data.candidates[0]
-                const parts = candidate.content.parts
+                const parts = data.candidates[0].content.parts
                 
-                let finalText = ""
                 for (const part of parts) {
                     if (part.text) {
-                        finalText += part.text
                         controller.enqueue(encoder.encode(`event: text\ndata: ${JSON.stringify({ text: part.text, providerUsed: 'gemini-native' })}\n\n`))
                     }
                     if (part.inlineData && part.inlineData.mimeType.includes("audio")) {
