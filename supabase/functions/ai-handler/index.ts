@@ -29,25 +29,30 @@ serve(async (req: Request) => {
 
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) throw new Error('Missing Authorization header')
+    if (!authHeader) {
+        console.error("Missing Authorization header");
+        throw new Error('Unauthorized');
+    }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    const { data: { user }, error: authError } = await (createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-        { global: { headers: { Authorization: authHeader } } }
-    )).auth.getUser()
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify User via Anon Client to be safe
+    const { data: { user }, error: authError } = await createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } }
+    }).auth.getUser();
     
-    if (authError || !user) throw new Error('Unauthorized')
+    if (authError || !user) {
+        console.error("Auth Error:", authError?.message);
+        throw new Error('Unauthorized');
+    }
 
     const reqData = await req.json()
     const { type, sessionId, chunkId, chunkData, context, overrideProvider, model } = reqData
-    console.log("AI Handler Request:", { type, sessionId, model })
+    console.log(`Processing ${type} request for user ${user.id}`);
 
     // 1. Common Settings Fetch
     const [settingsRes, keysRes] = await Promise.all([
