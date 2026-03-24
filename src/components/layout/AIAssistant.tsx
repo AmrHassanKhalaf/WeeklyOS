@@ -22,6 +22,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const chunkIdRef = useRef(0)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null)
   
   const [chatMessages, setChatMessages] = useState<{ role: 'ai' | 'user' | 'system'; text: string; provider?: string }[]>([
     {
@@ -83,6 +84,10 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
     // Interrupt handling: If AI is speaking or processing, stop it
     if (voiceState === 'speaking') {
       window.speechSynthesis.cancel()
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause()
+        activeAudioRef.current.currentTime = 0
+      }
     }
     
     if (voiceState === 'processing' || voiceState === 'speaking') {
@@ -133,12 +138,18 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
         const { currentWeek } = useWeekStore.getState()
         const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score } : {}
         
+        let hasNativeAudio = false
         await streamVoiceResponse(sessionId!, context, (event, data) => {
           if (event === 'text') {
             setChatMessages(prev => [...prev, { role: 'ai', text: data.text, provider: data.providerUsed }])
-            speakResponse(data.text)
+            if (!hasNativeAudio) {
+              speakResponse(data.text)
+            }
+          } else if (event === 'audio') {
+            hasNativeAudio = true
+            playNativeAudio(data.url)
           } else if (event === 'done') {
-            setVoiceState('idle')
+            if (!hasNativeAudio) setVoiceState('idle')
           } else if (event === 'error') {
             setChatMessages(prev => [...prev, { role: 'system', text: `Error: ${data.message}` }])
             setVoiceState('idle')
@@ -152,10 +163,28 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
     }
   }
 
+  const playNativeAudio = (url: string) => {
+    setVoiceState('speaking')
+    const audio = new Audio(url)
+    activeAudioRef.current = audio
+    audio.onended = () => {
+      setVoiceState('idle')
+      activeAudioRef.current = null
+    }
+    audio.onerror = () => {
+      console.error('Native audio error')
+      setVoiceState('idle')
+    }
+    audio.play().catch(e => {
+      console.error('Audio play failed:', e)
+      setVoiceState('idle')
+    })
+  }
+
   const speakResponse = (text: string) => {
     setVoiceState('speaking')
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'ar-SA' // Support Arabic
+    utterance.lang = 'ar-SA'
     utterance.onend = () => setVoiceState('idle')
     window.speechSynthesis.speak(utterance)
   }
