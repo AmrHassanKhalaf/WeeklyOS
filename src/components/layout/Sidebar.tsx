@@ -6,7 +6,6 @@ const navItems = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
   { to: '/weekly-distribution', icon: 'calendar_view_week', label: 'Weekly Distribution' },
   { to: '/focused-day', icon: 'target', label: 'Focused Day' },
-  { to: '/roadmap', icon: 'map', label: 'Roadmap' },
   { to: '/brain-dump', icon: 'psychology', label: 'Prep & Brain Dump' },
   { to: '/weekly-evaluation', icon: 'assessment', label: 'Weekly Evaluation' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
