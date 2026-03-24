@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
+import { GeminiLiveChat } from '../ai/GeminiLiveChat'
 
 type Tab = 'insights' | 'stats' | 'activity' | 'chat' | 'live'
 type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
@@ -401,54 +402,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             </div>
           )}
           {activeTab === 'live' && (
-            <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in zoom-in duration-300">
-              <div className="relative">
-                {/* Ping/Pulse Animations */}
-                {(voiceState === 'listening' || voiceState === 'speaking') && (
-                  <>
-                    <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${voiceState === 'listening' ? 'bg-primary' : 'bg-tertiary'}`} />
-                    <div className={`absolute -inset-4 rounded-full animate-pulse opacity-10 ${voiceState === 'listening' ? 'bg-primary' : 'bg-tertiary'}`} />
-                  </>
-                )}
-                
-                <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
-                  voiceState === 'idle' ? 'bg-surface-container-high' :
-                  voiceState === 'listening' ? 'bg-primary shadow-[0_0_40px_rgba(47,92,255,0.3)]' :
-                  voiceState === 'processing' ? 'bg-tertiary/20' :
-                  'bg-tertiary shadow-[0_0_40px_rgba(78,222,163,0.3)]'
-                }`}>
-                  <span className={`material-symbols-outlined text-4xl transition-all ${
-                     voiceState === 'idle' ? 'text-neutral-500' : 'text-white scale-110'
-                  }`}>
-                    {voiceState === 'idle' ? 'mic_off' : 
-                     voiceState === 'listening' ? 'mic' : 
-                     voiceState === 'processing' ? 'sync' : 'volume_up'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-bold text-on-surface">
-                  {voiceState === 'idle' ? 'Ready to talk?' :
-                   voiceState === 'listening' ? 'Listening...' :
-                   voiceState === 'processing' ? 'AI is thinking...' : 'AI is speaking'}
-                </h3>
-                <p className="text-xs text-neutral-500 uppercase tracking-widest px-4">
-                  {voiceState === 'idle' ? 'Tap the mic below to start a live conversation' :
-                   voiceState === 'listening' ? 'Speak clearly, I am recording' :
-                   voiceState === 'processing' ? 'Analyzing your request' : 'Listen to my response'}
-                </p>
-              </div>
-
-              {/* Mini history or live text indicator */}
-              <div className="w-full px-6 pt-4">
-                 <div className="h-20 overflow-hidden bg-black/20 rounded-xl p-3 border border-white/5">
-                    <p className="text-[10px] text-neutral-400 italic">
-                       {chatMessages[chatMessages.length-1]?.text || "No transcription yet..."}
-                    </p>
-                 </div>
-              </div>
-            </div>
+            <GeminiLiveChat />
           )}
           {activeTab === 'chat' && (
             <div className="space-y-6 pb-4">
