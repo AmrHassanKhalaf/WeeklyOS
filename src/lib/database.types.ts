@@ -17,14 +17,16 @@ export type Database = {
           is_active: boolean
           provider: string
           user_id: string
+          vault_secret_id: string | null
         }
         Insert: {
-          api_key: string
+          api_key?: string
           created_at?: string
           id?: string
           is_active?: boolean
           provider: string
           user_id: string
+          vault_secret_id?: string | null
         }
         Update: {
           api_key?: string
@@ -33,6 +35,7 @@ export type Database = {
           is_active?: boolean
           provider?: string
           user_id?: string
+          vault_secret_id?: string | null
         }
         Relationships: []
       }
@@ -80,36 +83,6 @@ export type Database = {
           created_at?: string
           id?: string
           tags?: string[] | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      daily_logs: {
-        Row: {
-          date: string
-          id: string
-          notes: string | null
-          rating: number | null
-          tasks_completed: number
-          tasks_total: number
-          user_id: string
-        }
-        Insert: {
-          date: string
-          id?: string
-          notes?: string | null
-          rating?: number | null
-          tasks_completed?: number
-          tasks_total?: number
-          user_id: string
-        }
-        Update: {
-          date?: string
-          id?: string
-          notes?: string | null
-          rating?: number | null
-          tasks_completed?: number
-          tasks_total?: number
           user_id?: string
         }
         Relationships: []
@@ -172,6 +145,7 @@ export type Database = {
           analytics_enabled: boolean | null
           daily_reminders: boolean | null
           fallback_enabled: boolean | null
+          rest_days: Json | null
           theme: string | null
           updated_at: string | null
           user_id: string
@@ -181,6 +155,7 @@ export type Database = {
           analytics_enabled?: boolean | null
           daily_reminders?: boolean | null
           fallback_enabled?: boolean | null
+          rest_days?: Json | null
           theme?: string | null
           updated_at?: string | null
           user_id: string
@@ -190,6 +165,7 @@ export type Database = {
           analytics_enabled?: boolean | null
           daily_reminders?: boolean | null
           fallback_enabled?: boolean | null
+          rest_days?: Json | null
           theme?: string | null
           updated_at?: string | null
           user_id?: string

@@ -34,38 +34,24 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Nav links */}
         <nav className="flex-1 space-y-0.5">
-          {navItems.map(({ to, icon, label }) => {
-            if (to === '/roadmap') {
-              return (
-                <div key={to} className="flex items-center justify-between px-3 py-2.5 rounded-lg opacity-50 cursor-not-allowed text-[#A1A1A1]">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[20px]">{icon}</span>
-                    <span className="truncate">{label}</span>
-                  </div>
-                  <span className="text-[8px] bg-[#353534] text-[#E5E2E1] px-1.5 py-0.5 rounded uppercase tracking-widest font-bold">Soon</span>
-                </div>
-              )
-            }
-            return (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={closeSidebarsOnMobile}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 ${
-                    isActive
-                      ? 'text-[#E5E2E1] bg-[#2A2A2A]'
-                      : 'text-[#A1A1A1] hover:bg-[#2A2A2A]'
-                  }`
-                }
-              >
-                <span className={`material-symbols-outlined text-[20px]`}>{icon}</span>
-                <span>{label}</span>
-              </NavLink>
-            )
-          })}
+          {navItems.map(({ to, icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={closeSidebarsOnMobile}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 ${
+                  isActive
+                    ? 'text-[#E5E2E1] bg-[#2A2A2A]'
+                    : 'text-[#A1A1A1] hover:bg-[#2A2A2A]'
+                }`
+              }
+            >
+              <span className={`material-symbols-outlined text-[20px]`}>{icon}</span>
+              <span>{label}</span>
+            </NavLink>
+          ))}
         </nav>
 
         {/* Bottom CTA + User */}

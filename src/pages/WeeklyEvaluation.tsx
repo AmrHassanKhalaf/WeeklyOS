@@ -7,6 +7,7 @@ export function WeeklyEvaluation() {
   const { currentWeek, isLoadingWeek } = useWeekStore()
   const { sendMessage } = useAiApi()
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({})
+  const [aiError, setAiError] = useState<string | null>(null)
 
   // Local state for the inputs to allow snappy typing
   const [evalState, setEvalState] = useState({
@@ -57,8 +58,8 @@ export function WeeklyEvaluation() {
       setEvalState(prev => ({ ...prev, [type]: newText }))
       useWeekStore.getState().updateEvaluation(type, newText)
       
-    } catch (e: any) {
-      alert(e.message)
+    } catch (e: unknown) {
+      setAiError(e instanceof Error ? e.message : 'Failed to generate reflection')
     } finally {
       setIsGenerating(prev => ({ ...prev, [type]: false }))
     }
@@ -95,6 +96,16 @@ export function WeeklyEvaluation() {
   return (
     <AppLayout aiVariant="evaluation">
       <div className="max-w-4xl mx-auto p-8">
+        {/* AI Error Banner */}
+        {aiError && (
+          <div className="flex items-center gap-3 bg-error/10 border border-error/20 rounded-xl px-5 py-3 mb-8">
+            <span className="material-symbols-outlined text-error text-xl shrink-0">error</span>
+            <p className="text-sm text-error flex-1">{aiError}</p>
+            <button onClick={() => setAiError(null)} className="text-error/60 hover:text-error transition-colors" aria-label="Dismiss">
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+        )}
         {/* Header */}
         <header className="mb-12">
           <h2 className="text-4xl font-extrabold tracking-tight mb-2">Weekly Evaluation</h2>

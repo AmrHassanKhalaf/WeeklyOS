@@ -18,6 +18,9 @@ export interface SettingsState {
   dailyReminders: boolean
   weeklySummaries: boolean
 
+  // Work Schedule
+  restDays: string[]  // e.g. ['friday', 'saturday']
+
   // Privacy
   analyticsEnabled: boolean
 
@@ -29,6 +32,7 @@ export interface SettingsState {
   setTheme: (theme: 'dark' | 'light' | 'system') => void
   setDailyReminders: (enabled: boolean) => void
   setWeeklySummaries: (enabled: boolean) => void
+  setRestDays: (days: string[]) => void
   setAnalyticsEnabled: (enabled: boolean) => void
   exportWeeklyReport: () => void
   loadFromDb: () => Promise<void>
@@ -45,6 +49,7 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
       ...(updates.dailyReminders !== undefined && { daily_reminders: updates.dailyReminders }),
       ...(updates.weeklySummaries !== undefined && { weekly_summaries: updates.weeklySummaries }),
       ...(updates.analyticsEnabled !== undefined && { analytics_enabled: updates.analyticsEnabled }),
+      ...(updates.restDays !== undefined && { rest_days: updates.restDays }),
     })
   } catch (e) {
     console.warn('Sync failed', e)
@@ -61,6 +66,7 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'dark',
       dailyReminders: true,
       weeklySummaries: true,
+      restDays: ['friday'],
       analyticsEnabled: false,
 
       setAiKey: async (provider, key) => {
@@ -116,6 +122,7 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => { set({ theme }); void syncSettingsToDb({ theme }) },
       setDailyReminders: (enabled) => { set({ dailyReminders: enabled }); void syncSettingsToDb({ dailyReminders: enabled }) },
       setWeeklySummaries: (enabled) => { set({ weeklySummaries: enabled }); void syncSettingsToDb({ weeklySummaries: enabled }) },
+      setRestDays: (days) => { set({ restDays: days }); void syncSettingsToDb({ restDays: days }) },
       setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); void syncSettingsToDb({ analyticsEnabled: enabled }) },
 
       loadFromDb: async () => {
@@ -137,6 +144,7 @@ export const useSettingsStore = create<SettingsState>()(
               dailyReminders: userSettings.daily_reminders ?? state.dailyReminders,
               weeklySummaries: userSettings.weekly_summaries ?? state.weeklySummaries,
               analyticsEnabled: userSettings.analytics_enabled ?? state.analyticsEnabled,
+              restDays: (userSettings.rest_days as string[]) ?? state.restDays,
             }))
           }
 
