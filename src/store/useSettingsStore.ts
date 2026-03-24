@@ -38,13 +38,14 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const payload: Record<string, unknown> = { user_id: user.id }
-    if (updates.theme !== undefined) payload.theme = updates.theme
-    if (updates.dailyReminders !== undefined) payload.daily_reminders = updates.dailyReminders
-    if (updates.weeklySummaries !== undefined) payload.weekly_summaries = updates.weeklySummaries
-    if (updates.analyticsEnabled !== undefined) payload.analytics_enabled = updates.analyticsEnabled
-    
-    await supabase.from('user_settings').upsert(payload as Parameters<typeof supabase.from<'user_settings'>>[0] extends never ? never : never)
+
+    await supabase.from('user_settings').upsert({
+      user_id: user.id,
+      ...(updates.theme !== undefined && { theme: updates.theme }),
+      ...(updates.dailyReminders !== undefined && { daily_reminders: updates.dailyReminders }),
+      ...(updates.weeklySummaries !== undefined && { weekly_summaries: updates.weeklySummaries }),
+      ...(updates.analyticsEnabled !== undefined && { analytics_enabled: updates.analyticsEnabled }),
+    })
   } catch (e) {
     console.warn('Sync failed', e)
   }

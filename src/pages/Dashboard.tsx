@@ -18,10 +18,12 @@ export function Dashboard() {
   const [isGeneratingChallenge, setIsGeneratingChallenge] = useState(false)
   const [isEditingChallenge, setIsEditingChallenge] = useState(false)
   const [manualChallenge, setManualChallenge] = useState('')
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const generateChallenge = async () => {
     if (!currentWeek || isGeneratingChallenge) return
     setIsGeneratingChallenge(true)
+    setAiError(null)
     try {
       const pendingTasks = currentWeek.days.flatMap(d => [d.highTask, ...d.mediumTasks, ...d.smallTasks])
         .filter(t => t?.status === 'pending')
@@ -35,8 +37,8 @@ export function Dashboard() {
       const desc = parts[1]?.replace(/^2\.\s*/, '').replace(/\*+/g, '') || 'Finish all your pending tasks before Friday.'
       
       await useWeekStore.getState().updateChallenge(title, desc)
-    } catch (e: any) {
-      alert(e.message) // Show error
+    } catch (e: unknown) {
+      setAiError(e instanceof Error ? e.message : 'Failed to generate challenge')
     } finally {
       setIsGeneratingChallenge(false)
     }
@@ -45,6 +47,7 @@ export function Dashboard() {
   const fetchInsight = async () => {
     if (!currentWeek || isInsightLoading) return
     setIsInsightLoading(true)
+    setAiError(null)
     const context = { title: currentWeek.title, score: currentWeek.score, completed: currentWeek.totalCompleted, planned: currentWeek.totalPlanned }
     try {
       const res = await sendMessage('insight', 'Give me a very short 2-sentence encouraging insight about my productivity this week based on the context data. Do not use quotes.', context)
@@ -87,6 +90,20 @@ export function Dashboard() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto p-8 space-y-12">
+        {/* AI Error Banner */}
+        {aiError && (
+          <div className="flex items-center gap-3 bg-error/10 border border-error/20 rounded-xl px-5 py-3">
+            <span className="material-symbols-outlined text-error text-xl shrink-0">error</span>
+            <p className="text-sm text-error flex-1">{aiError}</p>
+            <button
+              onClick={() => setAiError(null)}
+              className="text-error/60 hover:text-error transition-colors"
+              aria-label="Dismiss error"
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+        )}
         {/* Hero Stats */}
         <section className="flex justify-between items-end gap-8">
           <div className="flex-1">
