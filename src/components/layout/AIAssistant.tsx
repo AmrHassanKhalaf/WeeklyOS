@@ -4,7 +4,8 @@ import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
 
-type Tab = 'insights' | 'stats' | 'activity' | 'chat'
+type Tab = 'insights' | 'stats' | 'activity' | 'chat' | 'live'
+type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
 interface AIAssistantProps {
   variant?: 'default' | 'evaluation'
@@ -14,17 +15,21 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const [activeTab, setActiveTab] = useState<Tab>('insights')
   const [chatInput, setChatInput] = useState('')
   const [isAiTyping, setIsAiTyping] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
+  
+  // Voice Live State
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle')
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const chunkIdRef = useRef(0)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
+  const abortControllerRef = useRef<AbortController | null>(null)
   
   const [chatMessages, setChatMessages] = useState<{ role: 'ai' | 'user' | 'system'; text: string; provider?: string }[]>([
     {
       role: 'ai',
-      text: "Based on your activity data, I've noticed a significant trend. Your output on Wednesday was 45% lower than your average, and your biometric indicators suggest elevated stress.",
+      text: "Based on your activity data, I've noticed a significant trend. Your output on Wednesday was 45% lower than your average.",
     },
   ])
-  const { sendMessage } = useAiApi()
+  const { sendMessage, sendAudioChunk, streamVoiceResponse } = useAiApi()
   const navigate = useNavigate()
   const { isRightSidebarOpen, isFocusMode, toggleRightSidebar, closeSidebarsOnMobile } = useLayoutStore()
   const { currentWeek } = useWeekStore()
@@ -60,7 +65,12 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
       const { currentWeek } = useWeekStore.getState()
       const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score, days: currentWeek.days } : {}
       
-      const res = await sendMessage('chat', msg, context)
+      const history = chatMessages.filter(m => m.role !== 'system').map(m => ({ 
+        role: m.role === 'ai' ? 'assistant' : m.role, 
+        content: m.text 
+      }))
+
+      const res = await sendMessage('chat', msg, context, undefined, undefined, history)
       setChatMessages(prev => [...prev, { role: 'ai', text: res.response, provider: res.providerUsed }])
     } catch (e: any) {
       setChatMessages(prev => [...prev, { role: 'system', text: `System Error: ${e.message}` }])
@@ -70,59 +80,130 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   }
 
   const startRecording = async () => {
+    // Interrupt handling: If AI is speaking or processing, stop it
+    if (voiceState === 'speaking') {
+      window.speechSynthesis.cancel()
+    }
+    
+    if (voiceState === 'processing' || voiceState === 'speaking') {
+      abortControllerRef.current?.abort()
+      setVoiceState('idle')
+      if (voiceState === 'speaking') return // Just stop speaking if that was the goal
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
       mediaRecorderRef.current = recorder
-      audioChunksRef.current = []
+      
+      const sid = Math.random().toString(36).substring(7)
+      setSessionId(sid)
+      chunkIdRef.current = 0
+      setVoiceState('listening')
+      setActiveTab('live')
 
-      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data)
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-        const reader = new FileReader()
-        reader.readAsDataURL(audioBlob)
-        reader.onloadend = async () => {
-           const base64data = (reader.result as string).split(',')[1]
-           await handleVoiceMessage(base64data)
+      recorder.ondataavailable = async (e) => {
+        if (e.data.size > 0) {
+          const reader = new FileReader()
+          reader.readAsDataURL(e.data)
+          reader.onloadend = async () => {
+            const base64 = (reader.result as string).split(',')[1]
+            await sendAudioChunk(sid, chunkIdRef.current++, base64)
+          }
         }
       }
 
-      recorder.start()
-      setIsRecording(true)
+      recorder.start(1500) // 1.5s chunks
     } catch (e) {
-      console.error('Failed to start recording', e)
-      alert('Microphone access denied or unavailable.')
+      console.error('Mic error:', e)
+      setVoiceState('idle')
     }
   }
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+  const stopRecording = async () => {
+    if (mediaRecorderRef.current && voiceState === 'listening') {
       mediaRecorderRef.current.stop()
       mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop())
-      setIsRecording(false)
+      setVoiceState('processing')
+      
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
+      try {
+        const { currentWeek } = useWeekStore.getState()
+        const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score } : {}
+        
+        await streamVoiceResponse(sessionId!, context, (event, data) => {
+          if (event === 'text') {
+            setChatMessages(prev => [...prev, { role: 'ai', text: data.text, provider: data.providerUsed }])
+            speakResponse(data.text)
+          } else if (event === 'done') {
+            setVoiceState('idle')
+          } else if (event === 'error') {
+            setChatMessages(prev => [...prev, { role: 'system', text: `Error: ${data.message}` }])
+            setVoiceState('idle')
+          }
+        }, controller.signal)
+      } catch (e: any) {
+        if (e.name === 'AbortError') return
+        setChatMessages(prev => [...prev, { role: 'system', text: `Stream Error: ${e.message}` }])
+        setVoiceState('idle')
+      }
     }
   }
 
-  const handleVoiceMessage = async (base64audio: string) => {
-    if (isAiTyping) return
-    setActiveTab('chat')
-    setChatMessages(prev => [...prev, { role: 'user', text: '🎤 Voice Message' }])
-    
-    setIsAiTyping(true)
-    try {
-      const { currentWeek } = useWeekStore.getState()
-      const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score, days: currentWeek.days } : {}
-      
-      const res = await sendMessage('voice', '', context, 'gemini', base64audio)
-      setChatMessages(prev => [...prev, { role: 'ai', text: res.response, provider: res.providerUsed }])
-    } catch (e: any) {
-      setChatMessages(prev => [...prev, { role: 'system', text: `System Error: ${e.message}` }])
-    } finally {
-      setIsAiTyping(false)
-    }
+  const speakResponse = (text: string) => {
+    setVoiceState('speaking')
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'ar-SA' // Support Arabic
+    utterance.onend = () => setVoiceState('idle')
+    window.speechSynthesis.speak(utterance)
   }
 
   const quickActions = ['Optimize my schedule', 'Analyze my productivity', 'Plan my week']
+
+  // Custom component to format the AI's plain text response
+  const FormattedMessage = ({ text }: { text: string }) => {
+    if (!text) return null;
+    
+    const lines = text.split('\n');
+    const renderedElements = lines.map((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <div key={index} className="h-2" />; // Spacing for empty lines
+
+      // Handle bullet points
+      if (trimmed.startsWith('•')) {
+        return (
+          <li key={index} dir="auto" className="ml-2 mr-2 mb-1.5 flex items-start gap-2 text-start text-sm leading-relaxed text-on-surface/90">
+            <span className="text-primary mt-0.5 select-none">•</span>
+            <span className="flex-1">{trimmed.substring(1).trim()}</span>
+          </li>
+        );
+      }
+
+      // Handle sections with specific emojis (Theme, Score, Suggestions)
+      if (trimmed.includes('🌟') || trimmed.includes('📊') || trimmed.includes('⚡')) {
+        return (
+          <h4 key={index} dir="auto" className="font-semibold text-sm mb-2 mt-3 text-on-surface text-start">
+            {trimmed}
+          </h4>
+        );
+      }
+
+      // Default paragraph
+      return (
+        <p key={index} dir="auto" className="mb-2 text-sm leading-relaxed text-on-surface/90 text-start last:mb-0">
+          {trimmed}
+        </p>
+      );
+    });
+
+    return (
+      <div className="flex flex-col w-full font-['Inter']">
+        {renderedElements}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -142,7 +223,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
 
       {/* Tabs */}
       <nav className="flex gap-4 border-b border-white/5 px-6 pb-3 pt-4">
-        {(['insights', 'stats', 'activity', 'chat'] as Tab[]).map(tab => (
+        {(['insights', 'stats', 'activity', 'chat', 'live'] as Tab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -150,7 +231,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               activeTab === tab ? 'text-[#4EDEA3] font-bold' : 'text-neutral-500 hover:text-white'
             }`}
           >
-            {tab === 'insights' ? 'AI Insights' : tab === 'chat' ? 'Chat' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'insights' ? 'Insights' : tab === 'chat' ? 'Chat' : tab === 'live' ? 'Live' : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </nav>
@@ -290,30 +371,87 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               )}
             </div>
           )}
-          
-          {activeTab === 'chat' && (
-            <div className="space-y-4 pb-4">
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'max-w-[95%]'}`}>
-                  <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
-                    msg.role === 'ai'
-                      ? 'bg-surface-container-highest border border-white/5 rounded-tl-none'
-                      : msg.role === 'system'
-                      ? 'bg-error-container/20 text-error border border-error/20 rounded-tl-none'
-                      : 'bg-primary-container text-on-primary-container rounded-tr-none shadow-md'
+          {activeTab === 'live' && (
+            <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in zoom-in duration-300">
+              <div className="relative">
+                {/* Ping/Pulse Animations */}
+                {(voiceState === 'listening' || voiceState === 'speaking') && (
+                  <>
+                    <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${voiceState === 'listening' ? 'bg-primary' : 'bg-tertiary'}`} />
+                    <div className={`absolute -inset-4 rounded-full animate-pulse opacity-10 ${voiceState === 'listening' ? 'bg-primary' : 'bg-tertiary'}`} />
+                  </>
+                )}
+                
+                <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
+                  voiceState === 'idle' ? 'bg-surface-container-high' :
+                  voiceState === 'listening' ? 'bg-primary shadow-[0_0_40px_rgba(47,92,255,0.3)]' :
+                  voiceState === 'processing' ? 'bg-tertiary/20' :
+                  'bg-tertiary shadow-[0_0_40px_rgba(78,222,163,0.3)]'
+                }`}>
+                  <span className={`material-symbols-outlined text-4xl transition-all ${
+                     voiceState === 'idle' ? 'text-neutral-500' : 'text-white scale-110'
                   }`}>
-                    {msg.text}
-                    {msg.provider && <span className="block mt-2 text-[9px] uppercase tracking-widest opacity-50 text-right">via {msg.provider}</span>}
+                    {voiceState === 'idle' ? 'mic_off' : 
+                     voiceState === 'listening' ? 'mic' : 
+                     voiceState === 'processing' ? 'sync' : 'volume_up'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-bold text-on-surface">
+                  {voiceState === 'idle' ? 'Ready to talk?' :
+                   voiceState === 'listening' ? 'Listening...' :
+                   voiceState === 'processing' ? 'AI is thinking...' : 'AI is speaking'}
+                </h3>
+                <p className="text-xs text-neutral-500 uppercase tracking-widest px-4">
+                  {voiceState === 'idle' ? 'Tap the mic below to start a live conversation' :
+                   voiceState === 'listening' ? 'Speak clearly, I am recording' :
+                   voiceState === 'processing' ? 'Analyzing your request' : 'Listen to my response'}
+                </p>
+              </div>
+
+              {/* Mini history or live text indicator */}
+              <div className="w-full px-6 pt-4">
+                 <div className="h-20 overflow-hidden bg-black/20 rounded-xl p-3 border border-white/5">
+                    <p className="text-[10px] text-neutral-400 italic">
+                       {chatMessages[chatMessages.length-1]?.text || "No transcription yet..."}
+                    </p>
+                 </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'chat' && (
+            <div className="space-y-6 pb-4">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start max-w-[95%]'}`}>
+                  <div className={`p-4 rounded-2xl shadow-sm ${
+                    msg.role === 'ai'
+                      ? 'bg-surface-container-highest border border-white/5 rounded-tl-[4px] w-full'
+                      : msg.role === 'system'
+                      ? 'bg-error-container/10 text-error border border-error/20 rounded-tl-[4px]'
+                      : 'bg-[#2F5CFF] text-white rounded-tr-[4px] px-5 py-3'
+                  }`}>
+                    {msg.role === 'ai' || msg.role === 'system' ? (
+                      <FormattedMessage text={msg.text} />
+                    ) : (
+                      <div dir="auto" className="text-sm leading-relaxed text-start">{msg.text}</div>
+                    )}
+                    {msg.provider && (
+                      <div className="w-full mt-3 pt-2 border-t border-white/5 flex justify-end">
+                        <span className="text-[9px] font-medium uppercase tracking-widest text-[#4EDEA3]/50">
+                          {msg.provider}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
               {isAiTyping && (
-                <div className="flex flex-col gap-2 max-w-[90%]">
-                  <div className="p-3 bg-surface-container-high rounded-2xl rounded-tl-none text-sm text-neutral-400">
-                    <span className="animate-pulse flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm text-[#4EDEA3]">smart_toy</span>
-                      Processing data...
-                    </span>
+                <div className="flex flex-col gap-2 max-w-[90%] items-start">
+                  <div className="p-4 bg-surface-container-high border border-white/5 rounded-2xl rounded-tl-[4px] text-sm text-neutral-400 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-sm text-[#4EDEA3] animate-pulse">smart_toy</span>
+                    <span className="animate-pulse">Processing context...</span>
                   </div>
                 </div>
               )}
@@ -346,18 +484,25 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             value={chatInput}
             onChange={e => setChatInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-            placeholder={isRecording ? 'Listening...' : variant === 'evaluation' ? 'Ask AI Assistant...' : 'Ask AI anything...'}
-            disabled={isRecording}
+            placeholder={voiceState === 'listening' ? 'Listening...' : variant === 'evaluation' ? 'Ask AI Assistant...' : 'Ask AI anything...'}
+            disabled={voiceState === 'listening'}
             className={`w-full bg-surface-container-highest border border-white/5 rounded-xl py-2.5 text-xs focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors outline-none placeholder:text-neutral-600 text-on-surface ${
               variant === 'default' ? 'pl-9 pr-10' : 'pl-4 pr-16'
             }`}
           />
           <div className="absolute right-2 flex items-center gap-1">
             <button 
-              onClick={isRecording ? stopRecording : startRecording} 
-              className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${isRecording ? 'text-error animate-pulse bg-error/10' : 'text-neutral-500 hover:text-white'}`}
+              onClick={voiceState === 'listening' ? stopRecording : startRecording} 
+              className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
+                voiceState === 'listening' ? 'text-error animate-pulse bg-error/10' : 
+                voiceState === 'speaking' ? 'text-tertiary bg-tertiary/10' :
+                'text-neutral-500 hover:text-white'
+              }`}
             >
-              <span className="material-symbols-outlined text-[18px]">{isRecording ? 'stop_circle' : 'mic'}</span>
+              <span className="material-symbols-outlined text-[18px]">
+                {voiceState === 'listening' ? 'stop_circle' : 
+                 voiceState === 'speaking' ? 'close' : 'mic'}
+              </span>
             </button>
             {variant === 'evaluation' && (
               <button onClick={() => handleSendMessage()} className="p-1.5 text-primary hover:scale-110 transition-transform">

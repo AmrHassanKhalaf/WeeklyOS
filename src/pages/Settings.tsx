@@ -23,8 +23,21 @@ export function Settings() {
   }, [settings.activeProvider, settings.activeModel])
 
   // Determine if it's a custom model
-  const predefinedGemini = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash']
-  const predefinedGrok = ['grok-2', 'grok-2-mini']
+  const predefinedGemini = [
+    'gemini-flash-latest', 
+    'gemini-3.1-pro-preview', 
+    'gemini-3-flash-preview', 
+    'gemini-2.5-pro', 
+    'gemini-2.5-flash', 
+    'gemini-2.5-flash-lite',
+    'gemini-live-2.5-flash-native-audio'
+  ]
+  const predefinedGrok = [
+    'grok-4', 
+    'grok-4.1-fast', 
+    'grok-4-vision', 
+    'grok-code-fast-1'
+  ]
   const isCustom = localProvider === 'gemini' 
     ? !predefinedGemini.includes(localModel)
     : !predefinedGrok.includes(localModel)
@@ -128,15 +141,21 @@ export function Settings() {
                     >
                       {localProvider === 'grok' && (
                         <>
-                          <option value="grok-2">grok-2</option>
-                          <option value="grok-2-mini">grok-2-mini</option>
+                          <option value="grok-4">grok-4</option>
+                          <option value="grok-4.1-fast">grok-4.1-fast</option>
+                          <option value="grok-4-vision">grok-4-vision</option>
+                          <option value="grok-code-fast-1">grok-code-fast-1</option>
                         </>
                       )}
                       {localProvider === 'gemini' && (
                         <>
-                           <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-                           <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                           <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                           <option value="gemini-flash-latest">gemini-flash-latest</option>
+                           <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+                           <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
+                           <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                           <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                           <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                           <option value="gemini-live-2.5-flash-native-audio">gemini-live-audio</option>
                         </>
                       )}
                       <option value="custom">Other (Custom...)</option>
