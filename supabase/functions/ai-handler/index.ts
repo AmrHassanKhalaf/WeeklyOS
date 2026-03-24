@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.0"
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,6 +47,7 @@ serve(async (req: Request) => {
 
     const reqData = await req.json()
     const { type, sessionId, chunkId, chunkData, context, overrideProvider, model } = reqData
+    console.log("AI Handler Request:", { type, sessionId, model })
 
     // 1. Common Settings Fetch
     const [settingsRes, keysRes] = await Promise.all([
@@ -77,7 +78,10 @@ serve(async (req: Request) => {
       })
 
       const chat = geminiModel.startChat({
-        history: history || [],
+        history: (history || []).map((m: any) => ({
+            role: (m.role === 'assistant' || m.role === 'ai' || m.role === 'model') ? 'model' : 'user',
+            parts: [{ text: m.content || m.text || '' }]
+        })),
       })
 
       const result = await chat.sendMessage(input)
