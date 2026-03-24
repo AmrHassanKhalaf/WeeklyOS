@@ -1,11 +1,20 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { DayCardDistribution } from '../components/DayCardDistribution'
 import { useWeekStore } from '../store/useWeekStore'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAiApi } from '../hooks/useApi'
+import { useBrainDumpStore } from '../store/useBrainDumpStore'
+import { useSettingsStore } from '../store/useSettingsStore'
 
 export function WeeklyDistribution() {
-  const { currentWeek, isLoadingWeek, brainDumpItems, createTask, toggleBrainDumpSelection, deleteSelectedBrainDumpItems } = useWeekStore()
+  const { currentWeek, isLoadingWeek, createTask } = useWeekStore()
+  const { brainDumpItems, loadItems, deleteSelected, toggleSelection } = useBrainDumpStore()
+  const { restDays } = useSettingsStore()
+  
+  useEffect(() => {
+    loadItems()
+  }, [loadItems])
+
   const [isDistributing, setIsDistributing] = useState(false)
   const { sendMessage } = useAiApi()
 
@@ -21,20 +30,20 @@ Rules:
 - 5 small tasks (Low priority)
 
 Input:
-Brain dump items: ${brainDumpItems.map(i => i.title).join(', ')}
+Brain dump items: ${brainDumpItems.map((i: any) => i.content).join(', ')}
 
 Output requirements:
 Return exactly one JSON object with a "tasks" array.
 Each object in the array MUST have:
 - title: string
 - priority: "high" | "medium" | "low"
-- day: "saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday"
+- day: "saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday"
 - estimatedTime: optional string (e.g. "1h", "30m")
 
 Make sure:
 - Avoid overloading any day
 - Balance workload logically
-- DO NOT assign tasks to "friday" (REST DAY)`
+- DO NOT assign tasks to rest days: ${restDays.join(', ')}`
 
     try {
       const res = await sendMessage('schedule', prompt, { dateRange: currentWeek.dateRange })
@@ -48,6 +57,7 @@ Make sure:
       }
 
       const tasksToCreate = parsed.tasks || (Array.isArray(parsed) ? parsed : [])
+
       for (const t of tasksToCreate) {
         if (!t.title || !t.priority || !t.day) continue
         await createTask({
@@ -59,10 +69,10 @@ Make sure:
       }
       
       // Auto-clear brain dump after successful distribution
-      brainDumpItems.forEach(item => {
-        if (!item.selected) toggleBrainDumpSelection(item.id)
+      brainDumpItems.forEach((item: any) => {
+        if (!item.selected) toggleSelection(item.id)
       })
-      await deleteSelectedBrainDumpItems()
+      await deleteSelected()
 
     } catch (e: any) {
       alert("Failed to auto-distribute: " + e.message)
@@ -83,7 +93,6 @@ Make sure:
     )
   }
 
-  const [sat, sun, mon, tue, wed, thu, fri] = currentWeek.days
 
   return (
     <AppLayout>
@@ -119,18 +128,19 @@ Make sure:
           </div>
         </div>
 
-        {/* 2-col day grid */}
+        {/* Day grid */}
         <div className="flex-1 px-8 pb-8 overflow-y-auto custom-scrollbar">
           <div className="grid grid-cols-2 gap-6 pb-12">
-            <DayCardDistribution day={sat} />
-            <DayCardDistribution day={sun} />
-            <DayCardDistribution day={mon} />
-            <DayCardDistribution day={tue} />
-            <DayCardDistribution day={wed} isHighOutputZone={wed.isToday} />
-            <DayCardDistribution day={thu} />
-            <div className="col-span-2">
-              <DayCardDistribution day={fri} />
-            </div>
+            {currentWeek.days.map((dayData) => (
+              <DayCardDistribution 
+                key={dayData.day} 
+                day={{
+                  ...dayData,
+                  isRestDay: (restDays || []).includes(dayData.day)
+                }}
+                isHighOutputZone={dayData.isToday}
+              />
+            ))}
           </div>
         </div>
       </div>

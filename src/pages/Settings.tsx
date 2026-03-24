@@ -231,7 +231,7 @@ export function Settings() {
                 <span className="material-symbols-outlined">notifications</span>
                 <h2 className="text-sm font-bold uppercase tracking-widest">Notifications</h2>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Toggle 
                   label="Daily Reminders" 
                   desc="Get notified about your main objective every morning."
@@ -246,6 +246,42 @@ export function Settings() {
                 />
               </div>
             </div>
+
+            {/* Work Schedule */}
+            <div>
+              <div className="flex items-center gap-3 text-primary mb-6">
+                <span className="material-symbols-outlined">calendar_month</span>
+                <h2 className="text-sm font-bold uppercase tracking-widest">Work Schedule</h2>
+              </div>
+              <div className="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-4">
+                <p className="text-xs text-neutral-500 mb-2">Select your rest days. These days will be marked as "Rest Day" on your dashboard.</p>
+                <div className="flex flex-wrap gap-2">
+                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                    const isRest = (settings.restDays || []).includes(day)
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => {
+                          const current = settings.restDays || []
+                          const next = isRest 
+                            ? current.filter(d => d !== day)
+                            : [...current, day]
+                          settings.setRestDays(next)
+                        }}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                          isRest 
+                            ? 'bg-primary/20 text-primary border-primary/30' 
+                            : 'bg-surface-container-highest/50 text-neutral-500 border-transparent hover:bg-surface-container-highest'
+                        }`}
+                      >
+                        {day.slice(0, 3)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
 
             {/* Privacy & Data */}
             <div>

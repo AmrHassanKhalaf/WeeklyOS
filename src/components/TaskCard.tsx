@@ -1,5 +1,4 @@
-import type { BrainDumpItem } from '../store/useWeekStore'
-import { useWeekStore } from '../store/useWeekStore'
+import { useBrainDumpStore, BrainDumpItem } from '../store/useBrainDumpStore'
 import { useState, useRef, useEffect } from 'react'
 
 interface TaskCardProps {
@@ -7,9 +6,9 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ item }: TaskCardProps) {
-  const { toggleBrainDumpSelection, removeBrainDumpItem, updateBrainDumpItem } = useWeekStore()
+  const { toggleSelection, removeItem, updateItem } = useBrainDumpStore()
   const [isEditing, setIsEditing] = useState(false)
-  const [editValue, setEditValue] = useState(item.title)
+  const [editValue, setEditValue] = useState(item.content)
   const [editTags, setEditTags] = useState<string[]>(item.tags || [])
   const [newTag, setNewTag] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -21,16 +20,16 @@ export function TaskCard({ item }: TaskCardProps) {
 
   const commitEdit = async () => {
     setIsEditing(false)
-    const titleChanged = editValue.trim() && editValue.trim() !== item.title
+    const titleChanged = editValue.trim() && editValue.trim() !== item.content
     const tagsChanged = JSON.stringify(editTags) !== JSON.stringify(item.tags || [])
 
     if (titleChanged || tagsChanged) {
-      await updateBrainDumpItem(item.id, { 
-        title: editValue.trim() || item.title, 
+      await updateItem(item.id, { 
+        content: editValue.trim() || item.content, 
         tags: editTags 
       })
     } else {
-      setEditValue(item.title)
+      setEditValue(item.content)
       setEditTags(item.tags || [])
     }
   }
@@ -50,7 +49,7 @@ export function TaskCard({ item }: TaskCardProps) {
     if (e.key === 'Enter') commitEdit()
     if (e.key === 'Escape') { 
       setIsEditing(false)
-      setEditValue(item.title)
+      setEditValue(item.content)
       setEditTags(item.tags || [])
     }
   }
@@ -69,7 +68,7 @@ export function TaskCard({ item }: TaskCardProps) {
           ? 'bg-surface-container-high border-primary-container shadow-xl shadow-black/20 cursor-pointer'
           : 'bg-surface-container-low border-transparent hover:bg-surface-container-high hover:border-primary-container cursor-pointer'
       }`}
-      onClick={() => !isEditing && toggleBrainDumpSelection(item.id)}
+      onClick={() => !isEditing && toggleSelection(item.id)}
     >
       {/* Checkbox */}
       <div className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors flex-shrink-0 ${
@@ -124,7 +123,7 @@ export function TaskCard({ item }: TaskCardProps) {
             </div>
           </div>
         ) : (
-          <p className="text-sm font-medium text-on-surface w-full">{item.title}</p>
+          <p className="text-sm font-medium text-on-surface w-full">{item.content}</p>
         )}
         {!isEditing && item.tags && item.tags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap mt-1">
@@ -143,14 +142,14 @@ export function TaskCard({ item }: TaskCardProps) {
         onClick={e => e.stopPropagation()}
       >
         <button
-          onClick={() => { setIsEditing(true); setEditValue(item.title); setEditTags(item.tags || []) }}
+          onClick={() => { setIsEditing(true); setEditValue(item.content); setEditTags(item.tags || []) }}
           className="material-symbols-outlined text-outline hover:text-white transition-colors text-xl"
           title="Edit"
         >
           edit
         </button>
         <button
-          onClick={() => removeBrainDumpItem(item.id)}
+          onClick={() => removeItem(item.id)}
           className="material-symbols-outlined text-outline hover:text-error transition-colors text-xl"
           title="Delete"
         >

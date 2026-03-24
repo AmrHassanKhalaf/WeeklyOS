@@ -84,10 +84,7 @@ interface WeekStore {
   currentWeek: WeekData | null
   isLoadingWeek: boolean
   weekError: string | null
-  isSyncing: boolean // Added for optimistic updates
-
-  brainDumpItems: BrainDumpItem[]
-  isLoadingBrainDump: boolean
+  isSyncing: boolean
 
   pomodoroTime: number
   isPomodoroRunning: boolean
@@ -107,13 +104,6 @@ interface WeekStore {
   updateDailyNote: (day: DayOfWeek, note: string) => Promise<void>
   toggleChallengeComplete: () => Promise<void>
 
-  // Brain dump CRUD
-  addBrainDumpItem: (content: string) => Promise<void>
-  removeBrainDumpItem: (id: string) => Promise<void>
-  updateBrainDumpItem: (id: string, updates: Partial<{ title: string; tags: string[] }>) => Promise<void>
-  toggleBrainDumpSelection: (id: string) => void
-  deleteSelectedBrainDumpItems: () => Promise<void>
-
   // Pomodoro (local only)
   startPomodoro: () => void
   stopPomodoro: () => void
@@ -125,6 +115,7 @@ interface WeekStore {
 
   // Challenge & Evaluation
   updateChallenge: (title: string, desc?: string) => Promise<void>
+  updateChallengeProgress: (progress: number) => Promise<void>
   updateEvaluation: (type: 'wentWell' | 'struggle' | 'lessons', text: string) => Promise<void>
 }
 
@@ -210,7 +201,7 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
       date: dateStr,
       shortName: DAY_SHORT[idx],
       isToday: isCurrentWeek && idx === todayIdx,
-      isRestDay: day === 'friday',
+      isRestDay: false,
       progress: 0, 
       highTask: undefined,
       mediumTasks: [],
@@ -287,8 +278,6 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     isLoadingWeek: true,
     weekError: null,
     isSyncing: false,
-    brainDumpItems: [],
-    isLoadingBrainDump: true,
     pomodoroTime: 25 * 60,
     isPomodoroRunning: false,
 
@@ -374,21 +363,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         set({ weekError: (err as Error).message, isLoadingWeek: false })
       }
 
-      // 4. Brain dump
-      const { data: bdItems, error: bdErr } = await supabase
-        .from('brain_dump')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (!bdErr && bdItems) {
-        set({
-          brainDumpItems: bdItems.map(b => ({ id: b.id, title: b.content ?? '', tags: b.tags || [] })),
-          isLoadingBrainDump: false,
-        })
-      } else {
-        set({ isLoadingBrainDump: false })
-      }
+      // 4. Brain dump (MIGRATED to useBrainDumpStore)
     },
 
     cleanup: () => {
@@ -718,63 +693,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       if (error) console.error('[toggleChallengeComplete]', error)
     },
 
-    // ── Brain dump CRUD ────────────────────────────────────────────────────────
-
-    addBrainDumpItem: async (content: string) => {
-      if (!content.trim()) return
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data, error } = await supabase
-        .from('brain_dump')
-        .insert({ user_id: user.id, content: content.trim() })
-        .select()
-        .single()
-
-      if (error) { console.error('[addBrainDumpItem]', error); return }
-      if (data) {
-        set(state => ({
-          brainDumpItems: [{ id: data.id, title: data.content ?? content }, ...state.brainDumpItems],
-        }))
-      }
-    },
-
-    removeBrainDumpItem: async (id: string) => {
-      await supabase.from('brain_dump').delete().eq('id', id)
-      set(state => ({ brainDumpItems: state.brainDumpItems.filter(i => i.id !== id) }))
-    },
-
-    updateBrainDumpItem: async (id: string, updates: Partial<{ title: string; tags: string[] }>) => {
-      const payload: Record<string, any> = {}
-      if (updates.title !== undefined) payload.content = updates.title.trim()
-      if (updates.tags !== undefined) payload.tags = updates.tags
-
-      if (Object.keys(payload).length > 0) {
-        const { error } = await supabase.from('brain_dump').update(payload).eq('id', id)
-        if (error) {
-          console.error('[updateBrainDumpItem]', error)
-          return
-        }
-      }
-      set(state => ({
-        brainDumpItems: state.brainDumpItems.map(i => i.id === id ? { ...i, ...updates } : i),
-      }))
-    },
-
-    toggleBrainDumpSelection: (id: string) =>
-      set(state => ({
-        brainDumpItems: state.brainDumpItems.map(i =>
-          i.id === id ? { ...i, selected: !i.selected } : i,
-        ),
-      })),
-
-    deleteSelectedBrainDumpItems: async () => {
-      const selected = get().brainDumpItems.filter(i => i.selected)
-      if (!selected.length) return
-
-      await supabase.from('brain_dump').delete().in('id', selected.map(i => i.id))
-      set(state => ({ brainDumpItems: state.brainDumpItems.filter(i => !i.selected) }))
-    },
+    // ── Challenge & Evaluation ──────────────────────────────────────────────────
 
     updateChallenge: async (title: string, desc?: string) => {
       const { currentWeek } = get()
@@ -798,6 +717,22 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }).eq('id', currentWeek.id)
 
       if (error) console.error('updateChallenge error', error)
+    },
+    updateChallengeProgress: async (progress: number) => {
+      const { currentWeek } = get()
+      if (!currentWeek) return
+      
+      const newProgress = Math.min(100, Math.max(0, progress))
+
+      set(state => ({
+        currentWeek: state.currentWeek ? { ...state.currentWeek, challengeProgress: newProgress } : null
+      }))
+
+      const { error } = await supabase.from('weeks').update({
+        challenge_progress: newProgress
+      }).eq('id', currentWeek.id)
+
+      if (error) console.error('updateChallengeProgress error', error)
     },
 
     updateEvaluation: async (type: 'wentWell' | 'struggle' | 'lessons', text: string) => {

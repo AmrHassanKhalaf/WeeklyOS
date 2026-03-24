@@ -8,22 +8,9 @@ import { SignIn } from './pages/SignIn'
 import { Dashboard } from './pages/Dashboard'
 import { WeeklyDistribution } from './pages/WeeklyDistribution'
 import { FocusedDay } from './pages/FocusedDay'
-
 import { BrainDump } from './pages/BrainDump'
 import { WeeklyEvaluation } from './pages/WeeklyEvaluation'
 import { Settings } from './pages/Settings'
-
-function RoadmapPlaceholder() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <span className="material-symbols-outlined text-6xl text-primary mb-4 block">map</span>
-        <h1 className="text-2xl font-bold mb-2">Roadmap</h1>
-        <p className="text-neutral-500">Coming soon based on your long-term goals.</p>
-      </div>
-    </div>
-  )
-}
 
 function LoadingScreen() {
   return (
@@ -65,7 +52,6 @@ function AppRouter() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/weekly-distribution" element={<WeeklyDistribution />} />
       <Route path="/focused-day" element={<FocusedDay />} />
-      <Route path="/roadmap" element={<RoadmapPlaceholder />} />
       <Route path="/brain-dump" element={<BrainDump />} />
       <Route path="/weekly-evaluation" element={<WeeklyEvaluation />} />
       <Route path="/settings" element={<Settings />} />
@@ -85,4 +71,3 @@ export default function App() {
     </BrowserRouter>
   )
 }
-

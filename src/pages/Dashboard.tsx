@@ -4,6 +4,8 @@ import { useWeekStore } from '../store/useWeekStore'
 import { useAiApi } from '../hooks/useApi'
 import { useState } from 'react'
 
+import { useSettingsStore } from '../store/useSettingsStore'
+
 function LoadingCard() {
   return (
     <div className="rounded-xl bg-surface-container-low border border-white/5 h-32 animate-pulse" />
@@ -11,7 +13,8 @@ function LoadingCard() {
 }
 
 export function Dashboard() {
-  const { currentWeek, isLoadingWeek, deleteWeekData, toggleChallengeComplete } = useWeekStore()
+  const { currentWeek, isLoadingWeek, deleteWeekData, toggleChallengeComplete, updateChallengeProgress } = useWeekStore()
+  const { restDays } = useSettingsStore()
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
   const [isInsightLoading, setIsInsightLoading] = useState(false)
@@ -34,7 +37,7 @@ export function Dashboard() {
       // Expected response format: 2 lines
       const parts = res.response.split('\n').filter((s: string) => s.trim())
       const title = parts[0]?.replace(/^1\.\s*/, '').replace(/\*+/g, '') || 'Clear the Backlog'
-      const desc = parts[1]?.replace(/^2\.\s*/, '').replace(/\*+/g, '') || 'Finish all your pending tasks before Friday.'
+      const desc = parts[1]?.replace(/^2\.\s*/, '').replace(/\*+/g, '') || 'Finish all your pending tasks before your rest days.'
       
       await useWeekStore.getState().updateChallenge(title, desc)
     } catch (e: unknown) {
@@ -85,7 +88,6 @@ export function Dashboard() {
     )
   }
 
-  const [sat, sun, mon, tue, wed, thu, fri] = currentWeek.days
 
   return (
     <AppLayout>
@@ -178,6 +180,20 @@ export function Dashboard() {
                         </span>
                       </div>
                     </div>
+                    <div className="flex items-center gap-1.5 ml-4">
+                      <button 
+                        onClick={() => updateChallengeProgress((currentWeek.challengeProgress || 0) - 5)}
+                        className="w-6 h-6 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-xs">remove</span>
+                      </button>
+                      <button 
+                        onClick={() => updateChallengeProgress((currentWeek.challengeProgress || 0) + 5)}
+                        className="w-6 h-6 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-xs">add</span>
+                      </button>
+                    </div>
                     <span>{currentWeek.challengeProgress}%</span>
                   </div>
                   <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
@@ -252,13 +268,15 @@ export function Dashboard() {
 
         {/* Day Cards */}
         <section className="space-y-6">
-          <DayCard day={sat} />
-          <DayCard day={sun} />
-          <DayCard day={mon} />
-          <DayCard day={tue} />
-          <DayCard day={wed} />
-          <DayCard day={thu} />
-          <DayCard day={{...fri, isRestDay: true}} />
+          {currentWeek.days.map((dayData) => (
+            <DayCard 
+              key={dayData.day} 
+              day={{
+                ...dayData, 
+                isRestDay: (restDays || []).includes(dayData.day)
+              }} 
+            />
+          ))}
         </section>
 
         {/* Bottom Stats */}

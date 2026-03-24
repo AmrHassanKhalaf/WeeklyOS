@@ -2,10 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { TaskCard } from '../components/TaskCard'
-import { useWeekStore } from '../store/useWeekStore'
+import { useBrainDumpStore } from '../store/useBrainDumpStore'
+import { useEffect } from 'react'
 
 export function BrainDump() {
-  const { brainDumpItems, isLoadingBrainDump, deleteSelectedBrainDumpItems, addBrainDumpItem, updateBrainDumpItem } = useWeekStore()
+  const { brainDumpItems, isLoading, loadItems, addItem, updateItem, deleteSelected } = useBrainDumpStore()
+  
+  useEffect(() => {
+    loadItems()
+  }, [loadItems])
+
   const [inputValue, setInputValue] = useState('')
   const [isStructuring, setIsStructuring] = useState(false)
   const [quickInput, setQuickInput] = useState('')
@@ -14,11 +20,10 @@ export function BrainDump() {
   const selectedCount = brainDumpItems.filter(i => i.selected).length
 
   const handleStructure = async () => {
-    if (!inputValue.trim() || isStructuring) return
     setIsStructuring(true)
     const lines = inputValue.split('\n').filter(l => l.trim())
     for (const line of lines) {
-      await addBrainDumpItem(line.trim())
+      await addItem(line.trim())
     }
     setInputValue('')
     setIsStructuring(false)
@@ -31,7 +36,7 @@ export function BrainDump() {
   }
 
   const handleQuickAdd = async () => {
-    if (quickInput.trim()) await addBrainDumpItem(quickInput.trim())
+    if (quickInput.trim()) await addItem(quickInput.trim())
     setQuickInput('')
     setShowQuickInput(false)
   }
@@ -91,7 +96,7 @@ export function BrainDump() {
 
         {/* Task List */}
         <div className="space-y-4">
-          {isLoadingBrainDump ? (
+          {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-16 bg-surface-container-low rounded-xl animate-pulse border border-white/5" />
             ))
@@ -106,7 +111,7 @@ export function BrainDump() {
           )}
 
           {/* Quick add inline input */}
-          {!isLoadingBrainDump && (
+          {!isLoading && (
             showQuickInput ? (
               <div className="p-5 border-2 border-primary/30 border-dashed rounded-xl">
                 <input
@@ -146,7 +151,7 @@ export function BrainDump() {
                 const selected = brainDumpItems.filter(i => i.selected)
                 await Promise.all(selected.map(item => {
                   const newTags = Array.from(new Set([...(item.tags || []), tag.trim()]))
-                  return updateBrainDumpItem(item.id, { tags: newTags })
+                  return updateItem(item.id, { tags: newTags })
                 }))
               }
             }}
@@ -157,7 +162,7 @@ export function BrainDump() {
           </button>
           <div className="w-[1px] h-8 bg-surface-variant mx-1" />
           <button
-            onClick={deleteSelectedBrainDumpItems}
+            onClick={deleteSelected}
             className="flex items-center gap-2 px-6 py-3 bg-error-container text-on-error-container rounded-xl text-xs font-bold hover:opacity-90 transition-colors"
           >
             <span className="material-symbols-outlined text-lg">delete_sweep</span>
