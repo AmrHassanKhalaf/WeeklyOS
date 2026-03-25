@@ -16,7 +16,7 @@ export function GeminiLiveAssistant({ onClose }: GeminiLiveAssistantProps) {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const processorRef = useRef<AudioWorkletNode | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const audioOutPoolRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
@@ -60,9 +60,40 @@ export function GeminiLiveAssistant({ onClose }: GeminiLiveAssistantProps) {
       const audioCtx = new AudioContext({ sampleRate: 16000 });
       audioContextRef.current = audioCtx;
       
+      // Load the AudioWorklet
+      await audioCtx.audioWorklet.addModule('/audio-processor.js');
+      
       const source = audioCtx.createMediaStreamSource(stream);
-      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
+      const workletNode = new AudioWorkletNode(audioCtx, 'audio-processor');
+      processorRef.current = workletNode;
+
+      // Handle messages from the AudioWorklet
+      workletNode.port.onmessage = (event) => {
+        if (event.data.type === 'audioData') {
+          const int16 = new Int16Array(event.data.data);
+          const rms = event.data.rms;
+          setVolume(rms);
+
+          // VAD Logic (1.5s Silence)
+          if (rms > silenceThreshold) {
+            lastActiveTimeRef.current = Date.now();
+          } else if (Date.now() - lastActiveTimeRef.current > silenceDuration) {
+            // Trigger response if we were actually receiving meaningful audio
+          }
+
+          if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(int16.buffer)));
+            socketRef.current.send(JSON.stringify({
+              realtime_input: {
+                media_chunks: [{ mime_type: "audio/pcm", data: base64 }]
+              }
+            }));
+          }
+        }
+      };
+      
+      source.connect(workletNode);
+      workletNode.connect(audioCtx.destination);
 
       const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
       if (!apiKey) throw new Error("VITE_GEMINI_API_KEY missing");
@@ -82,7 +113,7 @@ export function GeminiLiveAssistant({ onClose }: GeminiLiveAssistantProps) {
         setState('listening');
         const setupMsg = {
           setup: {
-            model: "models/gemini-2.5-flash-native-audio", 
+            model: "models/gemini-live-2.5-flash-native-audio", 
             generation_config: { response_modalities: ["audio"] },
             system_instruction: {
                 parts: [{ 
@@ -97,9 +128,6 @@ export function GeminiLiveAssistant({ onClose }: GeminiLiveAssistantProps) {
           }
         };
         socket.send(JSON.stringify(setupMsg));
-        
-        source.connect(processor);
-        processor.connect(audioCtx.destination);
       };
 
       socket.onmessage = async (event) => {
@@ -123,34 +151,6 @@ export function GeminiLiveAssistant({ onClose }: GeminiLiveAssistantProps) {
             }
           }
         } catch (e) { console.error("Msg Error", e); }
-      };
-
-      processor.onaudioprocess = (e) => {
-        if (state !== 'listening') return;
-        
-        const input = e.inputBuffer.getChannelData(0);
-        let sum = 0;
-        for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
-        const rms = Math.sqrt(sum / input.length);
-        setVolume(rms);
-
-        // VAD Logic (1.5s Silence)
-        if (rms > silenceThreshold) {
-          lastActiveTimeRef.current = Date.now();
-        } else if (Date.now() - lastActiveTimeRef.current > silenceDuration) {
-          // Trigger response if we were actually receiving meaningful audio
-        }
-
-        if (socket.readyState === WebSocket.OPEN) {
-          const int16 = new Int16Array(input.length);
-          for(let i=0; i<input.length; i++) int16[i] = input[i] * 32767;
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(int16.buffer)));
-          socket.send(JSON.stringify({
-            realtime_input: {
-                media_chunks: [{ mime_type: "audio/pcm", data: base64 }]
-            }
-          }));
-        }
       };
 
       const playNextChunk = () => {

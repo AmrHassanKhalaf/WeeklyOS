@@ -28,27 +28,47 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Extract JWT from Authorization header
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-        console.error("Missing Authorization header");
-        throw new Error('Unauthorized');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Missing or invalid authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
+    const jwt = authHeader.replace('Bearer ', '')
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+    // Create authenticated Supabase client with user's JWT
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } }
+    })
 
-    // Verify User via Anon Client to be safe
-    const { data: { user }, error: authError } = await createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: authHeader } }
-    }).auth.getUser();
-    
-    if (authError || !user) {
-        console.error("Auth Error:", authError?.message);
-        throw new Error('Unauthorized');
+    // Verify the user is authenticated
+
+    const jwt = authHeader.replace('Bearer ', '')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+    // Create authenticated Supabase client with user's JWT
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } }
+    })
+
+    // Verify the user is authenticated
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+
+    if (userError || !user) {
+      console.error("User auth error:", userError)
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
+
+    console.log(`Processing request for user ${user.id}`);
 
     const reqData = await req.json()
     const { type, sessionId, chunkId, chunkData, context, overrideProvider, model } = reqData

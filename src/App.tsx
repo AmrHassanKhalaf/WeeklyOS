@@ -1,16 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useWeekStore } from './store/useWeekStore'
 import { useSettingsStore } from './store/useSettingsStore'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { SignIn } from './pages/SignIn'
-import { Dashboard } from './pages/Dashboard'
-import { WeeklyDistribution } from './pages/WeeklyDistribution'
-import { FocusedDay } from './pages/FocusedDay'
-import { BrainDump } from './pages/BrainDump'
-import { WeeklyEvaluation } from './pages/WeeklyEvaluation'
-import { Settings } from './pages/Settings'
+
+const SignIn = lazy(() => import('./pages/SignIn').then(m => ({ default: m.SignIn })))
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
+const WeeklyDistribution = lazy(() => import('./pages/WeeklyDistribution').then(m => ({ default: m.WeeklyDistribution })))
+const FocusedDay = lazy(() => import('./pages/FocusedDay').then(m => ({ default: m.FocusedDay })))
+const BrainDump = lazy(() => import('./pages/BrainDump').then(m => ({ default: m.BrainDump })))
+const WeeklyEvaluation = lazy(() => import('./pages/WeeklyEvaluation').then(m => ({ default: m.WeeklyEvaluation })))
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
 
 function LoadingScreen() {
   return (
@@ -47,7 +48,8 @@ function AppRouter() {
   if (!user) return <SignIn />
 
   return (
-    <Routes>
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/weekly-distribution" element={<WeeklyDistribution />} />
@@ -57,12 +59,13 @@ function AppRouter() {
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </Suspense>
   )
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ErrorBoundary>
         <AuthProvider>
           <AppRouter />

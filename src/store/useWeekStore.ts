@@ -329,38 +329,57 @@ export const useWeekStore = create<WeekStore>((set, get) => {
           isLoadingWeek: false,
         })
 
-        // 3. Real-time subscription for tasks
-        if (_realtimeChannel) {
-          await supabase.removeChannel(_realtimeChannel)
-        }
+        // 3. Real-time subscription for tasks (DISABLED - causing WebSocket connection issues)
+        // TODO: Re-enable when network connectivity is stable
+        /*
+        try {
+          if (_realtimeChannel) {
+            await supabase.removeChannel(_realtimeChannel)
+          }
 
-        _realtimeChannel = supabase
-          .channel(`tasks-week-${week.id}`)
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'tasks', filter: `week_id=eq.${week.id}` },
-            async () => {
-              // Re-fetch tasks on any change
-              const { data: refreshedTasks } = await supabase
-                .from('tasks')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('week_id', week!.id)
+          _realtimeChannel = supabase
+            .channel(`tasks-week-${week.id}`)
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'tasks', filter: `week_id=eq.${week.id}` },
+              async () => {
+                try {
+                  // Re-fetch tasks on any change
+                  const { data: refreshedTasks } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('week_id', week!.id)
 
-              const { data: refreshedWeek } = await supabase
-                .from('weeks')
-                .select('*')
-                .eq('id', week!.id)
-                .single()
+                  const { data: refreshedWeek } = await supabase
+                    .from('weeks')
+                    .select('*')
+                    .eq('id', week!.id)
+                    .single()
 
-              if (refreshedTasks && refreshedWeek) {
-                set(_state => ({
-                  currentWeek: buildWeekData(refreshedWeek as Record<string, unknown>, refreshedTasks as Record<string, unknown>[]),
-                }))
+                  if (refreshedTasks && refreshedWeek) {
+                    set(_state => ({
+                      currentWeek: buildWeekData(refreshedWeek as Record<string, unknown>, refreshedTasks as Record<string, unknown>[]),
+                    }))
+                  }
+                } catch (realtimeErr) {
+                  console.warn('Realtime update failed:', realtimeErr)
+                  // Don't throw - realtime failures shouldn't break the app
+                }
+              },
+            )
+            .subscribe((status) => {
+              if (status === 'SUBSCRIBED') {
+                console.log('Realtime subscription active')
+              } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                console.warn('Realtime subscription failed:', status)
               }
-            },
-          )
-          .subscribe()
+            })
+        } catch (realtimeSetupErr) {
+          console.warn('Failed to setup realtime subscription:', realtimeSetupErr)
+          // Continue without realtime - app still works
+        }
+        */
       } catch (err) {
         set({ weekError: (err as Error).message, isLoadingWeek: false })
       }
@@ -370,7 +389,11 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
     cleanup: () => {
       if (_realtimeChannel) {
-        supabase.removeChannel(_realtimeChannel)
+        try {
+          supabase.removeChannel(_realtimeChannel)
+        } catch (err) {
+          console.warn('Error cleaning up realtime channel:', err)
+        }
         _realtimeChannel = null
       }
     },
