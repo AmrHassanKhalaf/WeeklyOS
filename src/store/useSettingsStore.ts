@@ -40,7 +40,8 @@ export interface SettingsState {
 
 const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) return
 
     await supabase.from('user_settings').upsert({
@@ -72,7 +73,8 @@ export const useSettingsStore = create<SettingsState>()(
       setAiKey: async (provider, key) => {
         set((state) => ({ aiKeys: { ...state.aiKeys, [provider]: key } }))
         try {
-          const { data: { user } } = await supabase.auth.getUser()
+          const { data: { session } } = await supabase.auth.getSession()
+          const user = session?.user
           if (user) {
             const { data: existing } = await supabase
               .from('ai_keys')
@@ -92,7 +94,8 @@ export const useSettingsStore = create<SettingsState>()(
       setActiveProvider: async (provider) => {
         set({ activeProvider: provider })
         try {
-          const { data: { user } } = await supabase.auth.getUser()
+          const { data: { session } } = await supabase.auth.getSession()
+          const user = session?.user
           if (user) {
             await supabase.from('ai_settings').upsert({ user_id: user.id, default_provider: provider })
           }
@@ -102,7 +105,8 @@ export const useSettingsStore = create<SettingsState>()(
       setActiveModel: async (model) => {
         set({ activeModel: model })
         try {
-          const { data: { user } } = await supabase.auth.getUser()
+          const { data: { session } } = await supabase.auth.getSession()
+          const user = session?.user
           if (user) {
             await supabase.from('ai_settings').upsert({ user_id: user.id, active_model: model })
           }
@@ -112,7 +116,8 @@ export const useSettingsStore = create<SettingsState>()(
       setFallbackEnabled: async (enabled) => {
         set({ fallbackEnabled: enabled })
         try {
-          const { data: { user } } = await supabase.auth.getUser()
+          const { data: { session } } = await supabase.auth.getSession()
+          const user = session?.user
           if (user) {
             await supabase.from('ai_settings').upsert({ user_id: user.id, fallback_enabled: enabled })
           }
@@ -127,7 +132,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadFromDb: async () => {
         try {
-          const { data: { user } } = await supabase.auth.getUser()
+          const { data: { session } } = await supabase.auth.getSession()
+          const user = session?.user
           if (!user) return
 
           // Load User Settings

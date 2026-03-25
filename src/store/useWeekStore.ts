@@ -256,7 +256,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     const { currentWeek } = get()
     if (!currentWeek) return
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) return
 
     const { error } = await supabase
@@ -284,7 +285,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     // ── Initialize ─────────────────────────────────────────────────────────────
 
     initialize: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) return
 
       set({ isLoadingWeek: true, weekError: null })
@@ -374,7 +376,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     },
 
     startNewPlan: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) return
 
       set({ isLoadingWeek: true })
@@ -455,7 +458,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     },
 
     createTask: async (task) => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) return
 
       const currentWeek = get().currentWeek
