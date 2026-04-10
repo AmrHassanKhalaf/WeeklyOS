@@ -1,5 +1,75 @@
-import { type CSSProperties, type ReactNode, useMemo, useState } from 'react'
+import { type CSSProperties, type PointerEvent, type ReactNode, useCallback, useEffect, useRef } from 'react'
 import './BorderGlow.css'
+
+function parseHSL(hslStr: string) {
+  const match = hslStr.match(/([\d.]+)\s*([\d.]+)%?\s*([\d.]+)%?/)
+  if (!match) return { h: 40, s: 80, l: 80 }
+  return { h: Number.parseFloat(match[1]), s: Number.parseFloat(match[2]), l: Number.parseFloat(match[3]) }
+}
+
+function buildGlowVars(glowColor: string, intensity: number) {
+  const { h, s, l } = parseHSL(glowColor)
+  const base = `${h}deg ${s}% ${l}%`
+  const opacities = [100, 60, 50, 40, 30, 20, 10]
+  const keys = ['', '-60', '-50', '-40', '-30', '-20', '-10']
+  const vars: Record<string, string> = {}
+  for (let i = 0; i < opacities.length; i++) {
+    vars[`--glow-color${keys[i]}`] = `hsl(${base} / ${Math.min(opacities[i] * intensity, 100)}%)`
+  }
+  return vars
+}
+
+const GRADIENT_POSITIONS = ['80% 55%', '69% 34%', '8% 6%', '41% 38%', '86% 85%', '82% 18%', '51% 4%']
+const GRADIENT_KEYS = ['--gradient-one', '--gradient-two', '--gradient-three', '--gradient-four', '--gradient-five', '--gradient-six', '--gradient-seven']
+const COLOR_MAP = [0, 1, 2, 0, 1, 2, 1]
+
+function buildGradientVars(colors: string[]) {
+  const vars: Record<string, string> = {}
+  for (let i = 0; i < 7; i++) {
+    const c = colors[Math.min(COLOR_MAP[i], colors.length - 1)]
+    vars[GRADIENT_KEYS[i]] = `radial-gradient(at ${GRADIENT_POSITIONS[i]}, ${c} 0px, transparent 50%)`
+  }
+  vars['--gradient-base'] = `linear-gradient(${colors[0]} 0 100%)`
+  return vars
+}
+
+function easeOutCubic(x: number) {
+  return 1 - Math.pow(1 - x, 3)
+}
+
+function easeInCubic(x: number) {
+  return x * x * x
+}
+
+function animateValue({
+  start = 0,
+  end = 100,
+  duration = 1000,
+  delay = 0,
+  ease = easeOutCubic,
+  onUpdate,
+  onEnd,
+}: {
+  start?: number
+  end?: number
+  duration?: number
+  delay?: number
+  ease?: (x: number) => number
+  onUpdate: (value: number) => void
+  onEnd?: () => void
+}) {
+  const t0 = performance.now() + delay
+
+  function tick() {
+    const elapsed = performance.now() - t0
+    const t = Math.min(elapsed / duration, 1)
+    onUpdate(start + (end - start) * ease(t))
+    if (t < 1) requestAnimationFrame(tick)
+    else if (onEnd) onEnd()
+  }
+
+  setTimeout(() => requestAnimationFrame(tick), delay)
+}
 
 type BorderGlowProps = {
   children: ReactNode
@@ -12,6 +82,7 @@ type BorderGlowProps = {
   coneSpread?: number
   animated?: boolean
   colors?: string[]
+  fillOpacity?: number
   className?: string
 }
 
@@ -26,60 +97,135 @@ export default function BorderGlow({
   coneSpread = 25,
   animated = false,
   colors = ['#c084fc', '#f472b6', '#38bdf8'],
+  fillOpacity = 0.5,
   className = '',
 }: BorderGlowProps) {
-  const [x, setX] = useState('50%')
-  const [y, setY] = useState('50%')
-  const [opacity, setOpacity] = useState(animated ? Math.min(0.55, 0.2 + glowIntensity * 0.2) : 0)
+  const cardRef = useRef<HTMLDivElement | null>(null)
 
-  const overlayOpacity = useMemo(() => {
-    if (animated) return Math.max(opacity, 0.24)
-    return opacity
-  }, [animated, opacity])
+  const getCenterOfElement = useCallback((el: HTMLDivElement) => {
+    const { width, height } = el.getBoundingClientRect()
+    return [width / 2, height / 2]
+  }, [])
 
-  const handleMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const localX = event.clientX - rect.left
-    const localY = event.clientY - rect.top
+  const getEdgeProximity = useCallback((el: HTMLDivElement, x: number, y: number) => {
+    const [cx, cy] = getCenterOfElement(el)
+    const dx = x - cx
+    const dy = y - cy
+    let kx = Number.POSITIVE_INFINITY
+    let ky = Number.POSITIVE_INFINITY
+    if (dx !== 0) kx = cx / Math.abs(dx)
+    if (dy !== 0) ky = cy / Math.abs(dy)
+    return Math.min(Math.max(1 / Math.min(kx, ky), 0), 1)
+  }, [getCenterOfElement])
 
-    const nearestEdge = Math.min(localX, localY, rect.width - localX, rect.height - localY)
-    const edgeRatio = Math.max(0, 1 - nearestEdge / Math.max(edgeSensitivity, 1))
+  const getCursorAngle = useCallback((el: HTMLDivElement, x: number, y: number) => {
+    const [cx, cy] = getCenterOfElement(el)
+    const dx = x - cx
+    const dy = y - cy
+    if (dx === 0 && dy === 0) return 0
+    const radians = Math.atan2(dy, dx)
+    let degrees = radians * (180 / Math.PI) + 90
+    if (degrees < 0) degrees += 360
+    return degrees
+  }, [getCenterOfElement])
 
-    setX(`${(localX / rect.width) * 100}%`)
-    setY(`${(localY / rect.height) * 100}%`)
-    setOpacity(Math.min(1, edgeRatio * glowIntensity))
-  }
+  const handlePointerEnter = useCallback(() => {
+    const card = cardRef.current
+    if (!card) return
+    card.style.setProperty('--edge-proximity', '35')
+  }, [])
 
-  const handleLeave = () => {
-    setOpacity(animated ? Math.min(0.55, 0.2 + glowIntensity * 0.2) : 0)
-    setX('50%')
-    setY('50%')
-  }
+  const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    const card = cardRef.current
+    if (!card) return
+
+    const rect = card.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+
+    const edge = getEdgeProximity(card, x, y)
+    const angle = getCursorAngle(card, x, y)
+
+    // Keep glow visible while pointer is inside, and intensify near the edges.
+    const minVisibleWhileInside = 0.35
+    const blendedEdge = minVisibleWhileInside + edge * (1 - minVisibleWhileInside)
+
+    card.style.setProperty('--edge-proximity', `${(blendedEdge * 100).toFixed(3)}`)
+    card.style.setProperty('--cursor-angle', `${angle.toFixed(3)}deg`)
+  }, [getCursorAngle, getEdgeProximity])
+
+  const handlePointerLeave = useCallback(() => {
+    const card = cardRef.current
+    if (!card) return
+    if (!animated) {
+      card.style.setProperty('--edge-proximity', '0')
+    }
+    card.style.setProperty('--cursor-angle', '45deg')
+  }, [animated])
+
+  useEffect(() => {
+    if (!animated || !cardRef.current) return
+
+    const card = cardRef.current
+    const angleStart = 110
+    const angleEnd = 465
+    card.classList.add('sweep-active')
+    card.style.setProperty('--cursor-angle', `${angleStart}deg`)
+
+    animateValue({ duration: 500, onUpdate: v => card.style.setProperty('--edge-proximity', `${v}`) })
+    animateValue({
+      ease: easeInCubic,
+      duration: 1500,
+      end: 50,
+      onUpdate: v => {
+        card.style.setProperty('--cursor-angle', `${(angleEnd - angleStart) * (v / 100) + angleStart}deg`)
+      },
+    })
+    animateValue({
+      ease: easeOutCubic,
+      delay: 1500,
+      duration: 2250,
+      start: 50,
+      end: 100,
+      onUpdate: v => {
+        card.style.setProperty('--cursor-angle', `${(angleEnd - angleStart) * (v / 100) + angleStart}deg`)
+      },
+    })
+    animateValue({
+      ease: easeInCubic,
+      delay: 2500,
+      duration: 1500,
+      start: 100,
+      end: 0,
+      onUpdate: v => card.style.setProperty('--edge-proximity', `${v}`),
+      onEnd: () => card.classList.remove('sweep-active'),
+    })
+  }, [animated])
+
+  const glowVars = buildGlowVars(glowColor, glowIntensity)
 
   const style = {
-    '--glow-x': x,
-    '--glow-y': y,
-    '--glow-opacity': overlayOpacity,
-    '--glow-radius': `${glowRadius}px`,
-    '--glow-intensity': glowIntensity,
-    '--glow-color': glowColor,
-    '--bg-color': backgroundColor,
-    '--bg-border-radius': `${borderRadius}px`,
-    '--glow-grad-1': colors[0] || '#c084fc',
-    '--glow-grad-2': colors[1] || colors[0] || '#f472b6',
-    '--glow-grad-3': colors[2] || colors[1] || '#38bdf8',
-    '--cone-spread': `${coneSpread}deg`,
+    '--card-bg': backgroundColor,
+    '--edge-sensitivity': edgeSensitivity,
+    '--border-radius': `${borderRadius}px`,
+    '--glow-padding': `${glowRadius}px`,
+    '--cone-spread': `${coneSpread}`,
+    '--fill-opacity': `${fillOpacity}`,
+    ...glowVars,
+    ...buildGradientVars(colors),
   } as CSSProperties
 
   return (
     <div
-      className={`border-glow ${animated ? 'border-glow--animated' : ''} ${className}`.trim()}
+      ref={cardRef}
+      onPointerEnter={handlePointerEnter}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      className={`border-glow-card ${className}`.trim()}
       style={style}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
     >
-      <div className="border-glow__content">{children}</div>
-      <div className="border-glow__overlay" />
+      <span className="edge-light" />
+      <div className="border-glow-inner">{children}</div>
     </div>
   )
 }
