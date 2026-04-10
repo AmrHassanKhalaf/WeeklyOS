@@ -97,6 +97,7 @@ export type Database = {
           priority: string | null
           start_time: string | null
           status: string
+          tags: string[] | null
           title: string
           type: string | null
           user_id: string
@@ -111,6 +112,7 @@ export type Database = {
           priority?: string | null
           start_time?: string | null
           status?: string
+          tags?: string[] | null
           title: string
           type?: string | null
           user_id: string
@@ -125,6 +127,7 @@ export type Database = {
           priority?: string | null
           start_time?: string | null
           status?: string
+          tags?: string[] | null
           title?: string
           type?: string | null
           user_id?: string

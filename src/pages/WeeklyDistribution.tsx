@@ -253,7 +253,7 @@ Make sure:
                   ...dayData,
                   isRestDay: (restDays || []).includes(dayData.day)
                 }}
-                isHighOutputZone={dayData.isToday}
+                isHighOutputZone={false}
                 showTags={showTags}
               />
             ))}

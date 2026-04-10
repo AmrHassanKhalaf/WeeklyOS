@@ -546,6 +546,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       if (error) {
         console.error('[createTask] DB write failed, reverting:', error)
         set({ currentWeek: snapshot })
+        throw new Error(error.message || 'Failed to create task')
       }
     },
 
