@@ -234,28 +234,34 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
     console.error("Failed to parse activities:", e)
   }
 
-  // Initialize challengeDays from DB or create default pending days
+  // Initialize challengeDays from DB or create default pending days (Fri -> Thu)
   let challengeDays: ChallengeDay[] = []
+  const challengeOrder: DayOfWeek[] = ['friday', 'saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']
+  const defaultChallengeDays = challengeOrder.map((day) => ({
+    dayOfWeek: day,
+    date: dayPlans.find((dp) => dp.day === day)?.date || '',
+    status: 'pending' as ChallengeDayStatus,
+  }))
   try {
     if (dbWeek.challenge_days) {
-      challengeDays = typeof dbWeek.challenge_days === 'string' 
-        ? JSON.parse(dbWeek.challenge_days) 
+      const parsedDays = typeof dbWeek.challenge_days === 'string'
+        ? JSON.parse(dbWeek.challenge_days)
         : (dbWeek.challenge_days as ChallengeDay[])
+
+      challengeDays = challengeOrder.map((day) => {
+        const existing = parsedDays.find((cd: ChallengeDay) => cd.dayOfWeek === day)
+        return {
+          dayOfWeek: day,
+          date: existing?.date || dayPlans.find((dp) => dp.day === day)?.date || '',
+          status: existing?.status || 'pending',
+        }
+      })
     } else {
-      // Initialize default: all days pending
-      challengeDays = dayPlans.map((day) => ({
-        dayOfWeek: day.day,
-        date: day.date,
-        status: 'pending' as ChallengeDayStatus,
-      }))
+      challengeDays = defaultChallengeDays
     }
   } catch (e) {
     console.error("Failed to parse challenge_days:", e)
-    challengeDays = dayPlans.map((day) => ({
-      dayOfWeek: day.day,
-      date: day.date,
-      status: 'pending' as ChallengeDayStatus,
-    }))
+    challengeDays = defaultChallengeDays
   }
 
   return {

@@ -158,7 +158,7 @@ export function Dashboard() {
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Weekly Challenge</span>
                     <span className="w-1 h-1 rounded-full bg-primary/40" />
                     <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">
-                      Ends in {currentWeek.challengeEndsIn}
+                      Fri -&gt; Thu
                     </span>
                     <button 
                       onClick={() => { setManualChallenge(currentWeek.challengeTitle || ''); setIsEditingChallenge(true); }}
@@ -178,9 +178,9 @@ export function Dashboard() {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: '-120%', opacity: 0 }}
                     transition={{ type: 'spring', damping: 30, stiffness: 380 }}
-                    mainClassName="text-[2rem] font-black tracking-tight bg-gradient-to-r from-white via-[#d7e0ff] to-[#9fb3ff] bg-clip-text text-transparent drop-shadow-[0_0_18px_rgba(159,179,255,0.35)]"
+                    mainClassName="text-[2rem] font-black tracking-tight"
                     splitLevelClassName="overflow-hidden pb-1"
-                    elementLevelClassName="inline-block"
+                    elementLevelClassName="inline-block text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
                   />
                 </div>
               </div>

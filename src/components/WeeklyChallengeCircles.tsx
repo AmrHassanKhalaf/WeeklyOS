@@ -13,6 +13,9 @@ export function WeeklyChallengeCircles() {
 
   // Calculate if a day is in the past, today, or future
   const dayOrder: DayOfWeek[] = ['friday', 'saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']
+  const orderedChallengeDays = dayOrder
+    .map((day) => challengeDays.find((cd) => cd.dayOfWeek === day))
+    .filter((cd): cd is NonNullable<typeof cd> => !!cd)
   const todayIndex = dayOrder.indexOf(todayDayOfWeek)
 
   const getDayIndex = (dayOfWeek: DayOfWeek) => dayOrder.indexOf(dayOfWeek)
@@ -23,12 +26,12 @@ export function WeeklyChallengeCircles() {
   const isToday = (dayOfWeek: DayOfWeek) => dayOfWeek === todayDayOfWeek
 
   // Count success days for progress
-  const successCount = challengeDays.filter(cd => cd.status === 'success').length
+  const successCount = orderedChallengeDays.filter(cd => cd.status === 'success').length
   const progress = (successCount / 7) * 100
 
   // Streak counter
   let streak = 0
-  for (const day of challengeDays) {
+  for (const day of orderedChallengeDays) {
     if (day.status === 'success') {
       streak++
     } else {
@@ -43,14 +46,9 @@ export function WeeklyChallengeCircles() {
 
   return (
     <div className="space-y-6">
-      {/* Title */}
-      <div>
-        <h3 className="text-lg font-bold text-on-surface">7-Day Challenge</h3>
-      </div>
-
       {/* Circle Grid */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        {challengeDays.map((day) => {
+        {orderedChallengeDays.map((day) => {
           const future = isFutureDay(day.dayOfWeek)
           const current = isToday(day.dayOfWeek)
           const statusIcon =
@@ -111,7 +109,7 @@ export function WeeklyChallengeCircles() {
         </div>
         <div className="bg-surface-container-low rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-error">
-            {challengeDays.filter(cd => cd.status === 'fail').length}
+            {orderedChallengeDays.filter(cd => cd.status === 'fail').length}
           </div>
           <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">X</div>
         </div>
