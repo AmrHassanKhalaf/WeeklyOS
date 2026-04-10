@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { signOut } from '../../lib/supabase'
 import { useLayoutStore } from '../../store/useLayoutStore'
+import { GlowButton } from '../effects/GlowButton'
 
 const navItems = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -56,13 +57,15 @@ export function Sidebar() {
 
         {/* Bottom CTA + User */}
         <div className="mt-auto pt-6 space-y-4">
-          <button
+          <GlowButton
+            type="button"
             onClick={() => { navigate('/brain-dump'); closeSidebarsOnMobile(); }}
-            className="w-full obsidian-gradient text-on-primary-container py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95 transition-transform"
+            compact
+            className="w-full text-on-primary-container font-bold"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             New Plan
-          </button>
+          </GlowButton>
           <div className="flex items-center gap-3 p-2 bg-surface-container-lowest rounded-lg">
             <div className="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-on-surface-variant text-lg">account_circle</span>

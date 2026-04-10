@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { DayPlan, Task, DayOfWeek, Priority } from '../data/mockData'
 import { useWeekStore } from '../store/useWeekStore'
+import { GlowButton } from './effects/GlowButton'
 
 interface DayCardDistributionProps {
   day: DayPlan
@@ -307,12 +308,15 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
             <h2 className="text-2xl font-bold">{day.date}</h2>
           </div>
           <div className="flex items-center gap-3">
-            <button
+            <GlowButton
+              type="button"
               onClick={() => markDayComplete(day.day as DayOfWeek)}
-              className="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors"
+              compact
+              variant="secondary"
+              className="text-[10px] font-bold uppercase tracking-wider"
             >
               Day Complete
-            </button>
+            </GlowButton>
             <span className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer">drag_indicator</span>
           </div>
         </div>
@@ -344,12 +348,15 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
           <h2 className="text-2xl font-bold">{day.date}</h2>
         </div>
         <div className="flex items-center gap-3">
-          <button
+          <GlowButton
+            type="button"
             onClick={() => markDayComplete(day.day as DayOfWeek)}
-            className="px-3 py-1.5 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors"
+            compact
+            variant="secondary"
+            className="text-[10px] font-bold uppercase tracking-wider"
           >
             Day Complete
-          </button>
+          </GlowButton>
           <span className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer">drag_indicator</span>
         </div>
       </div>

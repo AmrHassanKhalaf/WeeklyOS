@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
+import { GlowButton } from '../components/effects/GlowButton'
 
 export function Settings() {
   const settings = useSettingsStore()
@@ -173,13 +174,16 @@ export function Settings() {
                   )}
 
                   <div className="flex items-center gap-3">
-                    <button 
+                    <GlowButton
+                      type="button"
                       onClick={handleSaveModel}
                       disabled={isSavingModel || (!localModel.trim()) || (localProvider === settings.activeProvider && localModel === settings.activeModel)}
-                      className="px-6 py-2.5 rounded-lg font-bold text-xs bg-tertiary/10 text-tertiary hover:bg-tertiary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors tracking-widest uppercase"
+                      compact
+                      variant="secondary"
+                      className="text-xs font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSavingModel ? 'Saving...' : savedModel ? 'Saved!' : 'Save Model Selection'}
-                    </button>
+                    </GlowButton>
                     {savedModel && <span className="text-tertiary text-[10px] font-medium uppercase tracking-widest">Successfully updated</span>}
                   </div>
                 </div>
@@ -210,17 +214,16 @@ export function Settings() {
               </div>
               <div className="flex gap-4">
                 {['dark', 'light', 'system'].map(t => (
-                  <button 
+                  <GlowButton 
                     key={t}
+                    type="button"
                     onClick={() => settings.setTheme(t as any)}
-                    className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-colors border ${
-                      settings.theme === t 
-                        ? 'bg-tertiary/20 text-tertiary border-tertiary/30' 
-                        : 'bg-surface-container-low text-neutral-500 border-transparent hover:bg-surface-container-high'
-                    }`}
+                    compact
+                    variant={settings.theme === t ? 'secondary' : 'tertiary'}
+                    className={`flex-1 text-sm font-bold uppercase tracking-wider ${settings.theme === t ? '' : 'opacity-75 hover:opacity-100'}`}
                   >
                     {t}
-                  </button>
+                  </GlowButton>
                 ))}
               </div>
             </div>
@@ -259,8 +262,9 @@ export function Settings() {
                   {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
                     const isRest = (settings.restDays || []).includes(day)
                     return (
-                      <button
+                      <GlowButton
                         key={day}
+                        type="button"
                         onClick={() => {
                           const current = settings.restDays || []
                           const next = isRest 
@@ -268,14 +272,12 @@ export function Settings() {
                             : [...current, day]
                           settings.setRestDays(next)
                         }}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
-                          isRest 
-                            ? 'bg-primary/20 text-primary border-primary/30' 
-                            : 'bg-surface-container-highest/50 text-neutral-500 border-transparent hover:bg-surface-container-highest'
-                        }`}
+                        compact
+                        variant={isRest ? 'secondary' : 'tertiary'}
+                        className={`uppercase tracking-wider ${isRest ? '' : 'opacity-80 hover:opacity-100'}`}
                       >
                         {day.slice(0, 3)}
-                      </button>
+                      </GlowButton>
                     )
                   })}
                 </div>
@@ -298,16 +300,19 @@ export function Settings() {
                 />
               </div>
               
-              <button 
+              <GlowButton 
+                type="button"
                 onClick={handleExport}
                 disabled={isExporting}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-white/10 text-neutral-400 font-bold text-sm hover:text-white hover:border-white/30 transition-colors disabled:opacity-50"
+                compact
+                variant="secondary"
+                className="w-full text-sm font-bold disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">
                   {isExporting ? 'hourglass_empty' : 'download'}
                 </span>
                 {isExporting ? 'Generating Image...' : 'Export Weekly Report'}
-              </button>
+              </GlowButton>
             </div>
 
           </section>
@@ -338,7 +343,7 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider, la
       <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">{label} API Key</label>
       <div className="flex bg-surface-container-low rounded-xl border border-white/5 overflow-hidden focus-within:border-primary/50 transition-colors">
         <input
-          type={isVis ? "text" : "password"}
+          type={isVis ? 'text' : 'password'}
           value={localVal}
           onChange={e => setLocalVal(e.target.value)}
           placeholder="sk-..."
@@ -347,9 +352,16 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider, la
         <button onClick={() => setIsVis(!isVis)} className="px-4 text-neutral-500 hover:text-white border-l border-white/5">
           <span className="material-symbols-outlined text-[18px]">{isVis ? 'visibility_off' : 'visibility'}</span>
         </button>
-        <button onClick={handleSave} disabled={isSaving || localVal === (settings.aiKeys[provider] || '')} className="px-4 font-bold text-xs bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <GlowButton
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving || localVal === (settings.aiKeys[provider] || '')}
+          compact
+          variant="secondary"
+          className="font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           {isSaving ? 'SAVING...' : saved ? 'SAVED' : 'SAVE'}
-        </button>
+        </GlowButton>
       </div>
       {saved && <p className="text-tertiary text-[10px] mt-1 font-medium">API key saved successfully</p>}
     </div>

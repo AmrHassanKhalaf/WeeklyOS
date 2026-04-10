@@ -3,6 +3,7 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
 import { useWeekStore } from '../store/useWeekStore'
 import type { Task } from '../store/useWeekStore'
+import { GlowButton } from '../components/effects/GlowButton'
 
 export function FocusedDay() {
   const { currentWeek, isLoadingWeek, pomodoroTime, isPomodoroRunning, startPomodoro, stopPomodoro, tickPomodoro, toggleTaskComplete, markDayComplete } = useWeekStore()
@@ -66,20 +67,26 @@ export function FocusedDay() {
 
         {/* Controls */}
         <div className="flex items-center gap-4 mb-12">
-          <button
+          <GlowButton
+            type="button"
             onClick={() => isPomodoroRunning ? stopPomodoro() : startPomodoro()}
-            className="primary-gradient px-8 py-3 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg hover:scale-105 transition-transform text-on-primary-container"
+            compact
+            variant="secondary"
+            className="px-8 py-3 rounded-full font-bold text-sm"
           >
             <span className="material-symbols-outlined">{isPomodoroRunning ? 'pause' : 'play_arrow'}</span>
             {isPomodoroRunning ? 'Pause Focus' : 'Start Focus'}
-          </button>
-          <button
+          </GlowButton>
+          <GlowButton
+            type="button"
             onClick={toggleFocusMode}
-            className="bg-surface-container-high px-6 py-3 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-surface-container-highest transition-colors"
+            compact
+            variant="tertiary"
+            className="px-6 py-3 rounded-full font-bold text-sm"
           >
             <span className="material-symbols-outlined">{isFocusMode ? 'visibility' : 'visibility_off'}</span>
             {isFocusMode ? 'Show Interface' : 'Hide Interface'}
-          </button>
+          </GlowButton>
         </div>
 
         <div className="space-y-16">
@@ -192,16 +199,19 @@ export function FocusedDay() {
 
           {/* Day Complete */}
           <section className="pt-12 pb-24 text-center">
-            <button
+            <GlowButton
+              type="button"
               onClick={() => todayPlan && markDayComplete(todayPlan.day)}
-              className="bg-tertiary-container/20 text-tertiary border border-tertiary/20 px-10 py-4 rounded-xl font-bold group hover:bg-tertiary-container/40 transition-all"
+              compact
+              variant="secondary"
+              className="px-10 py-4 rounded-xl font-bold group"
             >
               <div className="flex flex-col items-center gap-2">
                 <span className="material-symbols-outlined text-3xl mb-1 group-hover:scale-125 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                 <span>Day Complete</span>
                 <span className="text-[10px] font-normal uppercase tracking-widest text-tertiary/60">Finalize All Progress</span>
               </div>
-            </button>
+            </GlowButton>
           </section>
         </div>
       </div>
