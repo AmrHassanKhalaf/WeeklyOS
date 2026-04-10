@@ -73,8 +73,18 @@
 
 .glow-button--secondary {
   background: linear-gradient(90deg, #1d4ed8 0%, #7c3aed 100%);
+  box-shadow: 0 12px 28px rgba(29, 78, 216, 0.35), 0 4px 14px rgba(124, 58, 237, 0.25), 
+              0 0 20px rgba(124, 58, 237, 0.4) inset;
+  border: 1.5px solid rgba(124, 58, 237, 0.6);
+}
+
+.glow-button--secondary:hover {
+  box-shadow: 0 16px 34px rgba(29, 78, 216, 0.45), 0 6px 18px rgba(124, 58, 237, 0.32), 
+              0 0 28px rgba(124, 58, 237, 0.5) inset;
+  border: 1.5px solid rgba(124, 58, 237, 0.8);
 }
 
 .glow-button--tertiary {
   background: linear-gradient(90deg, #0f172a 0%, #1d4ed8 100%);
+  border: 1px solid rgba(29, 78, 216, 0.2);
 }

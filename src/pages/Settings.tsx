@@ -274,7 +274,7 @@ export function Settings() {
                         }}
                         compact
                         variant={isRest ? 'secondary' : 'tertiary'}
-                        className={`uppercase tracking-wider ${isRest ? '' : 'opacity-80 hover:opacity-100'}`}
+                        className={`uppercase tracking-wider font-bold ${isRest ? 'text-white' : 'text-neutral-400'}`}
                       >
                         {day.slice(0, 3)}
                       </GlowButton>
