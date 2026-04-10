@@ -16,7 +16,7 @@ function LoadingCard() {
 }
 
 export function Dashboard() {
-  const { currentWeek, isLoadingWeek, deleteWeekData, toggleChallengeComplete, updateChallengeProgress } = useWeekStore()
+  const { currentWeek, isLoadingWeek, deleteWeekData } = useWeekStore()
   const { restDays } = useSettingsStore()
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
@@ -179,20 +179,6 @@ export function Dashboard() {
                 <WeeklyChallengeCircles />
               </div>
 
-              {/* Daily Progress Section */}
-              <div className="border-t border-white/5 pt-6 md:flex items-center justify-between">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-3 md:mb-0">Daily Goal Progress</div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 group cursor-pointer" onClick={() => toggleChallengeComplete()}>
-                    <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${currentWeek.challengeCompleted ? 'bg-primary border-primary text-background' : 'border-primary/40 hover:border-primary'}`}>
-                      {currentWeek.challengeCompleted && <span className="material-symbols-outlined text-[10px] font-bold">check</span>}
-                    </div>
-                    <span className={`text-xs font-bold uppercase tracking-widest ${currentWeek.challengeCompleted ? 'text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors'}`}>
-                      {currentWeek.challengeCompleted ? 'DONE FOR TODAY' : 'NOT DONE TODAY'}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           </section>
           </BorderGlow>
