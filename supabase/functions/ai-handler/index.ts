@@ -28,26 +28,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Extract JWT from Authorization header
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Missing or invalid authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const jwt = authHeader.replace('Bearer ', '')
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-
-    // Create authenticated Supabase client with user's JWT
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${jwt}` } }
-    })
-
-    // Verify the user is authenticated
-
     const jwt = authHeader.replace('Bearer ', '')
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -68,7 +48,7 @@ serve(async (req: Request) => {
       })
     }
 
-    console.log(`Processing request for user ${user.id}`);
+    console.log(`Processing request for user ${user?.id}`);
 
     const reqData = await req.json()
     const { type, sessionId, chunkId, chunkData, context, overrideProvider, model } = reqData
