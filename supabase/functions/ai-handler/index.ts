@@ -22,14 +22,83 @@ You are the WeeklyOS AI Assistant. Follow these rules strictly:
 🚀 Action
 `
 
+const SCHEDULE_RULES = `
+You are a planning engine that must return strict JSON only.
+Do not include markdown, explanations, headings, emoji, or extra text.
+Return exactly one JSON object with a "tasks" array.
+Each task must include:
+- title: string
+- priority: "high" | "medium" | "low"
+- day: "saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday"
+- estimatedTime: optional string
+`
+
+function decodeJWT(token: string) {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const base64Url = parts[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
+    const binary = atob(padded)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+    return JSON.parse(new TextDecoder().decode(bytes))
+  } catch {
+    return null
+  }
+}
+
+function normalizeHistory(history: any[]) {
+  if (!Array.isArray(history) || history.length === 0) return []
+
+  const normalized = history.map((m: any) => ({
+    role: (m.role === 'assistant' || m.role === 'ai' || m.role === 'model') ? 'model' : 'user',
+    parts: [{ text: m.content || m.text || '' }],
+  }))
+
+  let startIdx = 0
+  while (startIdx < normalized.length && normalized[startIdx].role === 'model') {
+    startIdx++
+  }
+
+  const filtered = normalized.slice(startIdx)
+  const validHistory = []
+  let expectedRole = 'user'
+  for (const msg of filtered) {
+    if (msg.role === expectedRole && msg.parts[0]?.text?.trim()) {
+      validHistory.push(msg)
+      expectedRole = expectedRole === 'user' ? 'model' : 'user'
+    }
+  }
+  return validHistory
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const authHeader = req.headers.get('Authorization') ?? ''
-    const jwt = authHeader.replace('Bearer ', '')
+    const authHeader = req.headers.get('authorization') ?? ''
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'No Authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
+    const payload = decodeJWT(jwt)
+    if (!payload?.sub) {
+      return new Response(JSON.stringify({ error: 'Invalid JWT' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
@@ -38,37 +107,32 @@ serve(async (req: Request) => {
       global: { headers: { Authorization: `Bearer ${jwt}` } }
     })
 
-    // Verify the user is authenticated
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-
-    if (userError || !user) {
-      console.error("User auth error:", userError)
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    console.log(`Processing request for user ${user?.id}`);
+    const userId = payload.sub as string
 
     const reqData = await req.json()
     const { type, input, context, overrideProvider, model, history } = reqData
-    console.log(`Processing ${type} request for user ${user.id}`);
 
     // 1. Common Settings Fetch
     const [settingsRes, keysRes] = await Promise.all([
-      supabaseClient.from('ai_settings').select('default_provider, active_model').eq('user_id', user.id).maybeSingle(),
-      supabaseClient.from('ai_keys').select('provider, api_key').eq('user_id', user.id)
+      supabaseClient.from('ai_settings').select('default_provider, active_model').eq('user_id', userId).maybeSingle(),
+      supabaseClient.from('ai_keys').select('provider, api_key').eq('user_id', userId)
     ])
 
     const provider = overrideProvider || settingsRes.data?.default_provider || 'gemini'
     const apiKey = (keysRes.data || []).find(k => k.provider === provider)?.api_key
 
     const aiModel = model || settingsRes.data?.active_model || 'gemini-1.5-flash'
-    const systemPrompt = `${GLOBAL_RULES}\nContext: ${JSON.stringify(context || {})}`
+    const systemPrompt = type === 'schedule'
+      ? `${SCHEDULE_RULES}\nContext: ${JSON.stringify(context || {})}`
+      : `${GLOBAL_RULES}\nContext: ${JSON.stringify(context || {})}`
 
     if (['chat', 'reflection', 'challenge', 'insight', 'schedule'].includes(type)) {
-      if (!apiKey) throw new Error('No key')
+      if (!apiKey) {
+        return new Response(JSON.stringify({ error: 'No API key configured' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
 
       const fallbackInputs: Record<string, string> = {
         challenge: `Create a concise weekly challenge from these pending tasks: ${(context?.tasks || '').toString()}`,
@@ -79,19 +143,22 @@ serve(async (req: Request) => {
       }
 
       const resolvedInput = (input?.trim() || fallbackInputs[type] || '').trim()
-      if (!resolvedInput) throw new Error('Missing input')
+      if (!resolvedInput) {
+        return new Response(JSON.stringify({ error: 'Missing input' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
 
       const genAI = new GoogleGenerativeAI(apiKey)
       const geminiModel = genAI.getGenerativeModel({
         model: aiModel,
-        systemInstruction: systemPrompt
+        systemInstruction: systemPrompt,
+        ...(type === 'schedule' ? { generationConfig: { responseMimeType: 'application/json' } } : {})
       })
 
       const chat = geminiModel.startChat({
-        history: (history || []).map((m: any) => ({
-          role: (m.role === 'assistant' || m.role === 'ai' || m.role === 'model') ? 'model' : 'user',
-          parts: [{ text: m.content || m.text || '' }]
-        })),
+        history: normalizeHistory(history || []),
       })
 
       const result = await chat.sendMessage(resolvedInput)
@@ -101,12 +168,14 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    throw new Error('Unsupported type')
+    return new Response(JSON.stringify({ error: 'Unsupported type' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
 
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
-      status: error.message === 'Unauthorized' ? 401 : 400,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }

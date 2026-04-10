@@ -6,6 +6,33 @@ import { useAiApi } from '../hooks/useApi'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useSettingsStore } from '../store/useSettingsStore'
 
+function extractJsonFromText(raw: string) {
+  const trimmed = raw.trim()
+  const direct = JSON.parse(trimmed)
+  if (direct) return direct
+  return null
+}
+
+function parseScheduleResponse(raw: string) {
+  try {
+    return extractJsonFromText(raw)
+  } catch {
+    try {
+      const fenced = raw.match(/```json\s*([\s\S]*?)\s*```/i)
+      if (fenced?.[1]) return JSON.parse(fenced[1])
+    } catch {
+      // Continue to object extraction
+    }
+
+    const objectMatch = raw.match(/\{[\s\S]*\}/)
+    if (objectMatch?.[0]) {
+      return JSON.parse(objectMatch[0])
+    }
+
+    throw new Error('AI did not return valid JSON for distribution')
+  }
+}
+
 export function WeeklyDistribution() {
   const { currentWeek, isLoadingWeek, createTask } = useWeekStore()
   const { brainDumpItems, loadItems, deleteSelected, toggleSelection } = useBrainDumpStore()
@@ -16,7 +43,43 @@ export function WeeklyDistribution() {
   }, [loadItems])
 
   const [isDistributing, setIsDistributing] = useState(false)
+  const [isAssigning, setIsAssigning] = useState(false)
   const { sendMessage } = useAiApi()
+
+  const handleAssignBrainDump = async () => {
+    if (!currentWeek || isAssigning || brainDumpItems.length === 0) return
+
+    const selected = brainDumpItems.filter((item: any) => item.selected)
+    const sourceItems = selected.length > 0 ? selected : brainDumpItems
+
+    const targetDay = currentWeek.days.find(d => !(restDays || []).includes(d.day))?.day
+    if (!targetDay) {
+      alert('No available working day found (all days are rest days).')
+      return
+    }
+
+    setIsAssigning(true)
+    try {
+      for (const item of sourceItems) {
+        if (!item.content?.trim()) continue
+        await createTask({
+          title: item.content.trim(),
+          priority: 'medium',
+          day: targetDay,
+        })
+      }
+
+      // Remove only transferred items from brain dump.
+      for (const item of sourceItems) {
+        if (!item.selected) toggleSelection(item.id)
+      }
+      await deleteSelected()
+    } catch (e: any) {
+      alert('Failed to assign braindump items: ' + e.message)
+    } finally {
+      setIsAssigning(false)
+    }
+  }
 
   const handleAutoDistribute = async () => {
     if (!currentWeek || isDistributing || brainDumpItems.length === 0) return
@@ -47,14 +110,8 @@ Make sure:
 
     try {
       const res = await sendMessage('schedule', prompt, { dateRange: currentWeek.dateRange })
-      
-      let parsed
-      try {
-        parsed = JSON.parse(res.response)
-      } catch {
-         const matched = res.response.match(/```json\n([\s\S]*)\n```/);
-         parsed = JSON.parse(matched ? matched[1] : res.response.replace(/```json|```/g, ''))
-      }
+
+      const parsed = parseScheduleResponse(res.response)
 
       const tasksToCreate = parsed.tasks || (Array.isArray(parsed) ? parsed : [])
 
@@ -109,9 +166,15 @@ Make sure:
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-surface-container-high hover:bg-surface-variant transition-colors rounded-lg flex items-center gap-2 text-xs font-semibold">
+            <button
+              onClick={handleAssignBrainDump}
+              disabled={isAssigning || brainDumpItems.length === 0}
+              className={`px-4 py-2 bg-surface-container-high hover:bg-surface-variant transition-colors rounded-lg flex items-center gap-2 text-xs font-semibold ${
+                isAssigning || brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
               <span className="material-symbols-outlined text-lg">psychology</span>
-              Assign Braindump
+              {isAssigning ? 'Assigning...' : 'Assign Braindump'}
             </button>
             <button 
               onClick={handleAutoDistribute}
