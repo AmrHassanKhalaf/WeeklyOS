@@ -1,12 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
-import { GeminiLiveAssistant } from '../ai/GeminiLiveAssistant'
 
-type Tab = 'insights' | 'stats' | 'activity' | 'chat' | 'live'
-type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
+type Tab = 'insights' | 'stats' | 'activity' | 'chat'
 
 interface AIAssistantProps {
   variant?: 'default' | 'evaluation'
@@ -16,22 +14,13 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   const [activeTab, setActiveTab] = useState<Tab>('insights')
   const [chatInput, setChatInput] = useState('')
   const [isAiTyping, setIsAiTyping] = useState(false)
-  
-  // Voice Live State
-  const [voiceState, setVoiceState] = useState<VoiceState>('idle')
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const chunkIdRef = useRef(0)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const activeAudioRef = useRef<HTMLAudioElement | null>(null)
-  
   const [chatMessages, setChatMessages] = useState<{ role: 'ai' | 'user' | 'system'; text: string; provider?: string }[]>([
     {
       role: 'ai',
       text: "Based on your activity data, I've noticed a significant trend. Your output on Wednesday was 45% lower than your average.",
     },
   ])
-  const { sendMessage, sendAudioChunk, streamVoiceResponse } = useAiApi()
+  const { sendMessage } = useAiApi()
   const navigate = useNavigate()
   const { isRightSidebarOpen, isFocusMode, toggleRightSidebar, closeSidebarsOnMobile } = useLayoutStore()
   const { currentWeek } = useWeekStore()
@@ -72,122 +61,13 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
         content: m.text 
       }))
 
-      const res = await sendMessage('chat', msg, context, undefined, undefined, history)
+      const res = await sendMessage('chat', msg, context, undefined, history)
       setChatMessages(prev => [...prev, { role: 'ai', text: res.response, provider: res.providerUsed }])
     } catch (e: any) {
       setChatMessages(prev => [...prev, { role: 'system', text: `System Error: ${e.message}` }])
     } finally {
       setIsAiTyping(false)
     }
-  }
-
-  const startRecording = async () => {
-    // Interrupt handling: If AI is speaking or processing, stop it
-    if (voiceState === 'speaking') {
-      window.speechSynthesis.cancel()
-      if (activeAudioRef.current) {
-        activeAudioRef.current.pause()
-        activeAudioRef.current.currentTime = 0
-      }
-    }
-    
-    if (voiceState === 'processing' || voiceState === 'speaking') {
-      abortControllerRef.current?.abort()
-      setVoiceState('idle')
-      if (voiceState === 'speaking') return // Just stop speaking if that was the goal
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
-      mediaRecorderRef.current = recorder
-      
-      const sid = Math.random().toString(36).substring(7)
-      setSessionId(sid)
-      chunkIdRef.current = 0
-      setVoiceState('listening')
-      setActiveTab('live')
-
-      recorder.ondataavailable = async (e) => {
-        if (e.data.size > 0) {
-          const reader = new FileReader()
-          reader.readAsDataURL(e.data)
-          reader.onloadend = async () => {
-            const base64 = (reader.result as string).split(',')[1]
-            await sendAudioChunk(sid, chunkIdRef.current++, base64)
-          }
-        }
-      }
-
-      recorder.start(1500) // 1.5s chunks
-    } catch (e) {
-      console.error('Mic error:', e)
-      setVoiceState('idle')
-    }
-  }
-
-  const stopRecording = async () => {
-    if (mediaRecorderRef.current && voiceState === 'listening') {
-      mediaRecorderRef.current.stop()
-      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop())
-      setVoiceState('processing')
-      
-      const controller = new AbortController()
-      abortControllerRef.current = controller
-
-      try {
-        const { currentWeek } = useWeekStore.getState()
-        const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score } : {}
-        
-        let hasNativeAudio = false
-        await streamVoiceResponse(sessionId!, context, (event, data) => {
-          if (event === 'text') {
-            setChatMessages(prev => [...prev, { role: 'ai', text: data.text, provider: data.providerUsed }])
-            if (!hasNativeAudio) {
-              speakResponse(data.text)
-            }
-          } else if (event === 'audio') {
-            hasNativeAudio = true
-            playNativeAudio(data.url)
-          } else if (event === 'done') {
-            if (!hasNativeAudio) setVoiceState('idle')
-          } else if (event === 'error') {
-            setChatMessages(prev => [...prev, { role: 'system', text: `Error: ${data.message}` }])
-            setVoiceState('idle')
-          }
-        }, controller.signal)
-      } catch (e: any) {
-        if (e.name === 'AbortError') return
-        setChatMessages(prev => [...prev, { role: 'system', text: `Stream Error: ${e.message}` }])
-        setVoiceState('idle')
-      }
-    }
-  }
-
-  const playNativeAudio = (url: string) => {
-    setVoiceState('speaking')
-    const audio = new Audio(url)
-    activeAudioRef.current = audio
-    audio.onended = () => {
-      setVoiceState('idle')
-      activeAudioRef.current = null
-    }
-    audio.onerror = () => {
-      console.error('Native audio error')
-      setVoiceState('idle')
-    }
-    audio.play().catch(e => {
-      console.error('Audio play failed:', e)
-      setVoiceState('idle')
-    })
-  }
-
-  const speakResponse = (text: string) => {
-    setVoiceState('speaking')
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'ar-SA'
-    utterance.onend = () => setVoiceState('idle')
-    window.speechSynthesis.speak(utterance)
   }
 
   const quickActions = ['Optimize my schedule', 'Analyze my productivity', 'Plan my week']
@@ -253,7 +133,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
 
       {/* Tabs */}
       <nav className="flex gap-4 border-b border-white/5 px-6 pb-3 pt-4">
-        {(['insights', 'stats', 'activity', 'chat', 'live'] as Tab[]).map(tab => (
+        {(['insights', 'stats', 'activity', 'chat'] as Tab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -261,7 +141,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               activeTab === tab ? 'text-[#4EDEA3] font-bold' : 'text-neutral-500 hover:text-white'
             }`}
           >
-            {tab === 'insights' ? 'Insights' : tab === 'chat' ? 'Chat' : tab === 'live' ? 'Live' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'insights' ? 'Insights' : tab === 'chat' ? 'Chat' : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </nav>
@@ -401,9 +281,6 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               )}
             </div>
           )}
-          {activeTab === 'live' && (
-            <GeminiLiveAssistant />
-          )}
           {activeTab === 'chat' && (
             <div className="space-y-6 pb-4">
               {chatMessages.map((msg, i) => (
@@ -467,26 +344,12 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             value={chatInput}
             onChange={e => setChatInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-            placeholder={voiceState === 'listening' ? 'Listening...' : variant === 'evaluation' ? 'Ask AI Assistant...' : 'Ask AI anything...'}
-            disabled={voiceState === 'listening'}
+            placeholder={variant === 'evaluation' ? 'Ask AI Assistant...' : 'Ask AI anything...'}
             className={`w-full bg-surface-container-highest border border-white/5 rounded-xl py-2.5 text-xs focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors outline-none placeholder:text-neutral-600 text-on-surface ${
               variant === 'default' ? 'pl-9 pr-10' : 'pl-4 pr-16'
             }`}
           />
           <div className="absolute right-2 flex items-center gap-1">
-            <button 
-              onClick={voiceState === 'listening' ? stopRecording : startRecording} 
-              className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${
-                voiceState === 'listening' ? 'text-error animate-pulse bg-error/10' : 
-                voiceState === 'speaking' ? 'text-tertiary bg-tertiary/10' :
-                'text-neutral-500 hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                {voiceState === 'listening' ? 'stop_circle' : 
-                 voiceState === 'speaking' ? 'close' : 'mic'}
-              </span>
-            </button>
             {variant === 'evaluation' && (
               <button onClick={() => handleSendMessage()} className="p-1.5 text-primary hover:scale-110 transition-transform">
                 <span className="material-symbols-outlined text-[18px]">send</span>
