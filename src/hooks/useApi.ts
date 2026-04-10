@@ -4,16 +4,27 @@ import { useSettingsStore } from '../store/useSettingsStore'
 export function useAiApi() {
   const sendMessage = async (type: string, input: string, context: any = {}, overrideProvider?: string, history: any[] = []) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) throw new Error('Unauthorized')
 
       const state = useSettingsStore.getState()
-      const { data, error } = await supabase.functions.invoke('ai-handler', {
-        body: { type, input, context, overrideProvider, model: state.activeModel, history }
+      const response = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/ai-handler`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': (import.meta as any).env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ type, input, context, overrideProvider, model: state.activeModel, history }),
       })
 
-      if (error || data?.error) throw new Error(error?.message || data?.error || 'AI Error')
-      return data as { response: string, providerUsed: string }
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new Error(payload?.error || `Edge Function returned ${response.status}`)
+      }
+
+      return await response.json() as { response: string, providerUsed: string }
     } catch (e: any) {
       throw new Error(e.message)
     }

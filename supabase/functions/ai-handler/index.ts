@@ -69,7 +69,17 @@ serve(async (req: Request) => {
 
     if (['chat', 'reflection', 'challenge', 'insight', 'schedule'].includes(type)) {
       if (!apiKey) throw new Error('No key')
-      if (!input?.trim()) throw new Error('Missing input')
+
+      const fallbackInputs: Record<string, string> = {
+        challenge: `Create a concise weekly challenge from these pending tasks: ${(context?.tasks || '').toString()}`,
+        insight: 'Give me a very short encouraging insight based on the provided context.',
+        reflection: 'Write a short weekly reflection based on the provided context.',
+        schedule: 'Turn the provided brain dump into a structured weekly plan.',
+        chat: input || '',
+      }
+
+      const resolvedInput = (input?.trim() || fallbackInputs[type] || '').trim()
+      if (!resolvedInput) throw new Error('Missing input')
 
       const genAI = new GoogleGenerativeAI(apiKey)
       const geminiModel = genAI.getGenerativeModel({
@@ -84,7 +94,7 @@ serve(async (req: Request) => {
         })),
       })
 
-      const result = await chat.sendMessage(input)
+      const result = await chat.sendMessage(resolvedInput)
       const responseText = result.response.text()
 
       return new Response(JSON.stringify({ response: responseText, providerUsed: provider }), {

@@ -20,9 +20,13 @@ describe('useAiApi', () => {
     useSettingsStore.setState({ activeModel: 'gemini-3.1-pro-preview', activeProvider: 'gemini' })
 
     // @ts-ignore
-    supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user1' } } })
-    // @ts-ignore
-    supabase.functions.invoke.mockResolvedValue({ data: { response: 'hello', providerUsed: 'gemini' } })
+    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' }, access_token: 'token-123' } } })
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ response: 'hello', providerUsed: 'gemini' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
     const api = useAiApi()
     const result = await api.sendMessage('chat', 'مرحبا')
@@ -30,12 +34,15 @@ describe('useAiApi', () => {
     expect(result.response).toBe('hello')
     expect(result.providerUsed).toBe('gemini')
 
-    expect(supabase.functions.invoke).toHaveBeenCalledWith('ai-handler', expect.objectContaining({
-      body: expect.objectContaining({
-        type: 'chat',
-        input: 'مرحبا',
-        model: 'gemini-3.1-pro-preview',
-      }),
-    }))
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/functions/v1/ai-handler'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer token-123',
+        }),
+        body: expect.stringContaining('"model":"gemini-3.1-pro-preview"'),
+      })
+    )
   })
 })
