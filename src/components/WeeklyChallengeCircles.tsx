@@ -45,8 +45,7 @@ export function WeeklyChallengeCircles() {
     <div className="space-y-6">
       {/* Title */}
       <div>
-        <h3 className="text-lg font-bold text-on-surface mb-2">7-Day Challenge</h3>
-        <p className="text-xs text-on-surface-variant">Click each day to track your progress</p>
+        <h3 className="text-lg font-bold text-on-surface">7-Day Challenge</h3>
       </div>
 
       {/* Circle Grid */}
@@ -89,8 +88,7 @@ export function WeeklyChallengeCircles() {
 
       {/* Progress Bar */}
       <div className="space-y-2">
-        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-          <span>7-Day Progress</span>
+        <div className="flex justify-end text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
           <span>{Math.round(progress)}%</span>
         </div>
         <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
@@ -105,17 +103,17 @@ export function WeeklyChallengeCircles() {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-surface-container-low rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-tertiary">{successCount}</div>
-          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Success</div>
+          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">OK</div>
         </div>
         <div className="bg-surface-container-low rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-primary">{streak}</div>
-          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Streak</div>
+          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Run</div>
         </div>
         <div className="bg-surface-container-low rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-error">
             {challengeDays.filter(cd => cd.status === 'fail').length}
           </div>
-          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Failed</div>
+          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">X</div>
         </div>
       </div>
     </div>

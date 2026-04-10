@@ -8,6 +8,7 @@ import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
 import { GlowButton } from '../components/effects/GlowButton'
 import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
+import RotatingText from '../components/effects/RotatingText'
 
 function LoadingCard() {
   return (
@@ -167,10 +168,20 @@ export function Dashboard() {
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                     </button>
                   </div>
-                  <h3 className="text-xl font-bold text-on-surface">{currentWeek.challengeTitle}</h3>
-                  {currentWeek.challengeDescription && (
-                    <p className="text-sm text-on-surface-variant mt-2 max-w-xl">{currentWeek.challengeDescription}</p>
-                  )}
+                  <RotatingText
+                    texts={[currentWeek.challengeTitle]}
+                    auto={false}
+                    splitBy="characters"
+                    staggerFrom="last"
+                    staggerDuration={0.012}
+                    initial={{ y: '100%', opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: '-120%', opacity: 0 }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+                    mainClassName="text-[2rem] font-black tracking-tight bg-gradient-to-r from-white via-[#d7e0ff] to-[#9fb3ff] bg-clip-text text-transparent drop-shadow-[0_0_18px_rgba(159,179,255,0.35)]"
+                    splitLevelClassName="overflow-hidden pb-1"
+                    elementLevelClassName="inline-block"
+                  />
                 </div>
               </div>
 
