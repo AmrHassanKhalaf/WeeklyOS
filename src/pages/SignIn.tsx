@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { signIn, signUp } from '../lib/supabase'
+import { GlowButton } from '../components/effects/GlowButton'
 
 type Mode = 'signin' | 'signup'
 
@@ -100,17 +101,17 @@ export function SignIn() {
           )}
 
           {/* Submit */}
-          <button
+          <GlowButton
             type="submit"
             disabled={isLoading}
-            className="w-full obsidian-gradient py-3.5 rounded-xl font-bold text-sm text-white shadow-lg shadow-[#2F5CFF]/20 hover:opacity-90 transition-opacity disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+            className="w-full mt-2 text-sm font-bold disabled:opacity-50"
           >
             {isLoading ? (
               <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
             ) : (
               mode === 'signin' ? 'Sign In' : 'Create Account'
             )}
-          </button>
+          </GlowButton>
         </form>
 
         {/* Toggle mode */}

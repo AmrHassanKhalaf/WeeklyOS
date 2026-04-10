@@ -4,6 +4,7 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { TaskCard } from '../components/TaskCard'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useEffect } from 'react'
+import { GlowButton } from '../components/effects/GlowButton'
 
 export function BrainDump() {
   const { brainDumpItems, isLoading, loadItems, addItem, updateItem, deleteSelected } = useBrainDumpStore()
@@ -62,16 +63,19 @@ export function BrainDump() {
             className="w-full h-48 bg-transparent border-b-2 border-surface-variant focus:border-primary focus:ring-0 text-xl font-light py-6 px-0 resize-none transition-all outline-none placeholder:text-surface-variant text-on-surface"
           />
           <div className="absolute bottom-4 right-0 flex gap-4">
-            <button
+            <GlowButton
+              type="button"
               onClick={handleStructure}
               disabled={isStructuring || !inputValue.trim()}
-              className="flex items-center gap-2 px-6 py-3 bg-surface-container-highest/60 backdrop-blur-md text-on-surface text-sm font-semibold rounded-full hover:bg-surface-container-highest transition-colors border border-white/5 disabled:opacity-50"
+              compact
+              variant="secondary"
+              className="text-on-surface text-sm font-semibold disabled:opacity-50"
             >
               <span className={`material-symbols-outlined text-lg ${isStructuring ? 'animate-spin' : ''}`}>
                 {isStructuring ? 'progress_activity' : 'auto_awesome'}
               </span>
               {isStructuring ? 'Saving...' : 'Structure Tasks'}
-            </button>
+            </GlowButton>
           </div>
         </div>
 
@@ -84,13 +88,16 @@ export function BrainDump() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <button
+            <GlowButton
+              type="button"
               onClick={() => navigate('/weekly-distribution')}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary-container rounded-lg text-sm font-bold shadow-xl shadow-primary-container/10 hover:scale-[1.02] active:scale-95 transition-all"
+              compact
+              variant="secondary"
+              className="text-sm font-bold"
             >
               <span className="material-symbols-outlined text-sm">send</span>
               Send to Distribution
-            </button>
+            </GlowButton>
           </div>
         </div>
 

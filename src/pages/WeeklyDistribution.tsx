@@ -7,6 +7,7 @@ import { useAiApi } from '../hooks/useApi'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
+import { GlowButton } from '../components/effects/GlowButton'
 
 function extractJsonFromText(raw: string) {
   const trimmed = raw.trim()
@@ -212,16 +213,17 @@ Make sure:
             </p>
           </div>
           <div className="flex gap-3">
-            <button
+            <GlowButton
+              type="button"
               onClick={openAssignModal}
               disabled={brainDumpItems.length === 0}
-              className={`px-4 py-2 bg-surface-container-high hover:bg-surface-variant transition-colors rounded-lg flex items-center gap-2 text-xs font-semibold ${
-                brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              compact
+              variant="secondary"
+              className={brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
             >
               <span className="material-symbols-outlined text-lg">psychology</span>
               Assign Braindump
-            </button>
+            </GlowButton>
             <button
               onClick={() => setShowTags(s => !s)}
               className="px-4 py-2 bg-surface-container-high hover:bg-surface-variant transition-colors rounded-lg flex items-center gap-2 text-xs font-semibold"
@@ -229,18 +231,18 @@ Make sure:
               <span className="material-symbols-outlined text-lg">sell</span>
               {showTags ? 'Hide Tags' : 'Show Tags'}
             </button>
-            <button 
+            <GlowButton
+              type="button"
               onClick={handleAutoDistribute}
               disabled={isDistributing || brainDumpItems.length === 0}
-              className={`px-4 py-2 bg-gradient-to-br from-tertiary-container to-tertiary text-on-tertiary rounded-lg flex items-center gap-2 text-xs font-bold shadow-lg shadow-tertiary/10 transition-all ${
-                isDistributing || brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'
-              }`}
+              compact
+              className={isDistributing || brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed grayscale' : ''}
             >
               <span className={`material-symbols-outlined text-lg ${isDistributing ? 'animate-spin' : ''}`}>
                 {isDistributing ? 'sync' : 'auto_mode'}
               </span>
               {isDistributing ? 'Distributing...' : 'Auto-distribute'}
-            </button>
+            </GlowButton>
           </div>
         </div>
 
@@ -346,19 +348,24 @@ Make sure:
                   {assignDrafts.filter(d => d.selected).length} selected
                 </span>
                 <div className="flex items-center gap-3">
-                  <button
+                  <GlowButton
+                    type="button"
                     onClick={() => setIsAssignModalOpen(false)}
-                    className="px-4 py-2 rounded-lg bg-surface-container-high text-xs font-semibold"
+                    compact
+                    variant="tertiary"
+                    className="text-xs font-semibold"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </GlowButton>
+                  <GlowButton
+                    type="button"
                     onClick={handleAssignBrainDump}
                     disabled={isAssigning || assignDrafts.every(d => !d.selected)}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold bg-primary text-on-primary ${isAssigning || assignDrafts.every(d => !d.selected) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    compact
+                    className={isAssigning || assignDrafts.every(d => !d.selected) ? 'opacity-50 cursor-not-allowed' : ''}
                   >
                     {isAssigning ? 'Assigning...' : 'Assign Selected'}
-                  </button>
+                  </GlowButton>
                 </div>
               </div>
             </div>

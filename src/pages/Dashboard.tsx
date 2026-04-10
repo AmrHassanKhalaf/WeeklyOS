@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
+import { GlowButton } from '../components/effects/GlowButton'
 
 function LoadingCard() {
   return (
@@ -314,12 +315,15 @@ export function Dashboard() {
               {isInsightLoading ? 'Analyzing week data...' : (insight || "You're on track. Batch your remaining tasks to clear your schedule.")}
             </p>
             <div className="mt-auto">
-              <button 
+              <GlowButton
+                type="button"
                 onClick={fetchInsight}
                 disabled={isInsightLoading}
-                className="w-full bg-on-tertiary-container text-tertiary-container py-3 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+                variant="secondary"
+                className="w-full text-tertiary-container py-3 text-sm disabled:opacity-50"
+              >
                 {isInsightLoading ? 'Generating...' : 'Analyze My Week'}
-              </button>
+              </GlowButton>
             </div>
           </div>
           </BorderGlow>
