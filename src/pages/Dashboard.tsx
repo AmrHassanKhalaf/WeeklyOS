@@ -142,15 +142,16 @@ export function Dashboard() {
           </div>
         </section>
 
-        {/* Weekly Challenge */}
+        {/* Weekly Challenge - Unified */}
         {currentWeek.challengeTitle && !isEditingChallenge ? (
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <section>
-            <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <span className="material-symbols-outlined text-6xl text-primary">emoji_events</span>
-              </div>
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group space-y-6">
+              {/* Header Section */}
+              <div className="relative z-10 flex flex-col gap-6">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <span className="material-symbols-outlined text-6xl text-primary">emoji_events</span>
+                </div>
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Weekly Challenge</span>
@@ -171,37 +172,24 @@ export function Dashboard() {
                     <p className="text-sm text-on-surface-variant mt-2 max-w-xl">{currentWeek.challengeDescription}</p>
                   )}
                 </div>
-                <div className="w-full md:w-64 space-y-2 shrink-0">
-                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-primary">
-                    <div className="flex items-center gap-4">
-                      <span>Progress</span>
-                      <div className="flex items-center gap-2 group cursor-pointer" onClick={() => toggleChallengeComplete()}>
-                        <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${currentWeek.challengeCompleted ? 'bg-primary border-primary text-background' : 'border-primary/40 hover:border-primary'}`}>
-                          {currentWeek.challengeCompleted && <span className="material-symbols-outlined text-[10px] font-bold">check</span>}
-                        </div>
-                        <span className={currentWeek.challengeCompleted ? 'text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors'}>
-                          {currentWeek.challengeCompleted ? 'DONE FOR TODAY' : 'NOT DONE TODAY'}
-                        </span>
-                      </div>
+              </div>
+
+              {/* 7-Day Challenge Circles */}
+              <div className="border-t border-white/5 pt-6">
+                <WeeklyChallengeCircles />
+              </div>
+
+              {/* Daily Progress Section */}
+              <div className="border-t border-white/5 pt-6 md:flex items-center justify-between">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-3 md:mb-0">Daily Goal Progress</div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 group cursor-pointer" onClick={() => toggleChallengeComplete()}>
+                    <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${currentWeek.challengeCompleted ? 'bg-primary border-primary text-background' : 'border-primary/40 hover:border-primary'}`}>
+                      {currentWeek.challengeCompleted && <span className="material-symbols-outlined text-[10px] font-bold">check</span>}
                     </div>
-                    <div className="flex items-center gap-1.5 ml-4">
-                      <button 
-                        onClick={() => updateChallengeProgress((currentWeek.challengeProgress || 0) - 5)}
-                        className="w-6 h-6 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-xs">remove</span>
-                      </button>
-                      <button 
-                        onClick={() => updateChallengeProgress((currentWeek.challengeProgress || 0) + 5)}
-                        className="w-6 h-6 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-xs">add</span>
-                      </button>
-                    </div>
-                    <span>{currentWeek.challengeProgress}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${currentWeek.challengeProgress}%` }} />
+                    <span className={`text-xs font-bold uppercase tracking-widest ${currentWeek.challengeCompleted ? 'text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors'}`}>
+                      {currentWeek.challengeCompleted ? 'DONE FOR TODAY' : 'NOT DONE TODAY'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -269,15 +257,6 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-          </section>
-          </BorderGlow>
-        )}
-
-        {/* 7-Day Challenge Circles */}
-        {currentWeek.challengeTitle && (
-          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <section className="bg-primary/5 rounded-xl border border-primary/20 p-6">
-            <WeeklyChallengeCircles />
           </section>
           </BorderGlow>
         )}
