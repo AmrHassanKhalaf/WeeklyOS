@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useAiApi } from '../hooks/useApi'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useSettingsStore } from '../store/useSettingsStore'
+import BorderGlow from '../components/effects/BorderGlow'
 
 function extractJsonFromText(raw: string) {
   const trimmed = raw.trim()
@@ -247,15 +248,27 @@ Make sure:
         <div className="flex-1 px-8 pb-8 overflow-y-auto custom-scrollbar">
           <div className="grid grid-cols-2 gap-6 pb-12">
             {currentWeek.days.map((dayData) => (
-              <DayCardDistribution 
-                key={dayData.day} 
-                day={{
-                  ...dayData,
-                  isRestDay: (restDays || []).includes(dayData.day)
-                }}
-                isHighOutputZone={false}
-                showTags={showTags}
-              />
+              <BorderGlow
+                key={dayData.day}
+                edgeSensitivity={30}
+                glowColor="40 80 80"
+                backgroundColor="#0d0d0d"
+                borderRadius={18}
+                glowRadius={40}
+                glowIntensity={1}
+                coneSpread={25}
+                animated={false}
+                colors={['#c084fc', '#f472b6', '#38bdf8']}
+              >
+                <DayCardDistribution 
+                  day={{
+                    ...dayData,
+                    isRestDay: (restDays || []).includes(dayData.day)
+                  }}
+                  isHighOutputZone={false}
+                  showTags={showTags}
+                />
+              </BorderGlow>
             ))}
           </div>
         </div>

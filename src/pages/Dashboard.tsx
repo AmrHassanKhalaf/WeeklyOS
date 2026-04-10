@@ -5,6 +5,7 @@ import { useAiApi } from '../hooks/useApi'
 import { useState } from 'react'
 
 import { useSettingsStore } from '../store/useSettingsStore'
+import BorderGlow from '../components/effects/BorderGlow'
 
 function LoadingCard() {
   return (
@@ -141,6 +142,7 @@ export function Dashboard() {
 
         {/* Weekly Challenge */}
         {currentWeek.challengeTitle && !isEditingChallenge ? (
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <section>
             <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -203,7 +205,9 @@ export function Dashboard() {
               </div>
             </div>
           </section>
+          </BorderGlow>
         ) : (
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <section>
             <div className="bg-surface-container-low rounded-xl border border-dashed border-white/20 p-6 flex flex-col gap-5">
               <div className="flex items-center gap-3">
@@ -264,23 +268,26 @@ export function Dashboard() {
               </div>
             </div>
           </section>
+          </BorderGlow>
         )}
 
         {/* Day Cards */}
         <section className="space-y-6">
           {currentWeek.days.map((dayData) => (
-            <DayCard 
-              key={dayData.day} 
-              day={{
-                ...dayData, 
-                isRestDay: (restDays || []).includes(dayData.day)
-              }} 
-            />
+            <BorderGlow key={dayData.day} edgeSensitivity={28} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={36} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+              <DayCard 
+                day={{
+                  ...dayData, 
+                  isRestDay: (restDays || []).includes(dayData.day)
+                }} 
+              />
+            </BorderGlow>
           ))}
         </section>
 
         {/* Bottom Stats */}
         <section className="grid grid-cols-3 gap-8 pb-12">
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-2">
           <div className="col-span-2 bg-surface-container-low rounded-xl p-8 border border-white/5">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-xl font-bold">Deep Work Distribution</h3>
@@ -298,6 +305,8 @@ export function Dashboard() {
               ))}
             </div>
           </div>
+          </BorderGlow>
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <div className="bg-tertiary-container text-on-tertiary-container rounded-xl p-8 relative overflow-hidden flex flex-col">
             <span className="material-symbols-outlined absolute top-[-20px] right-[-20px] text-9xl opacity-10 rotate-12">bolt</span>
             <h3 className="text-xl font-bold mb-4">Focus Mode</h3>
@@ -313,6 +322,7 @@ export function Dashboard() {
               </button>
             </div>
           </div>
+          </BorderGlow>
         </section>
       </div>
     </AppLayout>

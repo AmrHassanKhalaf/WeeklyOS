@@ -1,0 +1,53 @@
+.border-glow {
+  position: relative;
+  border-radius: var(--bg-border-radius, 20px);
+}
+
+.border-glow__content {
+  position: relative;
+  z-index: 1;
+  border-radius: inherit;
+  background: var(--bg-color, transparent);
+}
+
+.border-glow__overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  padding: 1px;
+  opacity: var(--glow-opacity, 0);
+  transition: opacity 0.16s ease;
+  background:
+    radial-gradient(
+      circle var(--glow-radius, 40px) at var(--glow-x, 50%) var(--glow-y, 50%),
+      rgb(var(--glow-color, 40 80 80) / calc(0.42 * var(--glow-intensity, 1))),
+      transparent 72%
+    ),
+    conic-gradient(
+      from 120deg at 50% 50%,
+      var(--glow-grad-1, #c084fc),
+      var(--glow-grad-2, #f472b6),
+      var(--glow-grad-3, #38bdf8),
+      var(--glow-grad-1, #c084fc)
+    );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.border-glow--animated .border-glow__overlay {
+  animation: border-glow-spin 5.8s linear infinite;
+}
+
+@keyframes border-glow-spin {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
