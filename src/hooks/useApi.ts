@@ -1,21 +1,30 @@
 import { supabase } from '../lib/supabase'
 import { useSettingsStore } from '../store/useSettingsStore'
 
+const SUPABASE_URL = (import.meta as any).env.VITE_SUPABASE_URL as string
+const SUPABASE_PUBLIC_KEY =
+  ((import.meta as any).env.VITE_SUPABASE_ANON_KEY as string) ||
+  ((import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY as string)
+
 export function useAiApi() {
   const sendMessage = async (type: string, input: string, context: any = {}, overrideProvider?: string, history: any[] = []) => {
     try {
+      if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
+        throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY)')
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       if (!user) throw new Error('Unauthorized')
 
       const state = useSettingsStore.getState()
       const callAiHandler = async (accessToken?: string | null) => {
-        return fetch(`${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/ai-handler`, {
+        return fetch(`${SUPABASE_URL}/functions/v1/ai-handler`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken || ''}`,
-            'apikey': (import.meta as any).env.VITE_SUPABASE_ANON_KEY,
+            'apikey': SUPABASE_PUBLIC_KEY,
           },
           body: JSON.stringify({ type, input, context, overrideProvider, model: state.activeModel, history }),
         })
