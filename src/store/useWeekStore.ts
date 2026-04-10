@@ -7,6 +7,7 @@ import { getISOWeek, getISOWeekYear } from 'date-fns'
 
 export type Priority = 'high' | 'medium' | 'low'
 export type TaskStatus = 'pending' | 'done'
+export type ChallengeDayStatus = 'pending' | 'success' | 'fail'
 export type DayOfWeek =
   | 'monday'
   | 'tuesday'
@@ -27,6 +28,12 @@ export interface Task {
   startTime?: string
   estimatedTime?: string
   tags?: string[]
+}
+
+export interface ChallengeDay {
+  dayOfWeek: DayOfWeek
+  date: string
+  status: ChallengeDayStatus
 }
 
 export interface BrainDumpItem {
@@ -70,6 +77,7 @@ export interface WeekData {
   challengeDescription?: string
   challengeProgress?: number
   challengeEndsIn?: string
+  challengeDays?: ChallengeDay[]
   evalWentWell?: string
   evalStruggle?: string
   evalLessons?: string
@@ -116,6 +124,8 @@ interface WeekStore {
   // Challenge & Evaluation
   updateChallenge: (title: string, desc?: string) => Promise<void>
   updateChallengeProgress: (progress: number) => Promise<void>
+  toggleChallengeDayStatus: (dayOfWeek: DayOfWeek) => Promise<void>
+  autoFailPendingDays: () => Promise<void>
   updateEvaluation: (type: 'wentWell' | 'struggle' | 'lessons', text: string) => Promise<void>
 }
 
@@ -224,6 +234,30 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
     console.error("Failed to parse activities:", e)
   }
 
+  // Initialize challengeDays from DB or create default pending days
+  let challengeDays: ChallengeDay[] = []
+  try {
+    if (dbWeek.challenge_days) {
+      challengeDays = typeof dbWeek.challenge_days === 'string' 
+        ? JSON.parse(dbWeek.challenge_days) 
+        : (dbWeek.challenge_days as ChallengeDay[])
+    } else {
+      // Initialize default: all days pending
+      challengeDays = dayPlans.map((day) => ({
+        dayOfWeek: day.day,
+        date: day.date,
+        status: 'pending' as ChallengeDayStatus,
+      }))
+    }
+  } catch (e) {
+    console.error("Failed to parse challenge_days:", e)
+    challengeDays = dayPlans.map((day) => ({
+      dayOfWeek: day.day,
+      date: day.date,
+      status: 'pending' as ChallengeDayStatus,
+    }))
+  }
+
   return {
     id: dbWeek.id as string,
     weekNumber,
@@ -238,6 +272,7 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
     challengeDescription: (dbWeek.challenge_description as string | null) ?? undefined,
     challengeProgress: (dbWeek.challenge_progress as number | null) ?? undefined,
     challengeEndsIn: (dbWeek.challenge_ends_in as string | null) ?? undefined,
+    challengeDays,
     evalWentWell: (dbWeek.eval_went_well as string | null) ?? undefined,
     evalStruggle: (dbWeek.eval_struggle as string | null) ?? undefined,
     evalLessons: (dbWeek.eval_lessons as string | null) ?? undefined,
@@ -763,6 +798,53 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }).eq('id', currentWeek.id)
 
       if (error) console.error('updateChallengeProgress error', error)
+    },
+
+    toggleChallengeDayStatus: async (dayOfWeek: DayOfWeek) => {
+      const { currentWeek } = get()
+      if (!currentWeek || !currentWeek.challengeDays) return
+
+      // Cycle through: pending → success → fail → pending
+      const nextDays = currentWeek.challengeDays.map(cd => {
+        if (cd.dayOfWeek === dayOfWeek) {
+          const nextStatus: ChallengeDayStatus = 
+            cd.status === 'pending' ? 'success' : 
+            cd.status === 'success' ? 'fail' : 
+            'pending'
+          return { ...cd, status: nextStatus }
+        }
+        return cd
+      })
+
+      set(state => ({
+        currentWeek: state.currentWeek ? { ...state.currentWeek, challengeDays: nextDays } : null
+      }))
+
+      const { error } = await supabase.from('weeks').update({
+        challenge_days: JSON.stringify(nextDays)
+      }).eq('id', currentWeek.id)
+
+      if (error) console.error('toggleChallengeDayStatus error', error)
+    },
+
+    autoFailPendingDays: async () => {
+      const { currentWeek } = get()
+      if (!currentWeek || !currentWeek.challengeDays) return
+
+      const nextDays = currentWeek.challengeDays.map(cd => ({
+        ...cd,
+        status: cd.status === 'pending' ? 'fail' : cd.status
+      }))
+
+      set(state => ({
+        currentWeek: state.currentWeek ? { ...state.currentWeek, challengeDays: nextDays } : null
+      }))
+
+      const { error } = await supabase.from('weeks').update({
+        challenge_days: JSON.stringify(nextDays)
+      }).eq('id', currentWeek.id)
+
+      if (error) console.error('autoFailPendingDays error', error)
     },
 
     updateEvaluation: async (type: 'wentWell' | 'struggle' | 'lessons', text: string) => {

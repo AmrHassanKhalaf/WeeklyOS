@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
 import { GlowButton } from '../components/effects/GlowButton'
+import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
 
 function LoadingCard() {
   return (
@@ -268,6 +269,15 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
+          </section>
+          </BorderGlow>
+        )}
+
+        {/* 7-Day Challenge Circles */}
+        {currentWeek.challengeTitle && (
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+          <section className="bg-primary/5 rounded-xl border border-primary/20 p-6">
+            <WeeklyChallengeCircles />
           </section>
           </BorderGlow>
         )}

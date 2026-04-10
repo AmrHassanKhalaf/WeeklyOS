@@ -14,6 +14,7 @@ const DAYS_OPTIONS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'w
 function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void; showTags?: boolean }) {
   const { toggleTaskComplete, deleteTask, updateTask } = useWeekStore()
   const [isEditing, setIsEditing] = useState(false)
+  const [isToggling, setIsToggling] = useState(false)
   const [editData, setEditData] = useState({
     title: '', start: '', duration: '', description: '', day: 'monday' as DayOfWeek, priority: 'low' as Priority
   })
@@ -124,12 +125,25 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
     }
   }
 
+  const handleToggleComplete = async () => {
+    if (isToggling) return
+    setIsToggling(true)
+    try {
+      await toggleTaskComplete(task.id)
+    } catch (e) {
+      console.error('Failed to toggle task:', e)
+    } finally {
+      setIsToggling(false)
+    }
+  }
+
   return (
     <div className={`group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-all focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden ${task.status === 'done' ? 'opacity-60 bg-surface-container-low' : ''}`}>
       <div className="flex items-start gap-3">
         <button
-            onClick={() => toggleTaskComplete(task.id)}
-            className={`mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded border transition-colors ${
+            onClick={handleToggleComplete}
+            disabled={isToggling}
+            className={`mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded border transition-colors disabled:opacity-50 ${
                 task.status === 'done' ? 'bg-primary border-primary text-background' : 'border-outline-variant hover:border-primary text-transparent'
             }`}
         >
@@ -337,17 +351,24 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
   const smallFilled = day.smallTasks.length
   const hasAnyTasks = highFilled > 0 || medFilled > 0 || smallFilled > 0
 
+  // Calculate progress efficiently
+  const totalTasks = (day.highTask ? 1 : 0) + day.mediumTasks.length + day.smallTasks.length
+  const completedTasks = (day.highTask?.status === 'done' ? 1 : 0) + day.mediumTasks.filter(t => t.status === 'done').length + day.smallTasks.filter(t => t.status === 'done').length
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  const progressColor = progress === 100 ? 'bg-tertiary' : 'bg-primary'
+
   return (
     <div className="bg-surface-container-low rounded-2xl border border-white/5 flex flex-col h-[500px]">
       {/* Header */}
-      <div className="p-6 border-b border-white/5 flex items-center justify-between bg-surface-container-low/50 rounded-t-2xl">
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
-            {day.day.charAt(0).toUpperCase() + day.day.slice(1)}
-          </span>
-          <h2 className="text-2xl font-bold">{day.date}</h2>
-        </div>
-        <div className="flex items-center gap-3">
+      <div className="p-6 border-b border-white/5 space-y-4 bg-surface-container-low/50 rounded-t-2xl">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
+              {day.day.charAt(0).toUpperCase() + day.day.slice(1)}
+            </span>
+            <h2 className="text-2xl font-bold">{day.date}</h2>
+          </div>
+          <div className="flex items-center gap-3">
           <GlowButton
             type="button"
             onClick={() => markDayComplete(day.day as DayOfWeek)}
@@ -359,6 +380,20 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
           </GlowButton>
           <span className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer">drag_indicator</span>
         </div>
+      </div>
+        
+        {/* Progress Bar */}
+        {totalTasks > 0 && (
+          <div className="flex-1 max-w-xs space-y-2">
+            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              <span>Day Progress</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+              <div className={`h-full ${progressColor} transition-all duration-300`} style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Body */}
