@@ -31,6 +31,7 @@ Each task must include:
 - priority: "high" | "medium" | "low"
 - day: "saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday"
 - estimatedTime: optional string
+- tags: optional string[]
 `
 
 function decodeJWT(token: string) {

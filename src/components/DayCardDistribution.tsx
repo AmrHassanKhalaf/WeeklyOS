@@ -5,11 +5,12 @@ import { useWeekStore } from '../store/useWeekStore'
 interface DayCardDistributionProps {
   day: DayPlan
   isHighOutputZone?: boolean
+  showTags?: boolean
 }
 
 const DAYS_OPTIONS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 
-function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void }) {
+function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void; showTags?: boolean }) {
   const { toggleTaskComplete, deleteTask, updateTask } = useWeekStore()
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({
@@ -135,6 +136,15 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick }: { task?: Task; e
         </button>
         <div className="flex-1 min-w-0" onClick={() => setIsEditing(true)}>
             <div className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}>{task.title}</div>
+            {showTags && task.tags && task.tags.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                {task.tags.map(tag => (
+                  <span key={tag} className="px-1.5 py-0.5 bg-surface-container-low text-[9px] text-on-surface-variant rounded uppercase tracking-wider">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
             {task.description && <div className="text-xs text-on-surface-variant mt-1 line-clamp-2">{task.description}</div>}
             {(task.startTime || task.estimatedTime) && (
             <div className="flex gap-2 mt-2 text-[10px] text-primary/70 font-medium bg-primary/5 w-max px-2 py-0.5 rounded">
@@ -213,7 +223,7 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
 
 type AddingFor = { priority: Priority; day: DayOfWeek } | null
 
-export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributionProps) {
+export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: DayCardDistributionProps) {
   const { createTask, markDayComplete } = useWeekStore()
   const [addingFor, setAddingFor] = useState<AddingFor>(null)
 
@@ -368,7 +378,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
                 >add</span>
               </div>
             </div>
-            <TaskItem task={day.highTask} emptyHeight="h-24" onEmptyClick={() => startAdd('high')} />
+            <TaskItem task={day.highTask} emptyHeight="h-24" onEmptyClick={() => startAdd('high')} showTags={showTags} />
             {renderInlineForm('high')}
           </div>
 
@@ -386,7 +396,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
               </div>
             </div>
             {Array.from({ length: medSlots }).map((_, i) => (
-              <TaskItem key={i} task={day.mediumTasks[i]} onEmptyClick={() => startAdd('medium')} />
+              <TaskItem key={i} task={day.mediumTasks[i]} onEmptyClick={() => startAdd('medium')} showTags={showTags} />
             ))}
             {renderInlineForm('medium')}
           </div>
@@ -406,7 +416,7 @@ export function DayCardDistribution({ day, isHighOutputZone }: DayCardDistributi
             </div>
             <div className="space-y-2">
               {Array.from({ length: smallSlots }).map((_, i) => (
-                <TaskItem key={i} task={day.smallTasks[i]} onEmptyClick={() => startAdd('low')} />
+                <TaskItem key={i} task={day.smallTasks[i]} onEmptyClick={() => startAdd('low')} showTags={showTags} />
               ))}
             </div>
             {renderInlineForm('low')}

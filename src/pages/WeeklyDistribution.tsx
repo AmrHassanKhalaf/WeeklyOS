@@ -1,6 +1,7 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { DayCardDistribution } from '../components/DayCardDistribution'
 import { useWeekStore } from '../store/useWeekStore'
+import type { DayOfWeek, Priority } from '../store/useWeekStore'
 import { useState, useEffect } from 'react'
 import { useAiApi } from '../hooks/useApi'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
@@ -33,9 +34,28 @@ function parseScheduleResponse(raw: string) {
   }
 }
 
+function inferPriorityFromTags(tags: string[] = []): Priority {
+  const normalized = tags.map(t => t.toLowerCase())
+  const highSignals = ['hard', 'deep', 'complex', 'strategic', 'focus', 'high', 'project']
+  const lowSignals = ['easy', 'quick', 'simple', 'admin', 'routine', 'minor', 'low']
+
+  if (normalized.some(t => highSignals.some(sig => t.includes(sig)))) return 'high'
+  if (normalized.some(t => lowSignals.some(sig => t.includes(sig)))) return 'low'
+  return 'medium'
+}
+
+type AssignDraft = {
+  id: string
+  title: string
+  tags: string[]
+  selected: boolean
+  day: DayOfWeek
+  priority: Priority
+}
+
 export function WeeklyDistribution() {
   const { currentWeek, isLoadingWeek, createTask } = useWeekStore()
-  const { brainDumpItems, loadItems, deleteSelected, toggleSelection } = useBrainDumpStore()
+  const { brainDumpItems, loadItems, removeItem } = useBrainDumpStore()
   const { restDays } = useSettingsStore()
   
   useEffect(() => {
@@ -44,36 +64,55 @@ export function WeeklyDistribution() {
 
   const [isDistributing, setIsDistributing] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  const [assignDrafts, setAssignDrafts] = useState<AssignDraft[]>([])
+  const [showTags, setShowTags] = useState(true)
   const { sendMessage } = useAiApi()
 
-  const handleAssignBrainDump = async () => {
-    if (!currentWeek || isAssigning || brainDumpItems.length === 0) return
-
+  const openAssignModal = () => {
+    if (!currentWeek || brainDumpItems.length === 0) return
     const selected = brainDumpItems.filter((item: any) => item.selected)
     const sourceItems = selected.length > 0 ? selected : brainDumpItems
+    const defaultDay = (currentWeek.days.find(d => !(restDays || []).includes(d.day))?.day || currentWeek.days[0]?.day || 'monday') as DayOfWeek
 
-    const targetDay = currentWeek.days.find(d => !(restDays || []).includes(d.day))?.day
-    if (!targetDay) {
-      alert('No available working day found (all days are rest days).')
+    setAssignDrafts(
+      sourceItems.map((item: any) => ({
+        id: item.id,
+        title: item.content,
+        tags: item.tags || [],
+        selected: true,
+        day: defaultDay,
+        priority: inferPriorityFromTags(item.tags || []),
+      }))
+    )
+    setIsAssignModalOpen(true)
+  }
+
+  const handleAssignBrainDump = async () => {
+    if (!currentWeek || isAssigning || assignDrafts.length === 0) return
+    const toAssign = assignDrafts.filter(d => d.selected && d.title.trim())
+    if (toAssign.length === 0) {
+      alert('Please select at least one task to assign.')
       return
     }
 
     setIsAssigning(true)
     try {
-      for (const item of sourceItems) {
-        if (!item.content?.trim()) continue
+      for (const draft of toAssign) {
         await createTask({
-          title: item.content.trim(),
-          priority: 'medium',
-          day: targetDay,
+          title: draft.title.trim(),
+          priority: draft.priority,
+          day: draft.day,
+          tags: draft.tags,
         })
       }
 
-      // Remove only transferred items from brain dump.
-      for (const item of sourceItems) {
-        if (!item.selected) toggleSelection(item.id)
+      for (const draft of toAssign) {
+        await removeItem(draft.id)
       }
-      await deleteSelected()
+
+      setIsAssignModalOpen(false)
+      setAssignDrafts([])
     } catch (e: any) {
       alert('Failed to assign braindump items: ' + e.message)
     } finally {
@@ -84,6 +123,10 @@ export function WeeklyDistribution() {
   const handleAutoDistribute = async () => {
     if (!currentWeek || isDistributing || brainDumpItems.length === 0) return
     setIsDistributing(true)
+
+    const brainDumpForPrompt = brainDumpItems
+      .map((i: any) => `- ${i.content} | tags: ${(i.tags || []).join(', ') || 'none'} | suggestedPriority: ${inferPriorityFromTags(i.tags || [])}`)
+      .join('\n')
     
     const prompt = `Your job is to convert a brain dump into a structured weekly plan using the 1-3-5 productivity system.
     
@@ -93,7 +136,7 @@ Rules:
 - 5 small tasks (Low priority)
 
 Input:
-Brain dump items: ${brainDumpItems.map((i: any) => i.content).join(', ')}
+${brainDumpForPrompt}
 
 Output requirements:
 Return exactly one JSON object with a "tasks" array.
@@ -102,10 +145,12 @@ Each object in the array MUST have:
 - priority: "high" | "medium" | "low"
 - day: "saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday"
 - estimatedTime: optional string (e.g. "1h", "30m")
+- tags: optional string[]
 
 Make sure:
 - Avoid overloading any day
 - Balance workload logically
+- Use tags to infer task difficulty and suitable day intensity
 - DO NOT assign tasks to rest days: ${restDays.join(', ')}`
 
     try {
@@ -121,15 +166,15 @@ Make sure:
           title: t.title,
           priority: t.priority,
           day: t.day,
-          estimatedTime: t.estimatedTime
+          estimatedTime: t.estimatedTime,
+          tags: Array.isArray(t.tags) ? t.tags : undefined,
         })
       }
       
       // Auto-clear brain dump after successful distribution
-      brainDumpItems.forEach((item: any) => {
-        if (!item.selected) toggleSelection(item.id)
-      })
-      await deleteSelected()
+      for (const item of brainDumpItems) {
+        await removeItem(item.id)
+      }
 
     } catch (e: any) {
       alert("Failed to auto-distribute: " + e.message)
@@ -167,14 +212,21 @@ Make sure:
           </div>
           <div className="flex gap-3">
             <button
-              onClick={handleAssignBrainDump}
-              disabled={isAssigning || brainDumpItems.length === 0}
+              onClick={openAssignModal}
+              disabled={brainDumpItems.length === 0}
               className={`px-4 py-2 bg-surface-container-high hover:bg-surface-variant transition-colors rounded-lg flex items-center gap-2 text-xs font-semibold ${
-                isAssigning || brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
               <span className="material-symbols-outlined text-lg">psychology</span>
-              {isAssigning ? 'Assigning...' : 'Assign Braindump'}
+              Assign Braindump
+            </button>
+            <button
+              onClick={() => setShowTags(s => !s)}
+              className="px-4 py-2 bg-surface-container-high hover:bg-surface-variant transition-colors rounded-lg flex items-center gap-2 text-xs font-semibold"
+            >
+              <span className="material-symbols-outlined text-lg">sell</span>
+              {showTags ? 'Hide Tags' : 'Show Tags'}
             </button>
             <button 
               onClick={handleAutoDistribute}
@@ -202,10 +254,103 @@ Make sure:
                   isRestDay: (restDays || []).includes(dayData.day)
                 }}
                 isHighOutputZone={dayData.isToday}
+                showTags={showTags}
               />
             ))}
           </div>
         </div>
+
+        {isAssignModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+            <div className="w-full max-w-5xl max-h-[85vh] overflow-hidden rounded-2xl border border-white/10 bg-surface-container shadow-2xl">
+              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-on-surface">Assign Braindump Tasks</h3>
+                  <p className="text-xs text-on-surface-variant">Choose day + priority for each task, then add selected tasks to weekly distribution.</p>
+                </div>
+                <button
+                  onClick={() => setIsAssignModalOpen(false)}
+                  className="p-2 rounded-lg hover:bg-white/10 text-on-surface-variant"
+                  title="Close"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className="p-6 overflow-auto max-h-[62vh] space-y-3">
+                {assignDrafts.map((draft) => (
+                  <div key={draft.id} className="grid grid-cols-12 gap-3 items-center p-3 rounded-xl border border-white/10 bg-surface-container-low">
+                    <div className="col-span-1 flex justify-center">
+                      <input
+                        type="checkbox"
+                        checked={draft.selected}
+                        onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, selected: e.target.checked } : d))}
+                        className="w-4 h-4"
+                      />
+                    </div>
+                    <div className="col-span-5 min-w-0">
+                      <p className="text-sm font-medium text-on-surface truncate">{draft.title}</p>
+                      <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                        {draft.tags.length === 0 ? (
+                          <span className="text-[10px] text-on-surface-variant">No tags</span>
+                        ) : draft.tags.map(tag => (
+                          <span key={tag} className="px-1.5 py-0.5 bg-surface-container-high text-[9px] text-on-surface-variant rounded uppercase tracking-wider">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="col-span-3">
+                      <select
+                        value={draft.day}
+                        onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, day: e.target.value as DayOfWeek } : d))}
+                        className="w-full bg-surface-container-high rounded-lg px-3 py-2 text-xs outline-none"
+                      >
+                        {currentWeek.days.map(day => (
+                          <option key={day.day} value={day.day}>
+                            {day.shortName} {day.date}{(restDays || []).includes(day.day) ? ' (Rest)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-3">
+                      <select
+                        value={draft.priority}
+                        onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, priority: e.target.value as Priority } : d))}
+                        className="w-full bg-surface-container-high rounded-lg px-3 py-2 text-xs outline-none"
+                      >
+                        <option value="high">high</option>
+                        <option value="medium">medium</option>
+                        <option value="low">low</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+                <span className="text-xs text-on-surface-variant">
+                  {assignDrafts.filter(d => d.selected).length} selected
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsAssignModalOpen(false)}
+                    className="px-4 py-2 rounded-lg bg-surface-container-high text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAssignBrainDump}
+                    disabled={isAssigning || assignDrafts.every(d => !d.selected)}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold bg-primary text-on-primary ${isAssigning || assignDrafts.every(d => !d.selected) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isAssigning ? 'Assigning...' : 'Assign Selected'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   )

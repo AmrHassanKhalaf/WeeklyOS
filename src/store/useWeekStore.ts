@@ -95,7 +95,7 @@ interface WeekStore {
 
   // Tasks CRUD
   toggleTaskComplete: (taskId: string) => Promise<void>
-  createTask: (task: { title: string; priority: Priority; day?: DayOfWeek; description?: string; startTime?: string; estimatedTime?: string }) => Promise<void>
+  createTask: (task: { title: string; priority: Priority; day?: DayOfWeek; description?: string; startTime?: string; estimatedTime?: string; tags?: string[] }) => Promise<void>
   updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string; estimatedTime: string; startTime: string; tags: string[] }>) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
   markDayComplete: (day: DayOfWeek) => Promise<void>
@@ -511,6 +511,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         description: task.description,
         startTime: task.startTime,
         estimatedTime: task.estimatedTime,
+        tags: task.tags,
         weekId: currentWeek.id,
       }
 
@@ -539,6 +540,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         status: 'pending',
         start_time: task.startTime ?? null,
         estimated_duration: task.estimatedTime ?? null,
+        tags: task.tags ?? null,
       })
 
       if (error) {
