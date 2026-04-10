@@ -275,6 +275,8 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
   }
 
   if (day.isRestDay) {
+    const isOverridingRest = addingFor?.day === day.day
+
     return (
       <div className="bg-surface-container-low rounded-2xl border border-tertiary/20 flex flex-col h-[500px] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-tertiary/5 to-transparent pointer-events-none" />
@@ -285,24 +287,26 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
           </div>
           <span className="material-symbols-outlined text-tertiary">eco</span>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative z-10">
-          <div className="w-20 h-20 bg-tertiary/10 rounded-full flex items-center justify-center mb-6">
-            <span className="material-symbols-outlined text-4xl text-tertiary">bedtime</span>
-          </div>
-          <h3 className="text-lg font-bold text-tertiary mb-2">Recharge Phase</h3>
-          <p className="text-xs text-neutral-500 leading-relaxed max-w-xs mb-8">
-            System-mandated downtime for cognitive recovery and preparation for next cycle.
-          </p>
-          {!addingFor && (
-            <button
-              onClick={() => startAdd('low')}
-              className="px-6 py-2 border border-tertiary/30 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded-full hover:bg-tertiary/10 transition-colors"
-            >
-              Override Rest
-            </button>
-          )}
-          {addingFor?.day === day.day && (
-            <div className="mt-4 w-full text-left">
+        <div className={`flex-1 p-6 relative z-10 ${isOverridingRest ? 'overflow-y-auto' : 'flex flex-col items-center justify-center text-center'}`}>
+          {!isOverridingRest ? (
+            <>
+              <div className="w-20 h-20 bg-tertiary/10 rounded-full flex items-center justify-center mb-6">
+                <span className="material-symbols-outlined text-4xl text-tertiary">bedtime</span>
+              </div>
+              <h3 className="text-lg font-bold text-tertiary mb-2">Recharge Phase</h3>
+              <p className="text-xs text-neutral-500 leading-relaxed max-w-xs mb-8">
+                System-mandated downtime for cognitive recovery and preparation for next cycle.
+              </p>
+              <button
+                onClick={() => startAdd('low')}
+                className="px-6 py-2 border border-tertiary/30 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded-full hover:bg-tertiary/10 transition-colors"
+              >
+                Override Rest
+              </button>
+            </>
+          ) : (
+            <div className="max-w-3xl mx-auto">
+              <p className="text-[10px] uppercase tracking-widest text-tertiary font-bold mb-3">Override Rest Day</p>
               {renderInlineForm('low')}
             </div>
           )}
