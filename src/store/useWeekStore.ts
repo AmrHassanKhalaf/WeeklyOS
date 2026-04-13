@@ -571,7 +571,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       set({ currentWeek: { ...currentWeek, days: nextDays, activities }, isSyncing: true })
       await syncToDb()
 
-      const { error } = await supabase.from('tasks').insert({
+      const { data: dbTask, error } = await supabase.from('tasks').insert({
         user_id: user.id,
         week_id: currentWeek.id,
         title: task.title,
@@ -582,12 +582,31 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         start_time: task.startTime ?? null,
         estimated_duration: task.estimatedTime ?? null,
         tags: task.tags ?? null,
-      })
+      }).select().single()
 
       if (error) {
         console.error('[createTask] DB write failed, reverting:', error)
         set({ currentWeek: snapshot })
         throw new Error(error.message || 'Failed to create task')
+      } else if (dbTask) {
+        // Update the temp ID with the real ID from DB
+        set(state => {
+          if (!state.currentWeek) return state
+          const realTask = mapDbTask(dbTask)
+          const allTasksForUpdate = state.currentWeek.days.flatMap(d => 
+            [d.highTask, ...d.mediumTasks, ...d.smallTasks].filter(Boolean) as Task[]
+          ).map(t => t.id === newTask.id ? realTask : t)
+          
+          return {
+            currentWeek: {
+              ...state.currentWeek,
+              days: state.currentWeek.days.map(d => processTasksForDay(
+                { ...d, highTask: undefined, mediumTasks: [], smallTasks: [] },
+                allTasksForUpdate
+              ))
+            }
+          }
+        })
       }
     },
 
@@ -607,17 +626,23 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       const localUpdates = { ...updates }
       if (localUpdates.day === null) localUpdates.day = undefined
 
-      set(state => ({
-        currentWeek: state.currentWeek ? {
-          ...state.currentWeek,
-          days: state.currentWeek.days.map(d => ({
-            ...d,
-            highTask: d.highTask?.id === taskId ? { ...d.highTask, ...localUpdates } as Task : d.highTask,
-            mediumTasks: d.mediumTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as Task : t),
-            smallTasks: d.smallTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as Task : t),
-          })),
-        } : null,
-      }))
+      set(state => {
+        if (!state.currentWeek) return state
+        const allTasks = state.currentWeek.days.flatMap(d => 
+          [d.highTask, ...d.mediumTasks, ...d.smallTasks].filter(Boolean) as Task[]
+        )
+        const updatedTasks = allTasks.map(t => t.id === taskId ? { ...t, ...localUpdates } as Task : t)
+
+        return {
+          currentWeek: {
+            ...state.currentWeek,
+            days: state.currentWeek.days.map(d => processTasksForDay(
+              { ...d, highTask: undefined, mediumTasks: [], smallTasks: [] },
+              updatedTasks
+            ))
+          }
+        }
+      })
 
       const { error } = await supabase.from('tasks').update(payload).eq('id', taskId)
       if (error) {
