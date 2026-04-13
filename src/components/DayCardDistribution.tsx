@@ -34,6 +34,39 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
     }
   }, [isEditing, task])
 
+  const handleSave = async () => {
+    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
+    if (safeTrim(editData.title)) {
+      try {
+        await updateTask(task!.id, {
+          title: safeTrim(editData.title),
+          startTime: safeTrim(editData.start) || undefined,
+          estimatedTime: safeTrim(editData.duration) || undefined,
+          description: safeTrim(editData.description) || undefined,
+          day: editData.day,
+          priority: editData.priority
+        })
+        setIsEditing(false)
+      } catch (error) {
+        console.error('Failed to update task:', error)
+        alert(error instanceof Error ? error.message : 'Failed to update task')
+        setIsEditing(false)
+      }
+    }
+  }
+
+  const handleToggleComplete = async () => {
+    if (isToggling) return
+    setIsToggling(true)
+    try {
+      await toggleTaskComplete(task!.id)
+    } catch (e) {
+      console.error('Failed to toggle task:', e)
+    } finally {
+      setIsToggling(false)
+    }
+  }
+
   if (!task) {
     return (
       <div onClick={onEmptyClick} className={`${emptyHeight} rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic cursor-pointer hover:border-white/20 transition-colors`}>
@@ -111,38 +144,6 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
     )
   }
 
-  const handleSave = async () => {
-    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
-    if (safeTrim(editData.title)) {
-      try {
-        await updateTask(task.id, {
-          title: safeTrim(editData.title),
-          startTime: safeTrim(editData.start) || undefined,
-          estimatedTime: safeTrim(editData.duration) || undefined,
-          description: safeTrim(editData.description) || undefined,
-          day: editData.day,
-          priority: editData.priority
-        })
-        setIsEditing(false)
-      } catch (error) {
-        console.error("Failed to update task:", error)
-        alert(error instanceof Error ? error.message : "Failed to update task")
-        setIsEditing(false) // Close the form even on unknown throw to prevent lockups
-      }
-    }
-  }
-
-  const handleToggleComplete = async () => {
-    if (isToggling) return
-    setIsToggling(true)
-    try {
-      await toggleTaskComplete(task.id)
-    } catch (e) {
-      console.error('Failed to toggle task:', e)
-    } finally {
-      setIsToggling(false)
-    }
-  }
 
   return (
     <div className={`group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-all focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden ${task.status === 'done' ? 'opacity-60 bg-surface-container-low' : ''}`}>

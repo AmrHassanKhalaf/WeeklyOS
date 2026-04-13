@@ -645,9 +645,11 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         }
       })
 
-      const { error } = await supabase.from('tasks').update(payload).eq('id', taskId)
+      console.log('[updateTask] Sending payload to Supabase:', JSON.stringify(payload))
+      const { data, error } = await supabase.from('tasks').update(payload).eq('id', taskId).select()
+      console.log('[updateTask] Supabase response → data:', data, '| error:', error)
       if (error) {
-        console.error('[updateTask] DB write failed, reverting:', error)
+        console.error('[updateTask] DB write failed, reverting. Code:', error.code, '| Message:', error.message, '| Details:', error.details)
         set({ currentWeek: snapshot })
       }
     },
