@@ -114,15 +114,21 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
   const handleSave = async () => {
     const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
     if (safeTrim(editData.title)) {
-      await updateTask(task.id, {
-        title: safeTrim(editData.title),
-        startTime: safeTrim(editData.start) || undefined,
-        estimatedTime: safeTrim(editData.duration) || undefined,
-        description: safeTrim(editData.description) || undefined,
-        day: editData.day,
-        priority: editData.priority
-      })
-      setIsEditing(false)
+      try {
+        await updateTask(task.id, {
+          title: safeTrim(editData.title),
+          startTime: safeTrim(editData.start) || undefined,
+          estimatedTime: safeTrim(editData.duration) || undefined,
+          description: safeTrim(editData.description) || undefined,
+          day: editData.day,
+          priority: editData.priority
+        })
+        setIsEditing(false)
+      } catch (error) {
+        console.error("Failed to update task:", error)
+        alert(error instanceof Error ? error.message : "Failed to update task")
+        setIsEditing(false) // Close the form even on unknown throw to prevent lockups
+      }
     }
   }
 

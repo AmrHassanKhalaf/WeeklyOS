@@ -611,15 +611,16 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     },
 
     updateTask: async (taskId, updates) => {
-      const payload: Record<string, unknown> = { ...updates }
-      if (updates.startTime !== undefined) {
-        payload.start_time = updates.startTime
-        delete payload.startTime
-      }
-      if (updates.estimatedTime !== undefined) {
-        payload.estimated_duration = updates.estimatedTime
-        delete payload.estimatedTime
-      }
+      // Build payload safely to avoid pushing undefined fake columns to Supabase
+      const payload: Record<string, unknown> = {}
+      if ('title' in updates) payload.title = updates.title
+      if ('description' in updates) payload.description = updates.description === undefined ? null : updates.description
+      if ('day' in updates) payload.day = updates.day === undefined ? null : updates.day
+      if ('priority' in updates) payload.priority = updates.priority
+      if ('status' in updates) payload.status = updates.status
+      if ('startTime' in updates) payload.start_time = updates.startTime === undefined ? null : updates.startTime
+      if ('estimatedTime' in updates) payload.estimated_duration = updates.estimatedTime === undefined ? null : updates.estimatedTime
+      if ('tags' in updates) payload.tags = updates.tags === undefined ? null : updates.tags
 
       // Optimistic update with rollback
       const snapshot = get().currentWeek
