@@ -154,15 +154,15 @@ function getWeekStartDate(year: number, weekNumber: number): Date {
 
 function mapDbTask(t: Record<string, unknown>): Task {
   return {
-    id: t.id as string,
-    title: t.title as string,
-    description: (t.description as string | null) ?? undefined,
+    id: String(t.id),
+    title: String(t.title),
+    description: t.description ? String(t.description) : undefined,
     priority: (t.priority as Priority) ?? 'low',
     status: (t.status as TaskStatus) ?? 'pending',
     day: (t.day as DayOfWeek | null) ?? undefined,
-    weekId: (t.week_id as string | null) ?? undefined,
-    startTime: (t.start_time as string | null) ?? undefined,
-    estimatedTime: (t.estimated_duration as string | null) ?? undefined,
+    weekId: t.week_id ? String(t.week_id) : undefined,
+    startTime: t.start_time ? String(t.start_time) : undefined,
+    estimatedTime: t.estimated_duration ? String(t.estimated_duration) : undefined,
     tags: (t.tags as string[] | null) ?? undefined,
   }
 }

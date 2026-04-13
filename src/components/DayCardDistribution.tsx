@@ -112,12 +112,13 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
   }
 
   const handleSave = async () => {
-    if (editData.title.trim()) {
+    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
+    if (safeTrim(editData.title)) {
       await updateTask(task.id, {
-        title: editData.title.trim(),
-        startTime: editData.start.trim() || undefined,
-        estimatedTime: editData.duration.trim() || undefined,
-        description: editData.description.trim() || undefined,
+        title: safeTrim(editData.title),
+        startTime: safeTrim(editData.start) || undefined,
+        estimatedTime: safeTrim(editData.duration) || undefined,
+        description: safeTrim(editData.description) || undefined,
         day: editData.day,
         priority: editData.priority
       })
@@ -184,12 +185,13 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
   }
 
   const handleSave = () => {
-    if (editData.title.trim()) {
+    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
+    if (safeTrim(editData.title)) {
       onSave({
-        title: editData.title.trim(),
-        startTime: editData.start.trim() || undefined,
-        estimatedTime: editData.duration.trim() || undefined,
-        description: editData.description.trim() || undefined,
+        title: safeTrim(editData.title),
+        startTime: safeTrim(editData.start) || undefined,
+        estimatedTime: safeTrim(editData.duration) || undefined,
+        description: safeTrim(editData.description) || undefined,
         day: editData.day,
         priority: editData.priority
       })
