@@ -26,6 +26,7 @@ export interface SettingsState {
   // Notifications
   dailyReminders: boolean
   weeklySummaries: boolean
+  autoDownloadCompletedWeekReport: boolean
 
   // Work Schedule
   restDays: string[]  // e.g. ['friday', 'saturday']
@@ -43,6 +44,7 @@ export interface SettingsState {
   setTheme: (theme: 'dark' | 'light' | 'system') => void
   setDailyReminders: (enabled: boolean) => void
   setWeeklySummaries: (enabled: boolean) => void
+  setAutoDownloadCompletedWeekReport: (enabled: boolean) => void
   setRestDays: (days: string[]) => void
   setTimezone: (timezone: string) => void
   setWeekStartDay: (day: WeekStartDay) => void
@@ -62,6 +64,7 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
       ...(updates.theme !== undefined && { theme: updates.theme }),
       ...(updates.dailyReminders !== undefined && { daily_reminders: updates.dailyReminders }),
       ...(updates.weeklySummaries !== undefined && { weekly_summaries: updates.weeklySummaries }),
+      ...(updates.autoDownloadCompletedWeekReport !== undefined && { auto_download_completed_week_report: updates.autoDownloadCompletedWeekReport }),
       ...(updates.analyticsEnabled !== undefined && { analytics_enabled: updates.analyticsEnabled }),
       ...(updates.restDays !== undefined && { rest_days: updates.restDays }),
       ...(updates.timezone !== undefined && { timezone: updates.timezone }),
@@ -82,6 +85,7 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'dark',
       dailyReminders: true,
       weeklySummaries: true,
+      autoDownloadCompletedWeekReport: false,
       restDays: ['friday'],
       timezone: getDefaultTimeZone(),
       weekStartDay: 'saturday',
@@ -144,6 +148,7 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => { set({ theme }); void syncSettingsToDb({ theme }) },
       setDailyReminders: (enabled) => { set({ dailyReminders: enabled }); void syncSettingsToDb({ dailyReminders: enabled }) },
       setWeeklySummaries: (enabled) => { set({ weeklySummaries: enabled }); void syncSettingsToDb({ weeklySummaries: enabled }) },
+      setAutoDownloadCompletedWeekReport: (enabled) => { set({ autoDownloadCompletedWeekReport: enabled }); void syncSettingsToDb({ autoDownloadCompletedWeekReport: enabled }) },
       setRestDays: (days) => { set({ restDays: days }); void syncSettingsToDb({ restDays: days }) },
       setTimezone: (timezone) => { set({ timezone }); void syncSettingsToDb({ timezone }) },
       setWeekStartDay: (day) => { set({ weekStartDay: day }); void syncSettingsToDb({ weekStartDay: day }) },
@@ -168,6 +173,7 @@ export const useSettingsStore = create<SettingsState>()(
               theme: (userSettings.theme as SettingsState['theme']) ?? state.theme,
               dailyReminders: userSettings.daily_reminders ?? state.dailyReminders,
               weeklySummaries: userSettings.weekly_summaries ?? state.weeklySummaries,
+              autoDownloadCompletedWeekReport: userSettings.auto_download_completed_week_report ?? state.autoDownloadCompletedWeekReport,
               analyticsEnabled: userSettings.analytics_enabled ?? state.analyticsEnabled,
               restDays: (userSettings.rest_days as string[]) ?? state.restDays,
               timezone: userSettings.timezone ?? state.timezone,

@@ -5,6 +5,9 @@ import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
 import { GlowButton } from '../components/effects/GlowButton'
+import { useWeekStore } from '../store/useWeekStore'
+import { usePinnedTaskStore } from '../store/usePinnedTaskStore'
+import type { DayOfWeek, Priority, WeekData } from '../store/useWeekStore'
 
 const TIMEZONE_OPTIONS = [
   'Africa/Cairo',
@@ -27,20 +30,53 @@ const WEEK_START_OPTIONS: Array<{ value: WeekStartDay; label: string }> = [
 
 export function Settings() {
   const settings = useSettingsStore()
+  const { currentWeek, getPreviousWeekForReport } = useWeekStore()
+  const pinnedStore = usePinnedTaskStore()
   const [isExporting, setIsExporting] = useState(false)
   const printRef = useRef<HTMLDivElement>(null)
+  const [reportWeek, setReportWeek] = useState<WeekData | null>(null)
 
   // Local state for Model Selection
   const [localProvider, setLocalProvider] = useState<AIProvider>(settings.activeProvider)
   const [localModel, setLocalModel] = useState<string>(settings.activeModel)
   const [isSavingModel, setIsSavingModel] = useState(false)
   const [savedModel, setSavedModel] = useState(false)
+  const [pinnedDraft, setPinnedDraft] = useState({
+    title: '',
+    description: '',
+    priority: 'medium' as Priority,
+    dayOfWeek: 'monday' as DayOfWeek,
+    startTime: '07:00',
+    endTime: '10:00',
+    tags: '',
+    untilDate: '',
+    isActive: true,
+  })
 
   // Sync local state when store loads
   useEffect(() => {
     setLocalProvider(settings.activeProvider)
     setLocalModel(settings.activeModel)
   }, [settings.activeProvider, settings.activeModel])
+
+  useEffect(() => {
+    void pinnedStore.loadPinnedTasks()
+  }, [])
+
+  useEffect(() => {
+    if (!settings.autoDownloadCompletedWeekReport || !currentWeek) return
+    const markerKey = `weeklyos:auto-report:${currentWeek.year}:w${currentWeek.weekNumber}`
+    if (localStorage.getItem(markerKey)) return
+
+    const run = async () => {
+      const prevWeek = await getPreviousWeekForReport()
+      if (!prevWeek) return
+      await handleExport(prevWeek)
+      localStorage.setItem(markerKey, '1')
+    }
+
+    void run()
+  }, [settings.autoDownloadCompletedWeekReport, currentWeek?.id])
 
   // Determine if it's a custom model
   const predefinedGemini = [
@@ -71,10 +107,14 @@ export function Settings() {
     setTimeout(() => setSavedModel(false), 2000)
   }
 
-  const handleExport = async () => {
+  const handleExport = async (weekToExport?: WeekData | null) => {
     if (!printRef.current || isExporting) return
+    const targetWeek = weekToExport || reportWeek || currentWeek
+    if (!targetWeek) return
     try {
       setIsExporting(true)
+      setReportWeek(targetWeek)
+      await new Promise(resolve => setTimeout(resolve, 30))
       const canvas = await html2canvas(printRef.current, {
         scale: 2, // High resolution
         useCORS: true,
@@ -89,11 +129,55 @@ export function Settings() {
       // If height is larger than 1 page, jsPDF handles it if we don't care about page breaks on perfectly formatted reports,
       // but usually scaling to width is enough for a cohesive report snapshot.
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, Math.min(pdfHeight, pdf.internal.pageSize.getHeight()))
-      pdf.save('weekly_os_report.pdf')
+      pdf.save(`weekly_report_${targetWeek.year}_w${targetWeek.weekNumber}.pdf`)
     } catch (e) {
       console.error('Export failed:', e)
     } finally {
       setIsExporting(false)
+    }
+  }
+
+  const handleDownloadCompletedWeek = async () => {
+    const prevWeek = await getPreviousWeekForReport()
+    if (!prevWeek) {
+      alert('No completed week available yet.')
+      return
+    }
+    await handleExport(prevWeek)
+  }
+
+  const handleCreatePinnedTask = async () => {
+    if (!pinnedDraft.title.trim()) {
+      alert('Please enter a title for the pinned task.')
+      return
+    }
+
+    try {
+      await pinnedStore.createPinnedTask({
+        title: pinnedDraft.title.trim(),
+        description: pinnedDraft.description.trim() || undefined,
+        priority: pinnedDraft.priority,
+        dayOfWeek: pinnedDraft.dayOfWeek,
+        startTime: pinnedDraft.startTime || undefined,
+        endTime: pinnedDraft.endTime || undefined,
+        tags: pinnedDraft.tags ? pinnedDraft.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+        untilDate: pinnedDraft.untilDate || undefined,
+        isActive: pinnedDraft.isActive,
+      })
+
+      setPinnedDraft({
+        title: '',
+        description: '',
+        priority: 'medium',
+        dayOfWeek: 'monday',
+        startTime: '07:00',
+        endTime: '10:00',
+        tags: '',
+        untilDate: '',
+        isActive: true,
+      })
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to create pinned task')
     }
   }
 
@@ -266,6 +350,12 @@ export function Settings() {
                   checked={settings.weeklySummaries}
                   onChange={settings.setWeeklySummaries}
                 />
+                <Toggle
+                  label="Auto-download completed week report"
+                  desc="When enabled, WeeklyOS downloads last completed week's PDF once after rollover."
+                  checked={settings.autoDownloadCompletedWeekReport}
+                  onChange={settings.setAutoDownloadCompletedWeekReport}
+                />
               </div>
             </div>
 
@@ -332,6 +422,117 @@ export function Settings() {
               </div>
             </div>
 
+            {/* Pinned Tasks */}
+            <div>
+              <div className="flex items-center gap-3 text-primary mb-6">
+                <span className="material-symbols-outlined">push_pin</span>
+                <h2 className="text-sm font-bold uppercase tracking-widest">Pinned Tasks</h2>
+              </div>
+              <div className="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-3">
+                <p className="text-xs text-neutral-500">Pinned tasks repeat every week on your selected day/time until you disable or delete them.</p>
+                <input
+                  type="text"
+                  placeholder="Pinned task title"
+                  value={pinnedDraft.title}
+                  onChange={e => setPinnedDraft(p => ({ ...p, title: e.target.value }))}
+                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm"
+                />
+                <textarea
+                  rows={2}
+                  placeholder="Description (optional)"
+                  value={pinnedDraft.description}
+                  onChange={e => setPinnedDraft(p => ({ ...p, description: e.target.value }))}
+                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={pinnedDraft.priority}
+                    onChange={e => setPinnedDraft(p => ({ ...p, priority: e.target.value as Priority }))}
+                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm"
+                  >
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                  <select
+                    value={pinnedDraft.dayOfWeek}
+                    onChange={e => setPinnedDraft(p => ({ ...p, dayOfWeek: e.target.value as DayOfWeek }))}
+                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm"
+                  >
+                    {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="time"
+                    value={pinnedDraft.startTime}
+                    onChange={e => setPinnedDraft(p => ({ ...p, startTime: e.target.value }))}
+                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]"
+                  />
+                  <input
+                    type="time"
+                    value={pinnedDraft.endTime}
+                    onChange={e => setPinnedDraft(p => ({ ...p, endTime: e.target.value }))}
+                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Tags (comma separated)"
+                  value={pinnedDraft.tags}
+                  onChange={e => setPinnedDraft(p => ({ ...p, tags: e.target.value }))}
+                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm"
+                />
+                <input
+                  type="date"
+                  value={pinnedDraft.untilDate}
+                  onChange={e => setPinnedDraft(p => ({ ...p, untilDate: e.target.value }))}
+                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm [color-scheme:dark]"
+                />
+                <GlowButton
+                  type="button"
+                  onClick={handleCreatePinnedTask}
+                  compact
+                  variant="secondary"
+                  className="text-xs font-bold uppercase tracking-widest"
+                >
+                  Create Pinned Task
+                </GlowButton>
+
+                <div className="space-y-2 pt-2 border-t border-white/5">
+                  {pinnedStore.items.length === 0 && (
+                    <p className="text-xs text-neutral-500">No pinned tasks created yet.</p>
+                  )}
+                  {pinnedStore.items.map((item) => (
+                    <div key={item.id} className="bg-surface-container-lowest border border-white/5 rounded-lg px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">{item.title}</p>
+                          <p className="text-[11px] text-neutral-500">{item.dayOfWeek} • {item.startTime || '--:--'} to {item.endTime || '--:--'}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => void pinnedStore.togglePinnedTask(item.id, !item.isActive)}
+                            className={`px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold ${item.isActive ? 'bg-tertiary/15 text-tertiary' : 'bg-neutral-700/30 text-neutral-400'}`}
+                          >
+                            {item.isActive ? 'Active' : 'Paused'}
+                          </button>
+                          <button
+                            onClick={() => void pinnedStore.deletePinnedTask(item.id)}
+                            className="px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold bg-error/15 text-error"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
 
             {/* Privacy & Data */}
             <div>
@@ -361,13 +562,24 @@ export function Settings() {
                 </span>
                 {isExporting ? 'Generating Image...' : 'Export Weekly Report'}
               </GlowButton>
+              <GlowButton
+                type="button"
+                onClick={handleDownloadCompletedWeek}
+                disabled={isExporting}
+                compact
+                variant="tertiary"
+                className="w-full mt-3 text-sm font-bold disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">history</span>
+                Download Completed Week Report
+              </GlowButton>
             </div>
 
           </section>
 
         </div>
       </div>
-      <WeeklyReportPrintView ref={printRef} />
+      <WeeklyReportPrintView ref={printRef} weekData={reportWeek} />
     </AppLayout>
   )
 }

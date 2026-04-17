@@ -1,16 +1,20 @@
 import { forwardRef } from 'react'
 import { useWeekStore } from '../store/useWeekStore'
 import { DayCardDistribution } from './DayCardDistribution'
+import type { WeekData } from '../store/useWeekStore'
 
-export const WeeklyReportPrintView = forwardRef<HTMLDivElement>((_, ref) => {
+interface WeeklyReportPrintViewProps {
+  weekData?: WeekData | null
+}
+
+export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrintViewProps>(({ weekData }, ref) => {
   const { currentWeek } = useWeekStore()
+  const targetWeek = weekData || currentWeek
 
-  if (!currentWeek) return null
+  if (!targetWeek) return null
 
-  const [sat, sun, mon, tue, wed, thu, fri] = currentWeek.days
-
-  const score = currentWeek.score
-  const weekdays = currentWeek.days.slice(0, 5) // Mon-Fri
+  const score = targetWeek.score
+  const weekdays = targetWeek.days.slice(0, 5)
   const dailyStats = weekdays.map(d => {
     const total = (d.highTask ? 1 : 0) + d.mediumTasks.length + d.smallTasks.length
     const done = [d.highTask, ...d.mediumTasks, ...d.smallTasks]
@@ -42,20 +46,19 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement>((_, ref) => {
       <div>
         <div className="mb-8">
           <h1 className="text-5xl font-bold tracking-tight leading-none mb-2">
-            Week {currentWeek.weekNumber} — {currentWeek.dateRange.split('—')[1]?.trim() ?? String(currentWeek.year)}
+            Week {targetWeek.weekNumber} — {targetWeek.dateRange.split('—')[1]?.trim() ?? String(targetWeek.year)}
           </h1>
           <p className="text-sm text-neutral-400">Weekly Plan Distribution</p>
         </div>
         <div className="grid grid-cols-2 gap-6">
-          <DayCardDistribution day={sat} />
-          <DayCardDistribution day={sun} />
-          <DayCardDistribution day={mon} />
-          <DayCardDistribution day={tue} />
-          <DayCardDistribution day={wed} isHighOutputZone={wed.isToday} />
-          <DayCardDistribution day={thu} />
-          <div className="col-span-2">
-            <DayCardDistribution day={fri} />
-          </div>
+          {targetWeek.days.slice(0, 6).map((day) => (
+            <DayCardDistribution key={day.day} day={day} />
+          ))}
+          {targetWeek.days[6] && (
+            <div className="col-span-2">
+              <DayCardDistribution day={targetWeek.days[6]} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -66,7 +69,7 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement>((_, ref) => {
       <div>
         <header className="mb-8">
           <h2 className="text-4xl font-extrabold tracking-tight mb-2">Weekly Evaluation</h2>
-          <p className="text-neutral-400">Reviewing {currentWeek.dateRange}</p>
+          <p className="text-neutral-400">Reviewing {targetWeek.dateRange}</p>
         </header>
         <div className="grid grid-cols-12 gap-6 mb-8">
           <div className="col-span-4 bg-[#1C1B1B] p-6 rounded-xl flex flex-col justify-between">
@@ -78,7 +81,7 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement>((_, ref) => {
               <div className="h-full bg-gradient-to-r from-[#b8c3ff] to-[#2f5cff]" style={{ width: `${score}%` }} />
             </div>
             <div className="mt-3 text-[10px] text-neutral-500">
-              {currentWeek.totalCompleted} / {currentWeek.totalPlanned} tasks completed
+              {targetWeek.totalCompleted} / {targetWeek.totalPlanned} tasks completed
             </div>
           </div>
           <div className="col-span-8 bg-[#1C1B1B] p-6 rounded-xl">

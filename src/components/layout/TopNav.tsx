@@ -1,8 +1,17 @@
 import { NavLink } from 'react-router-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
+import { useWeekStore } from '../../store/useWeekStore'
 
 export function TopNav() {
   const { isMobile, isLeftSidebarOpen, isFocusMode, toggleLeftSidebar, toggleRightSidebar } = useLayoutStore()
+  const {
+    currentWeek,
+    goToPreviousWeek,
+    goToNextWeek,
+    goToCurrentWeek,
+    canGoPreviousWeek,
+    canGoNextWeek,
+  } = useWeekStore()
 
   if (isFocusMode) return null
 
@@ -25,8 +34,38 @@ export function TopNav() {
             }`
           }
         >
-          Current Week
+          {currentWeek ? `Week ${currentWeek.weekNumber}` : 'Current Week'}
         </NavLink>
+        <div className="flex items-center gap-2 text-[#E5E2E1]/80 ml-2">
+          <button
+            onClick={() => void goToPreviousWeek()}
+            disabled={!canGoPreviousWeek}
+            className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Previous Week"
+          >
+            <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+          </button>
+          <button
+            onClick={() => void goToCurrentWeek()}
+            className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-white/10 hover:bg-white/5"
+            title="Go to Current Week"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => void goToNextWeek()}
+            disabled={!canGoNextWeek}
+            className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Next Week"
+          >
+            <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+          </button>
+          {currentWeek && (
+            <span className="text-[10px] uppercase tracking-widest text-[#E5E2E1]/50 ml-1">
+              {currentWeek.dateRange}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Right: Search + Icons */}

@@ -33,8 +33,11 @@ function AppRouter() {
 
   useEffect(() => {
     if (user) {
-      initialize()
-      useSettingsStore.getState().loadFromDb()
+      const boot = async () => {
+        await useSettingsStore.getState().loadFromDb()
+        await initialize()
+      }
+      void boot()
       return () => cleanup()
     }
   }, [user, initialize, cleanup])

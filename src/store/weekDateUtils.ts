@@ -116,6 +116,37 @@ export function getWeekStartDaySerial(year: number, weekNumber: number, weekStar
   return firstWeekStart + (weekNumber - 1) * 7
 }
 
+export function getWeeksInYear(year: number, weekStartDay: WeekStartDay): number {
+  const firstCurrent = firstWeekStartDaySerial(year, weekStartDay)
+  const firstNext = firstWeekStartDaySerial(year + 1, weekStartDay)
+  return Math.round((firstNext - firstCurrent) / 7)
+}
+
+export function getAdjacentWeek(
+  weekNumber: number,
+  year: number,
+  offset: -1 | 1,
+  weekStartDay: WeekStartDay,
+): { weekNumber: number; year: number } {
+  if (offset === 1) {
+    const maxWeeks = getWeeksInYear(year, weekStartDay)
+    if (weekNumber < maxWeeks) return { weekNumber: weekNumber + 1, year }
+    return { weekNumber: 1, year: year + 1 }
+  }
+
+  if (weekNumber > 1) return { weekNumber: weekNumber - 1, year }
+  const prevYear = year - 1
+  return {
+    weekNumber: getWeeksInYear(prevYear, weekStartDay),
+    year: prevYear,
+  }
+}
+
+export function isWeekWithinYearBounds(year: number, weekNumber: number, weekStartDay: WeekStartDay): boolean {
+  if (weekNumber < 1) return false
+  return weekNumber <= getWeeksInYear(year, weekStartDay)
+}
+
 export function formatDaySerial(daySerial: number, timeZone: string, locale = 'en-US'): string {
   const date = new Date(daySerial * MS_PER_DAY)
   return date.toLocaleDateString(locale, {

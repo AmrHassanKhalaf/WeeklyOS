@@ -51,6 +51,7 @@ describe('useSettingsStore', () => {
       theme: 'dark',
       dailyReminders: true,
       weeklySummaries: true,
+      autoDownloadCompletedWeekReport: false,
       restDays: ['friday'],
       timezone: 'Africa/Cairo',
       weekStartDay: 'saturday',
@@ -108,5 +109,19 @@ describe('useSettingsStore', () => {
     expect(state.weekStartDay).toBe('monday')
     expect(supabase.from).toHaveBeenCalledWith('user_settings')
     expect(upsertMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'user1', week_start_day: 'monday' }))
+  })
+
+  it('should update auto download report setting and sync to user_settings', async () => {
+    // @ts-ignore
+    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+
+    useSettingsStore.getState().setAutoDownloadCompletedWeekReport(true)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const state = useSettingsStore.getState()
+    expect(state.autoDownloadCompletedWeekReport).toBe(true)
+    expect(supabase.from).toHaveBeenCalledWith('user_settings')
+    expect(upsertMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'user1', auto_download_completed_week_report: true }))
   })
 })

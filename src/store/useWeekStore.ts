@@ -3,7 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useSettingsStore } from './useSettingsStore'
 import type { WeekStartDay } from './useSettingsStore'
-import { formatDaySerial, getWeekInfoForDate, getWeekStartDaySerial } from './weekDateUtils'
+import { formatDaySerial, getAdjacentWeek, getWeekInfoForDate, getWeekStartDaySerial, getWeeksInYear } from './weekDateUtils'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -30,6 +30,12 @@ export interface Task {
   startTime?: string
   estimatedTime?: string
   tags?: string[]
+  pinnedTaskId?: string
+}
+
+export interface WeekKey {
+  weekNumber: number
+  year: number
 }
 
 export interface ChallengeDay {
@@ -92,6 +98,10 @@ export interface WeekData {
 
 interface WeekStore {
   currentWeek: WeekData | null
+  selectedWeek: WeekKey | null
+  currentWeekKey: WeekKey | null
+  canGoPreviousWeek: boolean
+  canGoNextWeek: boolean
   isLoadingWeek: boolean
   weekError: string | null
   isSyncing: boolean
@@ -101,6 +111,11 @@ interface WeekStore {
 
   // Init
   initialize: () => Promise<void>
+  goToPreviousWeek: () => Promise<void>
+  goToNextWeek: () => Promise<void>
+  goToCurrentWeek: () => Promise<void>
+  goToWeek: (weekNumber: number, year: number) => Promise<void>
+  getPreviousWeekForReport: () => Promise<WeekData | null>
   cleanup: () => void
 
   // Tasks CRUD
@@ -166,6 +181,15 @@ function getCurrentWeekInfo(): { weekNumber: number; year: number } {
   return { weekNumber: info.weekNumber, year: info.year }
 }
 
+function getWeekBounds(weekNumber: number, year: number, weekStartDay: WeekStartDay): { startSerial: number; endSerial: number } {
+  const startSerial = getWeekStartDaySerial(year, weekNumber, weekStartDay)
+  return { startSerial, endSerial: startSerial + 6 }
+}
+
+function daySerialToIso(daySerial: number): string {
+  return new Date(daySerial * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+}
+
 function mapDbTask(t: Record<string, unknown>): Task {
   return {
     id: String(t.id),
@@ -178,6 +202,7 @@ function mapDbTask(t: Record<string, unknown>): Task {
     startTime: t.start_time ? String(t.start_time) : undefined,
     estimatedTime: t.estimated_duration ? String(t.estimated_duration) : undefined,
     tags: (t.tags as string[] | null) ?? undefined,
+    pinnedTaskId: t.pinned_task_id ? String(t.pinned_task_id) : undefined,
   }
 }
 
@@ -328,8 +353,99 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     set({ isSyncing: false })
   }
 
+  const updateNavigationState = (selectedWeek: WeekKey, currentWeekKey: WeekKey) => {
+    const { weekStartDay } = getWeekSettings()
+    const maxWeeks = getWeeksInYear(selectedWeek.year, weekStartDay)
+    set({
+      selectedWeek,
+      currentWeekKey,
+      canGoPreviousWeek: selectedWeek.weekNumber > 1,
+      canGoNextWeek: selectedWeek.year < currentWeekKey.year || (selectedWeek.year === currentWeekKey.year && selectedWeek.weekNumber < maxWeeks),
+    })
+  }
+
+  const materializePinnedTasksForWeek = async (userId: string, week: Record<string, unknown>) => {
+    const { weekStartDay } = getWeekSettings()
+    const weekNumber = week.week_number as number
+    const year = week.year as number
+    const bounds = getWeekBounds(weekNumber, year, weekStartDay)
+    const weekEndIso = daySerialToIso(bounds.endSerial)
+
+    const { data: pinnedTasks, error: pinnedErr } = await supabase
+      .from('pinned_tasks')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .or(`until_date.is.null,until_date.gte.${weekEndIso}`)
+
+    if (pinnedErr || !pinnedTasks || pinnedTasks.length === 0) return
+
+    const rows = pinnedTasks.map((item) => ({
+      user_id: userId,
+      week_id: week.id,
+      title: item.title,
+      description: item.description,
+      priority: item.priority,
+      day: item.day_of_week,
+      start_time: item.start_time,
+      estimated_duration: item.end_time ? `${item.start_time || ''}-${item.end_time}` : null,
+      tags: item.tags,
+      status: 'pending',
+      type: 'pinned',
+      pinned_task_id: item.id,
+    }))
+
+    await supabase.from('tasks').upsert(rows, {
+      onConflict: 'week_id,pinned_task_id',
+      ignoreDuplicates: true,
+    })
+  }
+
+  const loadWeekByKey = async (weekNumber: number, year: number, options?: { createIfMissing?: boolean }): Promise<WeekData | null> => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
+    if (!user) return null
+
+    let { data: week, error: weekErr } = await supabase
+      .from('weeks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('week_number', weekNumber)
+      .eq('year', year)
+      .maybeSingle()
+
+    if (weekErr) throw weekErr
+
+    if (!week && options?.createIfMissing) {
+      const { data: newWeek, error: createErr } = await supabase
+        .from('weeks')
+        .insert({ user_id: user.id, week_number: weekNumber, year })
+        .select()
+        .single()
+      if (createErr) throw createErr
+      week = newWeek
+    }
+
+    if (!week) return null
+
+    await materializePinnedTasksForWeek(user.id, week as Record<string, unknown>)
+
+    const { data: tasks, error: tasksErr } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('week_id', week.id)
+
+    if (tasksErr) throw tasksErr
+    return buildWeekData(week as Record<string, unknown>, (tasks ?? []) as Record<string, unknown>[])
+  }
+
   return {
     currentWeek: null,
+    selectedWeek: null,
+    currentWeekKey: null,
+    canGoPreviousWeek: false,
+    canGoNextWeek: false,
     isLoadingWeek: true,
     weekError: null,
     isSyncing: false,
@@ -346,42 +462,18 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       set({ isLoadingWeek: true, weekError: null })
 
       try {
-        // 1. Get or create current week
-        const { weekNumber, year } = getCurrentWeekInfo()
+        const currentKey = getCurrentWeekInfo()
+        const selected = get().selectedWeek || currentKey
+        const loaded = await loadWeekByKey(selected.weekNumber, selected.year, { createIfMissing: true })
 
-        let { data: week, error: weekErr } = await supabase
-          .from('weeks')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('week_number', weekNumber)
-          .eq('year', year)
-          .maybeSingle()
-
-        if (weekErr) throw weekErr
-
-        if (!week) {
-          const { data: newWeek, error: createErr } = await supabase
-            .from('weeks')
-            .insert({ user_id: user.id, week_number: weekNumber, year })
-            .select()
-            .single()
-          if (createErr) throw createErr
-          week = newWeek
-        }
-
-        // 2. Load tasks for this week
-        const { data: tasks, error: tasksErr } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('week_id', week.id)
-
-        if (tasksErr) throw tasksErr
+        if (!loaded) throw new Error('Failed to load selected week')
 
         set({
-          currentWeek: buildWeekData(week as Record<string, unknown>, (tasks ?? []) as Record<string, unknown>[]),
+          currentWeek: loaded,
           isLoadingWeek: false,
         })
+
+        updateNavigationState({ weekNumber: loaded.weekNumber, year: loaded.year }, currentKey)
 
         // 3. Real-time subscription for tasks (DISABLED - causing WebSocket connection issues)
         // TODO: Re-enable when network connectivity is stable
@@ -439,6 +531,59 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
 
       // 4. Brain dump (MIGRATED to useBrainDumpStore)
+    },
+
+    goToWeek: async (weekNumber, year) => {
+      set({ isLoadingWeek: true, weekError: null })
+      try {
+        const loaded = await loadWeekByKey(weekNumber, year, { createIfMissing: true })
+        const currentKey = getCurrentWeekInfo()
+        if (!loaded) {
+          set({ isLoadingWeek: false })
+          return
+        }
+        set({
+          currentWeek: loaded,
+          isLoadingWeek: false,
+        })
+        updateNavigationState({ weekNumber: loaded.weekNumber, year: loaded.year }, currentKey)
+      } catch (err) {
+        set({ weekError: (err as Error).message, isLoadingWeek: false })
+      }
+    },
+
+    goToCurrentWeek: async () => {
+      const current = getCurrentWeekInfo()
+      await get().goToWeek(current.weekNumber, current.year)
+    },
+
+    goToPreviousWeek: async () => {
+      const selected = get().selectedWeek || getCurrentWeekInfo()
+      if (selected.weekNumber <= 1) return
+      const { weekStartDay } = getWeekSettings()
+      const prev = getAdjacentWeek(selected.weekNumber, selected.year, -1, weekStartDay)
+      if (prev.year !== selected.year) return
+      await get().goToWeek(prev.weekNumber, prev.year)
+    },
+
+    goToNextWeek: async () => {
+      const selected = get().selectedWeek || getCurrentWeekInfo()
+      const current = getCurrentWeekInfo()
+      const { weekStartDay } = getWeekSettings()
+      const maxWeeks = getWeeksInYear(selected.year, weekStartDay)
+      if (selected.year > current.year || selected.weekNumber >= maxWeeks) return
+      const next = getAdjacentWeek(selected.weekNumber, selected.year, 1, weekStartDay)
+      if (next.year !== selected.year) return
+      await get().goToWeek(next.weekNumber, next.year)
+    },
+
+    getPreviousWeekForReport: async () => {
+      const selected = get().selectedWeek || getCurrentWeekInfo()
+      if (selected.weekNumber <= 1) return null
+      const { weekStartDay } = getWeekSettings()
+      const prev = getAdjacentWeek(selected.weekNumber, selected.year, -1, weekStartDay)
+      if (prev.year !== selected.year) return null
+      return await loadWeekByKey(prev.weekNumber, prev.year)
     },
 
     cleanup: () => {
@@ -595,6 +740,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         start_time: task.startTime ?? null,
         estimated_duration: task.estimatedTime ?? null,
         tags: task.tags ?? null,
+        pinned_task_id: null,
       }).select().single()
 
       if (error) {

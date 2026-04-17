@@ -87,6 +87,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pinned_tasks: {
+        Row: {
+          created_at: string
+          day_of_week: string
+          description: string | null
+          end_time: string | null
+          id: string
+          is_active: boolean
+          priority: string
+          start_time: string | null
+          tags: string[] | null
+          title: string
+          until_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          priority?: string
+          start_time?: string | null
+          tags?: string[] | null
+          title: string
+          until_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          priority?: string
+          start_time?: string | null
+          tags?: string[] | null
+          title?: string
+          until_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           created_at: string
@@ -94,6 +142,7 @@ export type Database = {
           description: string | null
           estimated_duration: string | null
           id: string
+          pinned_task_id: string | null
           priority: string | null
           start_time: string | null
           status: string
@@ -109,6 +158,7 @@ export type Database = {
           description?: string | null
           estimated_duration?: string | null
           id?: string
+          pinned_task_id?: string | null
           priority?: string | null
           start_time?: string | null
           status?: string
@@ -124,6 +174,7 @@ export type Database = {
           description?: string | null
           estimated_duration?: string | null
           id?: string
+          pinned_task_id?: string | null
           priority?: string | null
           start_time?: string | null
           status?: string
@@ -135,6 +186,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "tasks_pinned_task_id_fkey"
+            columns: ["pinned_task_id"]
+            isOneToOne: false
+            referencedRelation: "pinned_tasks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_week_id_fkey"
             columns: ["week_id"]
             isOneToOne: false
@@ -145,33 +203,42 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          auto_download_completed_week_report: boolean | null
           analytics_enabled: boolean | null
           daily_reminders: boolean | null
           fallback_enabled: boolean | null
           rest_days: Json | null
           theme: string | null
+          timezone: string | null
           updated_at: string | null
           user_id: string
+          week_start_day: string | null
           weekly_summaries: boolean | null
         }
         Insert: {
+          auto_download_completed_week_report?: boolean | null
           analytics_enabled?: boolean | null
           daily_reminders?: boolean | null
           fallback_enabled?: boolean | null
           rest_days?: Json | null
           theme?: string | null
+          timezone?: string | null
           updated_at?: string | null
           user_id: string
+          week_start_day?: string | null
           weekly_summaries?: boolean | null
         }
         Update: {
+          auto_download_completed_week_report?: boolean | null
           analytics_enabled?: boolean | null
           daily_reminders?: boolean | null
           fallback_enabled?: boolean | null
           rest_days?: Json | null
           theme?: string | null
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string
+          week_start_day?: string | null
           weekly_summaries?: boolean | null
         }
         Relationships: []
