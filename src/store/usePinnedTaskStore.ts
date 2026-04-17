@@ -2,6 +2,13 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import type { DayOfWeek, Priority } from './useWeekStore'
 
+let _pinnedTableAvailable: boolean | null = null
+
+function isMissingPinnedTable(error: unknown): boolean {
+  const code = (error as { code?: string } | null | undefined)?.code
+  return code === 'PGRST205' || code === '42P01'
+}
+
 export interface PinnedTask {
   id: string
   title: string
@@ -47,6 +54,11 @@ export const usePinnedTaskStore = create<PinnedTaskStore>((set, get) => ({
   error: null,
 
   loadPinnedTasks: async () => {
+    if (_pinnedTableAvailable === false) {
+      set({ items: [], isLoading: false, error: null })
+      return
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
     if (!user) return
@@ -60,9 +72,16 @@ export const usePinnedTaskStore = create<PinnedTaskStore>((set, get) => ({
       .order('created_at', { ascending: false })
 
     if (error) {
+      if (isMissingPinnedTable(error)) {
+        _pinnedTableAvailable = false
+        set({ items: [], isLoading: false, error: null })
+        return
+      }
       set({ isLoading: false, error: error.message })
       return
     }
+
+    _pinnedTableAvailable = true
 
     set({
       items: (data || []).map((row) => mapPinnedTask(row as Record<string, unknown>)),
@@ -72,6 +91,10 @@ export const usePinnedTaskStore = create<PinnedTaskStore>((set, get) => ({
   },
 
   createPinnedTask: async (payload) => {
+    if (_pinnedTableAvailable === false) {
+      throw new Error('Pinned tasks تحتاج تطبيق Migration قاعدة البيانات أولاً.')
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
     if (!user) return
@@ -94,15 +117,25 @@ export const usePinnedTaskStore = create<PinnedTaskStore>((set, get) => ({
       .single()
 
     if (error) {
+      if (isMissingPinnedTable(error)) {
+        _pinnedTableAvailable = false
+        throw new Error('Pinned tasks غير مفعلة بعد. طبّق migration ثم أعد المحاولة.')
+      }
       set({ error: error.message })
       throw new Error(error.message)
     }
+
+    _pinnedTableAvailable = true
 
     const item = mapPinnedTask(data as Record<string, unknown>)
     set((state) => ({ items: [item, ...state.items] }))
   },
 
   updatePinnedTask: async (id, payload) => {
+    if (_pinnedTableAvailable === false) {
+      throw new Error('Pinned tasks غير مفعلة بعد. طبّق migration أولاً.')
+    }
+
     const { error } = await supabase
       .from('pinned_tasks')
       .update({
@@ -120,6 +153,10 @@ export const usePinnedTaskStore = create<PinnedTaskStore>((set, get) => ({
       .eq('id', id)
 
     if (error) {
+      if (isMissingPinnedTable(error)) {
+        _pinnedTableAvailable = false
+        throw new Error('Pinned tasks غير مفعلة بعد. طبّق migration ثم أعد المحاولة.')
+      }
       set({ error: error.message })
       throw new Error(error.message)
     }
@@ -130,12 +167,18 @@ export const usePinnedTaskStore = create<PinnedTaskStore>((set, get) => ({
   },
 
   deletePinnedTask: async (id) => {
+    if (_pinnedTableAvailable === false) return
+
     const { error } = await supabase
       .from('pinned_tasks')
       .delete()
       .eq('id', id)
 
     if (error) {
+      if (isMissingPinnedTable(error)) {
+        _pinnedTableAvailable = false
+        return
+      }
       set({ error: error.message })
       throw new Error(error.message)
     }

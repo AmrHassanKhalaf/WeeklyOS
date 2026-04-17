@@ -329,6 +329,7 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 let _realtimeChannel: RealtimeChannel | null = null
+let _pinnedFeatureAvailable: boolean | null = null
 
 export const useWeekStore = create<WeekStore>((set, get) => {
   const syncToDb = async () => {
@@ -365,6 +366,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
   }
 
   const materializePinnedTasksForWeek = async (userId: string, week: Record<string, unknown>) => {
+    if (_pinnedFeatureAvailable === false) return
+
     const { weekStartDay } = getWeekSettings()
     const weekNumber = week.week_number as number
     const year = week.year as number
@@ -378,7 +381,17 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       .eq('is_active', true)
       .or(`until_date.is.null,until_date.gte.${weekEndIso}`)
 
-    if (pinnedErr || !pinnedTasks || pinnedTasks.length === 0) return
+    if (pinnedErr) {
+      // Migration may not be applied yet in some environments; avoid retry spam and hard failures.
+      if ((pinnedErr as { code?: string }).code === 'PGRST205' || (pinnedErr as { code?: string }).code === '42P01') {
+        _pinnedFeatureAvailable = false
+      }
+      return
+    }
+
+    _pinnedFeatureAvailable = true
+
+    if (!pinnedTasks || pinnedTasks.length === 0) return
 
     const rows = pinnedTasks.map((item) => ({
       user_id: userId,
@@ -395,10 +408,17 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       pinned_task_id: item.id,
     }))
 
-    await supabase.from('tasks').upsert(rows, {
+    const { error: upsertErr } = await supabase.from('tasks').upsert(rows, {
       onConflict: 'week_id,pinned_task_id',
       ignoreDuplicates: true,
     })
+
+    if (upsertErr) {
+      // If schema is still old, stop trying to materialize until migration is present.
+      if ((upsertErr as { code?: string }).code === 'PGRST204' || (upsertErr as { code?: string }).code === '42703') {
+        _pinnedFeatureAvailable = false
+      }
+    }
   }
 
   const loadWeekByKey = async (weekNumber: number, year: number, options?: { createIfMissing?: boolean }): Promise<WeekData | null> => {
@@ -740,7 +760,6 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         start_time: task.startTime ?? null,
         estimated_duration: task.estimatedTime ?? null,
         tags: task.tags ?? null,
-        pinned_task_id: null,
       }).select().single()
 
       if (error) {
