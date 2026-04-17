@@ -3,6 +3,15 @@ import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 
 export type AIProvider = 'gemini' | 'grok'
+export type WeekStartDay = 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
+
+function getDefaultTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo'
+  } catch {
+    return 'Africa/Cairo'
+  }
+}
 
 export interface SettingsState {
   // AI Settings
@@ -20,6 +29,8 @@ export interface SettingsState {
 
   // Work Schedule
   restDays: string[]  // e.g. ['friday', 'saturday']
+  timezone: string
+  weekStartDay: WeekStartDay
 
   // Privacy
   analyticsEnabled: boolean
@@ -33,6 +44,8 @@ export interface SettingsState {
   setDailyReminders: (enabled: boolean) => void
   setWeeklySummaries: (enabled: boolean) => void
   setRestDays: (days: string[]) => void
+  setTimezone: (timezone: string) => void
+  setWeekStartDay: (day: WeekStartDay) => void
   setAnalyticsEnabled: (enabled: boolean) => void
   exportWeeklyReport: () => void
   loadFromDb: () => Promise<void>
@@ -51,6 +64,8 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
       ...(updates.weeklySummaries !== undefined && { weekly_summaries: updates.weeklySummaries }),
       ...(updates.analyticsEnabled !== undefined && { analytics_enabled: updates.analyticsEnabled }),
       ...(updates.restDays !== undefined && { rest_days: updates.restDays }),
+      ...(updates.timezone !== undefined && { timezone: updates.timezone }),
+      ...(updates.weekStartDay !== undefined && { week_start_day: updates.weekStartDay }),
     })
   } catch (e) {
     console.warn('Sync failed', e)
@@ -68,6 +83,8 @@ export const useSettingsStore = create<SettingsState>()(
       dailyReminders: true,
       weeklySummaries: true,
       restDays: ['friday'],
+      timezone: getDefaultTimeZone(),
+      weekStartDay: 'saturday',
       analyticsEnabled: false,
 
       setAiKey: async (provider, key) => {
@@ -128,6 +145,8 @@ export const useSettingsStore = create<SettingsState>()(
       setDailyReminders: (enabled) => { set({ dailyReminders: enabled }); void syncSettingsToDb({ dailyReminders: enabled }) },
       setWeeklySummaries: (enabled) => { set({ weeklySummaries: enabled }); void syncSettingsToDb({ weeklySummaries: enabled }) },
       setRestDays: (days) => { set({ restDays: days }); void syncSettingsToDb({ restDays: days }) },
+      setTimezone: (timezone) => { set({ timezone }); void syncSettingsToDb({ timezone }) },
+      setWeekStartDay: (day) => { set({ weekStartDay: day }); void syncSettingsToDb({ weekStartDay: day }) },
       setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); void syncSettingsToDb({ analyticsEnabled: enabled }) },
 
       loadFromDb: async () => {
@@ -151,6 +170,8 @@ export const useSettingsStore = create<SettingsState>()(
               weeklySummaries: userSettings.weekly_summaries ?? state.weeklySummaries,
               analyticsEnabled: userSettings.analytics_enabled ?? state.analyticsEnabled,
               restDays: (userSettings.rest_days as string[]) ?? state.restDays,
+              timezone: userSettings.timezone ?? state.timezone,
+              weekStartDay: (userSettings.week_start_day as WeekStartDay) ?? state.weekStartDay,
             }))
           }
 

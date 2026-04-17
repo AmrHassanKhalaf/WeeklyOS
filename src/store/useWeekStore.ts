@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { getISOWeek, getISOWeekYear } from 'date-fns'
+import { useSettingsStore } from './useSettingsStore'
+import type { WeekStartDay } from './useSettingsStore'
+import { formatDaySerial, getWeekInfoForDate, getWeekStartDaySerial } from './weekDateUtils'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -132,24 +134,36 @@ interface WeekStore {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const DAYS: DayOfWeek[] = [
-  'saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+  'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
 ]
-const DAY_SHORT = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']
-
-function getCurrentWeekInfo(): { weekNumber: number; year: number } {
-  const now = new Date()
-  return { weekNumber: getISOWeek(now), year: getISOWeekYear(now) }
+const DAY_SHORT: Record<DayOfWeek, string> = {
+  sunday: 'Sun',
+  monday: 'Mon',
+  tuesday: 'Tue',
+  wednesday: 'Wed',
+  thursday: 'Thu',
+  friday: 'Fri',
+  saturday: 'Sat',
 }
 
-/** Get the Saturday of a given ISO week. */
-function getWeekStartDate(year: number, weekNumber: number): Date {
-  const jan4 = new Date(year, 0, 4)
-  const dayOfWeek = jan4.getDay() || 7 // 1 is Monday, 7 is Sunday
-  const monday = new Date(jan4)
-  monday.setDate(jan4.getDate() - (dayOfWeek - 1) + (weekNumber - 1) * 7)
-  const saturday = new Date(monday)
-  saturday.setDate(monday.getDate() - 2) // Shift ISO Monday to Saturday
-  return saturday
+function getOrderedDays(weekStartDay: WeekStartDay): DayOfWeek[] {
+  const startIdx = DAYS.indexOf(weekStartDay as DayOfWeek)
+  if (startIdx < 0) return [...DAYS]
+  return [...DAYS.slice(startIdx), ...DAYS.slice(0, startIdx)]
+}
+
+function getWeekSettings(): { timeZone: string; weekStartDay: WeekStartDay } {
+  const { timezone, weekStartDay } = useSettingsStore.getState()
+  return {
+    timeZone: timezone || 'Africa/Cairo',
+    weekStartDay: (weekStartDay || 'saturday') as WeekStartDay,
+  }
+}
+
+function getCurrentWeekInfo(): { weekNumber: number; year: number } {
+  const { timeZone, weekStartDay } = getWeekSettings()
+  const info = getWeekInfoForDate(new Date(), timeZone, weekStartDay)
+  return { weekNumber: info.weekNumber, year: info.year }
 }
 
 function mapDbTask(t: Record<string, unknown>): Task {
@@ -189,27 +203,26 @@ function processTasksForDay(dayPlan: DayPlan, allTasks: Task[]): DayPlan {
 function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, unknown>[]): WeekData {
   const weekNumber = dbWeek.week_number as number
   const year = dbWeek.year as number
-  const startDate = getWeekStartDate(year, weekNumber)
+  const { timeZone, weekStartDay } = getWeekSettings()
+  const orderedDays = getOrderedDays(weekStartDay)
+  const weekStartDaySerial = getWeekStartDaySerial(year, weekNumber, weekStartDay)
 
-  const today = new Date()
-  const todayIdx = (today.getDay() + 1) % 7 // For Saturday-started week: Sat=0, Sun=1, Mon=2, etc.
+  const nowWeekInfo = getWeekInfoForDate(new Date(), timeZone, weekStartDay)
+  const todayIdx = nowWeekInfo.todayIndex
 
   // Is the loaded week the current one?
-  const { weekNumber: curWeek, year: curYear } = getCurrentWeekInfo()
-  const isCurrentWeek = weekNumber === curWeek && year === curYear
+  const isCurrentWeek = weekNumber === nowWeekInfo.weekNumber && year === nowWeekInfo.year
 
   const mappedTasks = tasks.map(mapDbTask)
 
-    const dayPlans: DayPlan[] = DAYS.map((day, idx) => {
-    const dayDate = new Date(startDate)
-    dayDate.setDate(startDate.getDate() + idx)
-    const dateStr = dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const dayPlans: DayPlan[] = orderedDays.map((day, idx) => {
+    const dateStr = formatDaySerial(weekStartDaySerial + idx, timeZone)
     const dailyNotes = (dbWeek.daily_notes as Record<string, string>) || {}
 
     const baseDayPlan = {
       day,
       date: dateStr,
-      shortName: DAY_SHORT[idx],
+      shortName: DAY_SHORT[day],
       isToday: isCurrentWeek && idx === todayIdx,
       isRestDay: false,
       progress: 0, 

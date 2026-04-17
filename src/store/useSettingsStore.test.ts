@@ -52,6 +52,8 @@ describe('useSettingsStore', () => {
       dailyReminders: true,
       weeklySummaries: true,
       restDays: ['friday'],
+      timezone: 'Africa/Cairo',
+      weekStartDay: 'saturday',
       analyticsEnabled: false,
     })
   })
@@ -78,5 +80,33 @@ describe('useSettingsStore', () => {
     expect(state.activeModel).toBe('gemini-3.1-pro-preview')
     expect(supabase.from).toHaveBeenCalledWith('ai_settings')
     expect(upsertMock).toHaveBeenCalledWith({ user_id: 'user1', active_model: 'gemini-3.1-pro-preview' })
+  })
+
+  it('should update timezone and sync to user_settings', async () => {
+    // @ts-ignore
+    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+
+    useSettingsStore.getState().setTimezone('UTC')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const state = useSettingsStore.getState()
+    expect(state.timezone).toBe('UTC')
+    expect(supabase.from).toHaveBeenCalledWith('user_settings')
+    expect(upsertMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'user1', timezone: 'UTC' }))
+  })
+
+  it('should update weekStartDay and sync to user_settings', async () => {
+    // @ts-ignore
+    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+
+    useSettingsStore.getState().setWeekStartDay('monday')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const state = useSettingsStore.getState()
+    expect(state.weekStartDay).toBe('monday')
+    expect(supabase.from).toHaveBeenCalledWith('user_settings')
+    expect(upsertMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'user1', week_start_day: 'monday' }))
   })
 })

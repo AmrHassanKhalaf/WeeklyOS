@@ -1,10 +1,29 @@
 import { AppLayout } from '../components/layout/AppLayout'
-import { useSettingsStore, AIProvider } from '../store/useSettingsStore'
+import { useSettingsStore, AIProvider, WeekStartDay } from '../store/useSettingsStore'
 import { useState, useRef, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
 import { GlowButton } from '../components/effects/GlowButton'
+
+const TIMEZONE_OPTIONS = [
+  'Africa/Cairo',
+  'UTC',
+  'Europe/London',
+  'Europe/Berlin',
+  'Asia/Riyadh',
+  'Asia/Dubai',
+  'Asia/Kolkata',
+  'America/New_York',
+  'America/Chicago',
+  'America/Los_Angeles',
+]
+
+const WEEK_START_OPTIONS: Array<{ value: WeekStartDay; label: string }> = [
+  { value: 'saturday', label: 'Saturday' },
+  { value: 'sunday', label: 'Sunday' },
+  { value: 'monday', label: 'Monday' },
+]
 
 export function Settings() {
   const settings = useSettingsStore()
@@ -257,6 +276,35 @@ export function Settings() {
                 <h2 className="text-sm font-bold uppercase tracking-widest">Work Schedule</h2>
               </div>
               <div className="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Timezone</label>
+                    <select
+                      value={settings.timezone}
+                      onChange={e => settings.setTimezone(e.target.value)}
+                      className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface"
+                    >
+                      <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>System ({Intl.DateTimeFormat().resolvedOptions().timeZone})</option>
+                      {TIMEZONE_OPTIONS.map((tz) => (
+                        <option key={tz} value={tz}>{tz}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Week Starts On</label>
+                    <select
+                      value={settings.weekStartDay}
+                      onChange={e => settings.setWeekStartDay(e.target.value as WeekStartDay)}
+                      className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface"
+                    >
+                      {WEEK_START_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <p className="text-xs text-neutral-500 mb-2">Select your rest days. These days will be marked as "Rest Day" on your dashboard.</p>
                 <div className="flex flex-wrap gap-2">
                   {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
