@@ -6,6 +6,17 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_b3b9efeb8f5e774a459220e1a70143b3e223137a",
+        "SUPABASE_PROJECT_REF": "vdbscudaljbxqcndwovp"
+      }
     }
   }
 }
