@@ -307,6 +307,11 @@ export function generateWeeklyReportHTML(weekData: WeekData, opts: ReportOptions
   // Page 1: Cover
   pages.push(coverPage(weekData))
 
+  // Page 2: Evaluation / Reflection (if any content)
+  if (weekData.evalWentWell || weekData.evalStruggle || weekData.evalLessons) {
+    pages.push(evalPage(weekData))
+  }
+
   // Filter days
   const filteredDays = weekData.days.filter(d =>
     !includedDays || includedDays.includes(d.day)
@@ -322,22 +327,16 @@ export function generateWeeklyReportHTML(weekData: WeekData, opts: ReportOptions
   }
 
   chunks.forEach((chunk, idx) => {
-    const isLast   = idx === chunks.length - 1
-    const isAlone  = chunk.length < 3
-    const title    = `Weekly Distribution · Part ${idx + 1}`
+    const isLast  = idx === chunks.length - 1
+    const isAlone = chunk.length < 3
+    const title   = `Weekly Distribution · Part ${idx + 1}`
 
     if (isLast && isAlone) {
-      // Closing page: centered card(s) + quote
       pages.push(closingPage(chunk, closingQuote))
     } else {
       pages.push(daysPage(chunk, title))
     }
   })
-
-  // Evaluation page
-  if (weekData.evalWentWell || weekData.evalStruggle || weekData.evalLessons) {
-    pages.push(evalPage(weekData))
-  }
 
   return `<!DOCTYPE html>
 <html lang="en">
