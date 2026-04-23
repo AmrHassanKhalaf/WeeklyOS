@@ -34,6 +34,7 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
         top: '-9999px',
         left: '-9999px',
         pointerEvents: 'none',
+        fontFamily: "'Inter', 'Segoe UI', Tahoma, Arial, sans-serif",
       }}
     >
       {/* Page 1: Weekly Distribution */}
@@ -79,7 +80,7 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
           <h2 className="text-4xl font-extrabold tracking-tight mb-2">Weekly Evaluation</h2>
           <p className="text-neutral-400">Reviewing {targetWeek.dateRange}</p>
         </header>
-        <div className="grid grid-cols-12 gap-6 mb-8 flex-1 content-start">
+        <div className="grid grid-cols-12 gap-6 mb-8 content-start">
           <div className="col-span-4 bg-[#1C1B1B] p-6 rounded-xl flex flex-col justify-between">
             <span className="text-xs uppercase tracking-widest text-neutral-500">Weekly Score</span>
             <div className="mt-4 flex items-baseline gap-2">
@@ -112,6 +113,29 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
                 )
               })}
             </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 mt-2">
+          <div className="bg-[#1C1B1B] rounded-xl p-5 border border-white/5">
+            <div className="text-xs uppercase tracking-widest text-neutral-500 mb-2">What Went Well</div>
+            <p className="text-sm leading-relaxed text-[#e5e2e1] whitespace-pre-wrap min-h-[72px]">
+              {(targetWeek.evalWentWell || '').trim() || 'No notes provided.'}
+            </p>
+          </div>
+
+          <div className="bg-[#1C1B1B] rounded-xl p-5 border border-white/5">
+            <div className="text-xs uppercase tracking-widest text-neutral-500 mb-2">Where I Struggled</div>
+            <p className="text-sm leading-relaxed text-[#e5e2e1] whitespace-pre-wrap min-h-[72px]">
+              {(targetWeek.evalStruggle || '').trim() || 'No notes provided.'}
+            </p>
+          </div>
+
+          <div className="bg-[#1C1B1B] rounded-xl p-5 border border-white/5">
+            <div className="text-xs uppercase tracking-widest text-neutral-500 mb-2">Lessons Learned</div>
+            <p className="text-sm leading-relaxed text-[#e5e2e1] whitespace-pre-wrap min-h-[72px]">
+              {(targetWeek.evalLessons || '').trim() || 'No notes provided.'}
+            </p>
           </div>
         </div>
       </section>

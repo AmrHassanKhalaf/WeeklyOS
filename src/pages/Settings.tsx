@@ -139,11 +139,40 @@ export function Settings() {
         }
 
         const pageNode = pagesToCapture[i]
-        const canvas = await html2canvas(pageNode, {
-          scale: 2,
+        const captureHost = document.createElement('div')
+        captureHost.style.position = 'fixed'
+        captureHost.style.top = '0'
+        captureHost.style.left = '0'
+        captureHost.style.width = `${pageNode.offsetWidth || 1200}px`
+        captureHost.style.zIndex = '2147483647'
+        captureHost.style.pointerEvents = 'none'
+        captureHost.style.background = '#131313'
+        captureHost.style.opacity = '0.01'
+        captureHost.style.overflow = 'hidden'
+
+        const clone = pageNode.cloneNode(true) as HTMLElement
+        clone.style.position = 'relative'
+        clone.style.top = '0'
+        clone.style.left = '0'
+        clone.style.transform = 'translateZ(0)'
+        clone.style.backfaceVisibility = 'hidden'
+
+        captureHost.appendChild(clone)
+        document.body.appendChild(captureHost)
+
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        })
+
+        const canvas = await html2canvas(clone, {
+          scale: Math.max(2, window.devicePixelRatio || 1),
           useCORS: true,
           backgroundColor: '#131313',
+          foreignObjectRendering: true,
+          logging: false,
         })
+
+        captureHost.remove()
 
         const imgData = canvas.toDataURL('image/png')
         const imgWidth = canvas.width
