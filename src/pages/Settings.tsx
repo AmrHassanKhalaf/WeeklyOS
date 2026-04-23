@@ -213,7 +213,7 @@ export function Settings() {
   }
 
   const Toggle = ({ label, desc, checked, onChange }: { label: string, desc: string, checked: boolean, onChange: (c: boolean) => void }) => (
-    <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border border-white/5">
+    <div className="flex items-center justify-between gap-4 p-4 bg-surface-container-low/70 rounded-xl border border-white/10">
       <div>
         <p className="font-bold text-on-surface text-sm">{label}</p>
         <p className="text-xs text-neutral-500 mt-0.5">{desc}</p>
@@ -229,17 +229,27 @@ export function Settings() {
 
   return (
     <AppLayout>
-      <div className="max-w-[800px] mx-auto px-8 py-12">
-        <div className="mb-12">
-          <h1 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-2">Settings</h1>
-          <p className="text-neutral-500">Configure your WeeklyOS experience, AI integrations, and privacy.</p>
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-8 md:py-10">
+        <div className="mb-8 rounded-2xl border border-white/10 bg-gradient-to-br from-surface-container-low/70 to-surface-container-lowest/70 p-6 md:p-7">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tighter text-on-surface mb-2">Settings</h1>
+              <p className="text-neutral-400">Configure your WeeklyOS experience, AI integrations, and privacy in one place.</p>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold">
+              <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary">Workspace</span>
+              <span className="px-2.5 py-1 rounded-full bg-tertiary/15 text-tertiary">AI</span>
+              <span className="px-2.5 py-1 rounded-full bg-error/15 text-error">Privacy</span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/5 pt-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           
           {/* AI Settings */}
-          <section className="space-y-8">
-            <div className="flex items-center gap-3 text-primary mb-6">
+          <section className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <div className="flex items-center gap-3 text-primary mb-5">
               <span className="material-symbols-outlined">smart_toy</span>
               <h2 className="text-sm font-bold uppercase tracking-widest">AI Integration</h2>
             </div>
@@ -257,7 +267,7 @@ export function Settings() {
                         if (p === 'grok') setLocalModel('grok-2-mini')
                         if (p === 'gemini') setLocalModel('gemini-1.5-flash')
                       }}
-                      className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface"
+                      className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface"
                     >
                       <option value="gemini">Google Gemini</option>
                       <option value="grok">Grok (xAI)</option>
@@ -272,7 +282,7 @@ export function Settings() {
                           setLocalModel('') // clear for custom typing
                         }
                       }}
-                      className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/5 outline-none text-sm text-on-surface text-tertiary font-medium"
+                      className="flex-1 bg-surface-container-low px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface text-tertiary font-medium"
                     >
                       {localProvider === 'grok' && (
                         <>
@@ -323,7 +333,7 @@ export function Settings() {
                 </div>
               </div>
 
-              <div className="space-y-4 py-4 border-y border-white/5">
+              <div className="space-y-4 py-4 border-y border-white/10">
                 <ProviderInput provider="gemini" label="Google Gemini" settings={settings} />
                 <ProviderInput provider="grok" label="xAI Grok" settings={settings} />
               </div>
@@ -335,14 +345,15 @@ export function Settings() {
                 onChange={settings.setFallbackEnabled}
               />
             </div>
+            </div>
           </section>
 
           {/* General & Privacy */}
-          <section className="space-y-12">
+          <section className="space-y-6">
             
             {/* UI Settings */}
-            <div>
-              <div className="flex items-center gap-3 text-tertiary mb-6">
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-tertiary mb-5">
                 <span className="material-symbols-outlined">palette</span>
                 <h2 className="text-sm font-bold uppercase tracking-widest">Appearance</h2>
               </div>
@@ -363,8 +374,8 @@ export function Settings() {
             </div>
 
             {/* Notifications */}
-            <div>
-              <div className="flex items-center gap-3 text-neutral-400 mb-6">
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-neutral-400 mb-5">
                 <span className="material-symbols-outlined">notifications</span>
                 <h2 className="text-sm font-bold uppercase tracking-widest">Notifications</h2>
               </div>
@@ -391,12 +402,12 @@ export function Settings() {
             </div>
 
             {/* Work Schedule */}
-            <div>
-              <div className="flex items-center gap-3 text-primary mb-6">
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-primary mb-5">
                 <span className="material-symbols-outlined">calendar_month</span>
                 <h2 className="text-sm font-bold uppercase tracking-widest">Work Schedule</h2>
               </div>
-              <div className="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-4">
+              <div className="bg-surface-container-low rounded-xl border border-white/10 p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Timezone</label>
@@ -454,12 +465,12 @@ export function Settings() {
             </div>
 
             {/* Pinned Tasks */}
-            <div>
-              <div className="flex items-center gap-3 text-primary mb-6">
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-primary mb-5">
                 <span className="material-symbols-outlined">push_pin</span>
                 <h2 className="text-sm font-bold uppercase tracking-widest">Pinned Tasks</h2>
               </div>
-              <div className="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-3">
+              <div className="bg-surface-container-low rounded-xl border border-white/10 p-4 space-y-3">
                 <p className="text-xs text-neutral-500">Pinned tasks repeat every week on your selected day/time until you disable or delete them.</p>
                 <input
                   type="text"
@@ -535,7 +546,7 @@ export function Settings() {
                   Create Pinned Task
                 </GlowButton>
 
-                <div className="space-y-2 pt-2 border-t border-white/5">
+                <div className="space-y-2 pt-2 border-t border-white/10 max-h-64 overflow-y-auto pr-1">
                   {pinnedStore.items.length === 0 && (
                     <p className="text-xs text-neutral-500">No pinned tasks created yet.</p>
                   )}
@@ -569,8 +580,8 @@ export function Settings() {
 
 
             {/* Privacy & Data */}
-            <div>
-              <div className="flex items-center gap-3 text-error mb-6">
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-error mb-5">
                 <span className="material-symbols-outlined">security</span>
                 <h2 className="text-sm font-bold uppercase tracking-widest">Privacy & Data</h2>
               </div>
@@ -635,7 +646,7 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider, la
   return (
     <div>
       <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">{label} API Key</label>
-      <div className="flex bg-surface-container-low rounded-xl border border-white/5 overflow-hidden focus-within:border-primary/50 transition-colors">
+      <div className="flex bg-surface-container-low rounded-xl border border-white/10 overflow-hidden focus-within:border-primary/50 transition-colors">
         <input
           type={isVis ? 'text' : 'password'}
           value={localVal}
