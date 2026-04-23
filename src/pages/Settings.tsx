@@ -1,9 +1,7 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { useSettingsStore, AIProvider, WeekStartDay } from '../store/useSettingsStore'
 import { useState, useEffect } from 'react'
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
-import { generateReportSlidesHTML } from '../lib/generateWeeklyReportHTML'
+import { generateWeeklyReportHTML } from '../lib/generateWeeklyReportHTML'
 import { GlowButton } from '../components/effects/GlowButton'
 import { useWeekStore } from '../store/useWeekStore'
 import { usePinnedTaskStore } from '../store/usePinnedTaskStore'
@@ -69,7 +67,7 @@ export function Settings() {
     const run = async () => {
       const prevWeek = await getPreviousWeekForReport()
       if (!prevWeek) return
-      await openReportWindow(prevWeek)
+      openReportWindow(prevWeek)
       localStorage.setItem(markerKey, '1')
     }
 
@@ -106,48 +104,25 @@ export function Settings() {
     setTimeout(() => setSavedModel(false), 2000)
   }
 
-  const openReportWindow = async (weekToExport?: WeekData | null) => {
+  const openReportWindow = (weekToExport?: WeekData | null) => {
     const targetWeek = weekToExport || currentWeek
     if (!targetWeek || isExporting) return
     setIsExporting(true)
-
-    // Mount slides off-screen (1920px wide, not display:none so html2canvas can read them)
-    const host = document.createElement('div')
-    host.style.cssText = 'position:fixed;top:0;left:-1940px;width:1920px;z-index:-1;pointer-events:none'
-    host.innerHTML = generateReportSlidesHTML(targetWeek)
-    document.body.appendChild(host)
-
-    // Wait two animation frames for layout
-    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())))
-
     try {
-      const slides = Array.from(host.querySelectorAll('.report-slide')) as HTMLElement[]
-
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080], hotfixes: ['px_scaling'] })
-
-      for (let i = 0; i < slides.length; i++) {
-        if (i > 0) pdf.addPage([1920, 1080], 'landscape')
-
-        const canvas = await html2canvas(slides[i], {
-          scale: 1,
-          width: 1920,
-          height: 1080,
-          backgroundColor: '#0b0b12',
-          useCORS: true,
-          logging: false,
-          windowWidth: 1920,
-          windowHeight: 1080,
-        })
-
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG', 0, 0, 1920, 1080)
+      const html = generateWeeklyReportHTML(targetWeek)
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+      const url  = URL.createObjectURL(blob)
+      const win  = window.open(url, '_blank')
+      // Clean up blob URL after window loads
+      if (win) {
+        win.addEventListener('load', () => URL.revokeObjectURL(url), { once: true })
+      } else {
+        setTimeout(() => URL.revokeObjectURL(url), 60_000)
+        alert('Pop-up blocked — please allow pop-ups for this site.')
       }
-
-      pdf.save(`weekly_report_${targetWeek.year}_w${targetWeek.weekNumber}.pdf`)
     } catch (e) {
-      console.error('Export failed:', e)
-      alert('Export failed: ' + (e as Error).message)
+      console.error('Report failed:', e)
     } finally {
-      host.remove()
       setIsExporting(false)
     }
   }
