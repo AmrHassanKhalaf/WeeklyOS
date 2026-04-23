@@ -30,7 +30,7 @@ const WEEK_START_OPTIONS: Array<{ value: WeekStartDay; label: string }> = [
 
 export function Settings() {
   const settings = useSettingsStore()
-  const { currentWeek, getPreviousWeekForReport } = useWeekStore()
+  const { currentWeek, getPreviousWeekForReport, goToWeek } = useWeekStore()
   const pinnedStore = usePinnedTaskStore()
   const [isExporting, setIsExporting] = useState(false)
   const printRef = useRef<HTMLDivElement>(null)
@@ -170,6 +170,10 @@ export function Settings() {
         isActive: pinnedDraft.isActive,
       })
 
+      if (currentWeek) {
+        await goToWeek(currentWeek.weekNumber, currentWeek.year)
+      }
+
       setPinnedDraft({
         title: '',
         description: '',
@@ -183,6 +187,28 @@ export function Settings() {
       })
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to create pinned task')
+    }
+  }
+
+  const handleTogglePinnedTask = async (id: string, isActive: boolean) => {
+    try {
+      await pinnedStore.togglePinnedTask(id, isActive)
+      if (currentWeek) {
+        await goToWeek(currentWeek.weekNumber, currentWeek.year)
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to update pinned task')
+    }
+  }
+
+  const handleDeletePinnedTask = async (id: string) => {
+    try {
+      await pinnedStore.deletePinnedTask(id)
+      if (currentWeek) {
+        await goToWeek(currentWeek.weekNumber, currentWeek.year)
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to delete pinned task')
     }
   }
 
@@ -496,6 +522,9 @@ export function Settings() {
                   onChange={e => setPinnedDraft(p => ({ ...p, untilDate: e.target.value }))}
                   className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm [color-scheme:dark]"
                 />
+                <p className="text-[11px] text-neutral-500 -mt-1">
+                  Leave date empty to repeat every week until you pause or delete this pinned task.
+                </p>
                 <GlowButton
                   type="button"
                   onClick={handleCreatePinnedTask}
@@ -519,13 +548,13 @@ export function Settings() {
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => void pinnedStore.togglePinnedTask(item.id, !item.isActive)}
+                            onClick={() => void handleTogglePinnedTask(item.id, !item.isActive)}
                             className={`px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold ${item.isActive ? 'bg-tertiary/15 text-tertiary' : 'bg-neutral-700/30 text-neutral-400'}`}
                           >
                             {item.isActive ? 'Active' : 'Paused'}
                           </button>
                           <button
-                            onClick={() => void pinnedStore.deletePinnedTask(item.id)}
+                            onClick={() => void handleDeletePinnedTask(item.id)}
                             className="px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold bg-error/15 text-error"
                           >
                             Delete

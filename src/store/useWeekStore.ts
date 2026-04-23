@@ -373,14 +373,15 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     const weekNumber = week.week_number as number
     const year = week.year as number
     const bounds = getWeekBounds(weekNumber, year, weekStartDay)
-    const weekEndIso = daySerialToIso(bounds.endSerial)
+    const weekStartIso = daySerialToIso(bounds.startSerial)
+    const weekId = String(week.id)
 
     const { data: pinnedTasks, error: pinnedErr } = await supabase
       .from('pinned_tasks')
       .select('*')
       .eq('user_id', userId)
       .eq('is_active', true)
-      .or(`until_date.is.null,until_date.gte.${weekEndIso}`)
+      .or(`until_date.is.null,until_date.gte.${weekStartIso}`)
 
     if (pinnedErr) {
       // Migration may not be applied yet in some environments; avoid retry spam and hard failures.
@@ -392,9 +393,30 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
     _pinnedFeatureAvailable = true
 
-    if (!pinnedTasks || pinnedTasks.length === 0) return
+    const activePinnedIds = new Set((pinnedTasks ?? []).map((item) => String(item.id)))
 
-    const weekId = String(week.id)
+    // Remove pinned-derived tasks that no longer have an active source pinned task.
+    const { data: existingPinnedWeekTasks, error: existingPinnedErr } = await supabase
+      .from('tasks')
+      .select('id,pinned_task_id')
+      .eq('user_id', userId)
+      .eq('week_id', weekId)
+      .not('pinned_task_id', 'is', null)
+
+    if (!existingPinnedErr && existingPinnedWeekTasks && existingPinnedWeekTasks.length > 0) {
+      const staleIds = existingPinnedWeekTasks
+        .filter((task) => !activePinnedIds.has(String(task.pinned_task_id)))
+        .map((task) => String(task.id))
+
+      if (staleIds.length > 0) {
+        await supabase
+          .from('tasks')
+          .delete()
+          .in('id', staleIds)
+      }
+    }
+
+    if (!pinnedTasks || pinnedTasks.length === 0) return
 
     const rows = pinnedTasks.map((item) => ({
       user_id: userId,
