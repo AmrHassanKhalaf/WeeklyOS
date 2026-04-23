@@ -255,23 +255,84 @@ function evalPage(w: WeekData): string {
     </div>`)
 }
 
+// ─── Closing page (last page with 1-2 days + quote) ─────────────────────────
+function closingPage(days: DayPlan[], quote: string): string {
+  const quoteText  = quote.trim()
+  // Split at last " — " or " - " to get author if present
+  const dashIdx    = quoteText.lastIndexOf(' — ')
+  const mainQuote  = dashIdx > -1 ? quoteText.slice(0, dashIdx).trim() : quoteText
+  const quoteAuthor = dashIdx > -1 ? quoteText.slice(dashIdx + 3).trim() : ''
+
+  const cardsHTML = days.map(d => dayCard(d, '', '')).join('')
+
+  return page(`
+    <div style="padding:36px 40px;display:flex;flex-direction:column;height:100%;gap:28px">
+      <!-- Days centered at top -->
+      <div style="display:flex;gap:16px;align-items:flex-start;justify-content:center">
+        ${cardsHTML}
+      </div>
+
+      <!-- Closing quote -->
+      <div style="
+        flex:1;display:flex;align-items:center;justify-content:center;
+        background:${CARD};border:1px solid ${BORDER};
+        border-left:4px solid ${INDIGO};
+        border-radius:16px;padding:32px 48px;
+      ">
+        <div style="text-align:center;max-width:700px">
+          <div style="font-size:32px;margin-bottom:20px;opacity:.4">&ldquo;</div>
+          <p style="
+            font-size:22px;font-weight:600;font-style:italic;
+            color:${TEXT};font-family:${FONT};line-height:1.6;
+            margin:0 0 16px;
+          ">${mainQuote.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+          ${quoteAuthor ? `<p style="font-size:13px;font-weight:700;color:${INDIGO};font-family:${FONT};letter-spacing:.08em;text-transform:uppercase;margin:0">— ${quoteAuthor.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>` : ''}
+        </div>
+      </div>
+    </div>`)
+}
+
 // ─── Public: full HTML document ───────────────────────────────────────────────
-export function generateWeeklyReportHTML(weekData: WeekData): string {
+export interface ReportOptions {
+  includedDays?: string[]   // e.g. ['saturday','sunday',...] — all if undefined
+  closingQuote?: string
+}
+
+export function generateWeeklyReportHTML(weekData: WeekData, opts: ReportOptions = {}): string {
+  const includedDays = opts.includedDays ?? null   // null = include all
+  const closingQuote = opts.closingQuote ?? 'The secret of getting ahead is getting started.'
+
   const pages: string[] = []
 
   // Page 1: Cover
   pages.push(coverPage(weekData))
 
-  // Day pages: 3 days per page
-  const allDays = [
-    ...weekData.days.filter(d => !d.isRestDay),
-    ...weekData.days.filter(d =>  d.isRestDay),
-  ]
+  // Filter days
+  const filteredDays = weekData.days.filter(d =>
+    !includedDays || includedDays.includes(d.day)
+  )
+  const workDays = filteredDays.filter(d => !d.isRestDay)
+  const restDays = filteredDays.filter(d =>  d.isRestDay)
+  const allDays  = [...workDays, ...restDays]
+
+  // Group into chunks of 3; last chunk may have 1-2 days → closing page
+  const chunks: DayPlan[][] = []
   for (let i = 0; i < allDays.length; i += 3) {
-    const chunk = allDays.slice(i, i + 3)
-    const num   = Math.floor(i / 3) + 1
-    pages.push(daysPage(chunk, `Weekly Distribution · Part ${num}`))
+    chunks.push(allDays.slice(i, i + 3))
   }
+
+  chunks.forEach((chunk, idx) => {
+    const isLast   = idx === chunks.length - 1
+    const isAlone  = chunk.length < 3
+    const title    = `Weekly Distribution · Part ${idx + 1}`
+
+    if (isLast && isAlone) {
+      // Closing page: centered card(s) + quote
+      pages.push(closingPage(chunk, closingQuote))
+    } else {
+      pages.push(daysPage(chunk, title))
+    }
+  })
 
   // Evaluation page
   if (weekData.evalWentWell || weekData.evalStruggle || weekData.evalLessons) {

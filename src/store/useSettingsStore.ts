@@ -36,6 +36,10 @@ export interface SettingsState {
   // Privacy
   analyticsEnabled: boolean
 
+  // Report Settings
+  reportIncludedDays: string[]   // which days to include in the PDF report
+  reportClosingQuote: string     // motivational quote shown on the closing page
+
   // Actions
   setAiKey: (provider: AIProvider, key: string) => void
   setActiveProvider: (provider: AIProvider) => void
@@ -49,6 +53,8 @@ export interface SettingsState {
   setTimezone: (timezone: string) => void
   setWeekStartDay: (day: WeekStartDay) => void
   setAnalyticsEnabled: (enabled: boolean) => void
+  setReportIncludedDays: (days: string[]) => void
+  setReportClosingQuote: (quote: string) => void
   exportWeeklyReport: () => void
   loadFromDb: () => Promise<void>
 }
@@ -90,6 +96,8 @@ export const useSettingsStore = create<SettingsState>()(
       timezone: getDefaultTimeZone(),
       weekStartDay: 'saturday',
       analyticsEnabled: false,
+      reportIncludedDays: ['saturday','sunday','monday','tuesday','wednesday','thursday','friday'],
+      reportClosingQuote: 'The secret of getting ahead is getting started.',
 
       setAiKey: async (provider, key) => {
         set((state) => ({ aiKeys: { ...state.aiKeys, [provider]: key } }))
@@ -153,6 +161,8 @@ export const useSettingsStore = create<SettingsState>()(
       setTimezone: (timezone) => { set({ timezone }); void syncSettingsToDb({ timezone }) },
       setWeekStartDay: (day) => { set({ weekStartDay: day }); void syncSettingsToDb({ weekStartDay: day }) },
       setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); void syncSettingsToDb({ analyticsEnabled: enabled }) },
+      setReportIncludedDays: (days) => { set({ reportIncludedDays: days }) },
+      setReportClosingQuote: (quote) => { set({ reportClosingQuote: quote }) },
 
       loadFromDb: async () => {
         try {

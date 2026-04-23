@@ -109,7 +109,10 @@ export function Settings() {
     if (!targetWeek || isExporting) return
     setIsExporting(true)
     try {
-      const html = generateWeeklyReportHTML(targetWeek)
+      const html = generateWeeklyReportHTML(targetWeek, {
+        includedDays: settings.reportIncludedDays,
+        closingQuote: settings.reportClosingQuote,
+      })
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
       const url  = URL.createObjectURL(blob)
       const win  = window.open(url, '_blank')
@@ -564,45 +567,106 @@ export function Settings() {
             </div>
 
 
-            {/* Privacy & Data */}
+            {/* ── Report Settings ─────────────────────────────────── */}
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
+              <div className="flex items-center gap-3 text-tertiary mb-5">
+                <span className="material-symbols-outlined">picture_as_pdf</span>
+                <h2 className="text-[13px] font-bold uppercase tracking-widest">Report Settings</h2>
+              </div>
+
+              {/* Days included in report */}
+              <div className="mb-5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3">Days Included in Report</p>
+                <div className="flex flex-wrap gap-2">
+                  {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map(day => {
+                    const included = (settings.reportIncludedDays ?? []).includes(day)
+                    return (
+                      <GlowButton
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          const current = settings.reportIncludedDays ?? []
+                          const next = included
+                            ? current.filter(d => d !== day)
+                            : [...current, day]
+                          settings.setReportIncludedDays(next)
+                        }}
+                        compact
+                        variant={included ? 'secondary' : 'tertiary'}
+                        className={`uppercase tracking-wider text-[11px] font-bold ${
+                          included ? 'text-white' : 'text-neutral-500'
+                        }`}
+                      >
+                        {day.slice(0, 3)}
+                      </GlowButton>
+                    )
+                  })}
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-2">
+                  Days turned off won't appear in the exported PDF.
+                </p>
+              </div>
+
+              {/* Closing quote */}
+              <div className="mb-5">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">
+                  Closing Page Quote
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. The secret of getting ahead is getting started. — Mark Twain"
+                  value={settings.reportClosingQuote ?? ''}
+                  onChange={e => settings.setReportClosingQuote(e.target.value)}
+                  className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface resize-none focus:border-tertiary/50 transition-colors"
+                />
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  Appears on the last report page when a day ends up alone. Use " — Author" at the end to add an attribution.
+                </p>
+              </div>
+
+              {/* Export buttons */}
+              <div className="space-y-3">
+                <GlowButton
+                  type="button"
+                  onClick={() => void openReportWindow()}
+                  disabled={isExporting}
+                  compact
+                  variant="secondary"
+                  className="w-full text-sm font-bold disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {isExporting ? 'sync' : 'download'}
+                  </span>
+                  {isExporting ? 'Generating...' : 'Export This Week Report'}
+                </GlowButton>
+                <GlowButton
+                  type="button"
+                  onClick={() => void handleDownloadCompletedWeek()}
+                  disabled={isExporting}
+                  compact
+                  variant="tertiary"
+                  className="w-full text-sm font-bold disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[18px]">history</span>
+                  Export Previous Week Report
+                </GlowButton>
+              </div>
+            </div>
+
+            {/* ── Privacy & Data ───────────────────────────────────── */}
             <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
               <div className="flex items-center gap-3 text-error mb-5">
                 <span className="material-symbols-outlined">security</span>
-                <h2 className="text-[13px] font-bold uppercase tracking-widest">Privacy & Data</h2>
+                <h2 className="text-[13px] font-bold uppercase tracking-widest">Privacy &amp; Data</h2>
               </div>
-              <div className="space-y-2 mb-6">
-                <Toggle 
-                  label="Analytics Tracking" 
+              <div className="space-y-2">
+                <Toggle
+                  label="Analytics Tracking"
                   desc="Share anonymous usage data to help us improve."
                   checked={settings.analyticsEnabled}
                   onChange={settings.setAnalyticsEnabled}
                 />
               </div>
-              
-              <GlowButton 
-                type="button"
-                onClick={() => void openReportWindow()}
-                disabled={isExporting}
-                compact
-                variant="secondary"
-                className="w-full text-sm font-bold disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  {isExporting ? 'sync' : 'download'}
-                </span>
-                {isExporting ? 'Generating PDF...' : 'Export Weekly Report'}
-              </GlowButton>
-              <GlowButton
-                type="button"
-                onClick={() => void handleDownloadCompletedWeek()}
-                disabled={isExporting}
-                compact
-                variant="tertiary"
-                className="w-full mt-3 text-sm font-bold disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">history</span>
-                Download Completed Week Report
-              </GlowButton>
             </div>
 
           </section>
