@@ -114,7 +114,12 @@ export function Settings() {
     try {
       setIsExporting(true)
       setReportWeek(targetWeek)
-      await new Promise(resolve => setTimeout(resolve, 30))
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })
+      if (document.fonts?.ready) {
+        await document.fonts.ready
+      }
       const canvas = await html2canvas(printRef.current, {
         scale: 2, // High resolution
         useCORS: true,
@@ -551,7 +556,7 @@ export function Settings() {
               
               <GlowButton 
                 type="button"
-                onClick={handleExport}
+                onClick={() => void handleExport()}
                 disabled={isExporting}
                 compact
                 variant="secondary"

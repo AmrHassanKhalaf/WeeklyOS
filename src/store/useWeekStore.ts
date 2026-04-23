@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import type { Json } from '../lib/database.types'
 import { useSettingsStore } from './useSettingsStore'
 import type { WeekStartDay } from './useSettingsStore'
 import { formatDaySerial, getAdjacentWeek, getWeekInfoForDate, getWeekStartDaySerial, getWeeksInYear } from './weekDateUtils'
@@ -393,9 +394,11 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
     if (!pinnedTasks || pinnedTasks.length === 0) return
 
+    const weekId = String(week.id)
+
     const rows = pinnedTasks.map((item) => ({
       user_id: userId,
-      week_id: week.id,
+      week_id: weekId,
       title: item.title,
       description: item.description,
       priority: item.priority,
@@ -1033,7 +1036,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }))
 
       const { error } = await supabase.from('weeks').update({
-        challenge_days: JSON.stringify(nextDays)
+        challenge_days: nextDays as unknown as Json
       }).eq('id', currentWeek.id)
 
       if (error) console.error('toggleChallengeDayStatus error', error)
@@ -1053,7 +1056,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }))
 
       const { error } = await supabase.from('weeks').update({
-        challenge_days: JSON.stringify(nextDays)
+        challenge_days: nextDays as unknown as Json
       }).eq('id', currentWeek.id)
 
       if (error) console.error('autoFailPendingDays error', error)

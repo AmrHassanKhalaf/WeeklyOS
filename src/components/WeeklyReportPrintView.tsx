@@ -33,7 +33,6 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
         position: 'absolute',
         top: '-9999px',
         left: '-9999px',
-        opacity: 0,
         pointerEvents: 'none',
       }}
     >

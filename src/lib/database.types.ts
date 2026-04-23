@@ -249,6 +249,7 @@ export type Database = {
           challenge_completed: boolean | null
           challenge_description: string | null
           challenge_ends_in: string | null
+          challenge_days: Json | null
           challenge_progress: number | null
           challenge_title: string | null
           created_at: string
@@ -267,6 +268,7 @@ export type Database = {
           challenge_completed?: boolean | null
           challenge_description?: string | null
           challenge_ends_in?: string | null
+          challenge_days?: Json | null
           challenge_progress?: number | null
           challenge_title?: string | null
           created_at?: string
@@ -285,6 +287,7 @@ export type Database = {
           challenge_completed?: boolean | null
           challenge_description?: string | null
           challenge_ends_in?: string | null
+          challenge_days?: Json | null
           challenge_progress?: number | null
           challenge_title?: string | null
           created_at?: string
