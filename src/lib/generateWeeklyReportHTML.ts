@@ -22,10 +22,13 @@ const FONT   = `'Inter','Segoe UI',system-ui,sans-serif`
 function taskRow(task: Task, accent: string): string {
   const done = task.status === 'done'
   const title = task.title.replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,${done?'0.02':'0.05'});border-left:3px solid ${done?'#1e293b':accent};border-radius:8px;opacity:${done?.55:1}">
-    <div style="flex-shrink:0;width:13px;height:13px;border-radius:50%;border:2px solid ${done?GREEN:accent};background:${done?GREEN:'transparent'};display:flex;align-items:center;justify-content:center;font-size:8px;color:#000">${done?'✓':''}</div>
-    <span style="font-size:12px;font-weight:600;color:${done?MUTED:TEXT};text-decoration:${done?'line-through':'none'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${title}</span>
-    ${task.estimatedTime?`<span style="flex-shrink:0;margin-left:auto;font-size:10px;color:${accent};opacity:.7">⌛${task.estimatedTime}</span>`:''}
+  const timeTag = task.estimatedTime
+    ? `<span style="flex-shrink:0;margin-left:8px;font-size:10px;color:${accent};opacity:.7;white-space:nowrap">⌛ ${task.estimatedTime}</span>`
+    : ''
+  return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,${done?'0.02':'0.05'});border-left:3px solid ${done?'#1e293b':accent};border-radius:8px;">
+    <div style="flex-shrink:0;width:14px;height:14px;border-radius:50%;border:2px solid ${done?GREEN:accent};background:${done?GREEN:'transparent'};display:flex;align-items:center;justify-content:center;font-size:8px;color:#000;line-height:1">${done?'✓':''}</div>
+    <span style="flex:1;min-width:0;font-size:13px;font-weight:600;color:${done?'#64748b':'#e2e8f0'};text-decoration:${done?'line-through':'none'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</span>
+    ${timeTag}
   </div>`
 }
 
