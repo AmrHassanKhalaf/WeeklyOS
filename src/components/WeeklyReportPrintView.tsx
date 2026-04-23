@@ -27,8 +27,8 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
   return (
     <div
       ref={ref}
-      // Fixed width to ensure print layout is consistent regardless of viewport
-      className="bg-[#131313] text-[#e5e2e1] w-[1200px] p-12 flex flex-col gap-12 font-['Inter']"
+      // Keep report pages mounted off-screen so html2canvas can capture them reliably.
+      className="w-[1200px] flex flex-col gap-8 font-['Inter']"
       style={{
         position: 'absolute',
         top: '-9999px',
@@ -36,20 +36,24 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
         pointerEvents: 'none',
       }}
     >
-      <div className="absolute top-8 right-8 flex items-center gap-2 opacity-50">
-        <span className="material-symbols-outlined text-sm">dashboard</span>
-        <span className="text-xs font-bold tracking-widest uppercase">WeeklyOS Report</span>
-      </div>
+      {/* Page 1: Weekly Distribution */}
+      <section
+        data-report-page="true"
+        className="relative bg-[#131313] text-[#e5e2e1] w-[1200px] h-[1697px] p-12 flex flex-col"
+      >
+        <div className="absolute top-8 right-8 flex items-center gap-2 opacity-50">
+          <span className="material-symbols-outlined text-sm">dashboard</span>
+          <span className="text-xs font-bold tracking-widest uppercase">WeeklyOS Report</span>
+        </div>
 
-      {/* Part 1: Weekly Distribution */}
-      <div>
-        <div className="mb-8">
+        <header className="mb-8">
           <h1 className="text-5xl font-bold tracking-tight leading-none mb-2">
             Week {targetWeek.weekNumber} — {targetWeek.dateRange.split('—')[1]?.trim() ?? String(targetWeek.year)}
           </h1>
           <p className="text-sm text-neutral-400">Weekly Plan Distribution</p>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
+        </header>
+
+        <div className="grid grid-cols-2 gap-6 flex-1 content-start">
           {targetWeek.days.slice(0, 6).map((day) => (
             <DayCardDistribution key={day.day} day={day} />
           ))}
@@ -59,18 +63,23 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Divider */}
-      <div className="h-px bg-white/10 my-8" />
+      {/* Page 2: Weekly Evaluation */}
+      <section
+        data-report-page="true"
+        className="relative bg-[#131313] text-[#e5e2e1] w-[1200px] h-[1697px] p-12 flex flex-col"
+      >
+        <div className="absolute top-8 right-8 flex items-center gap-2 opacity-50">
+          <span className="material-symbols-outlined text-sm">insights</span>
+          <span className="text-xs font-bold tracking-widest uppercase">WeeklyOS Evaluation</span>
+        </div>
 
-      {/* Part 2: Weekly Evaluation */}
-      <div>
         <header className="mb-8">
           <h2 className="text-4xl font-extrabold tracking-tight mb-2">Weekly Evaluation</h2>
           <p className="text-neutral-400">Reviewing {targetWeek.dateRange}</p>
         </header>
-        <div className="grid grid-cols-12 gap-6 mb-8">
+        <div className="grid grid-cols-12 gap-6 mb-8 flex-1 content-start">
           <div className="col-span-4 bg-[#1C1B1B] p-6 rounded-xl flex flex-col justify-between">
             <span className="text-xs uppercase tracking-widest text-neutral-500">Weekly Score</span>
             <div className="mt-4 flex items-baseline gap-2">
@@ -105,7 +114,7 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   )
 })
