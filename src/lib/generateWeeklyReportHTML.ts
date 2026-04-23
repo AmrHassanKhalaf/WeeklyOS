@@ -221,13 +221,11 @@ function coverPage(w: WeekData): string {
 
 // ─── Day pages: 3 days per page ───────────────────────────────────────────────
 function daysPage(days: DayPlan[], title: string): string {
-  // 297mm - 2×30px padding = 237mm ≈ 895px. With 3 cols + 2 gaps: ~290px each
-  // Heights: 210mm - 2×30px - titleRow = ~590px ≈ 223mm
   return page(`
     <div style="padding:28px 30px;display:flex;flex-direction:column;gap:12px;height:100%">
       <div style="font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#1e2a40;font-family:${FONT}">${title}</div>
-      <div style="display:flex;gap:14px;flex:1;min-height:0">
-        ${days.map(d => dayCard(d, '', '100%')).join('')}
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        ${days.map(d => dayCard(d, '', '')).join('')}
         ${days.length < 3 ? Array(3 - days.length).fill(`<div style="flex:1"></div>`).join('') : ''}
       </div>
     </div>`)
