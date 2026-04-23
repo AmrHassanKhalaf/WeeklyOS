@@ -1,9 +1,9 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { useSettingsStore, AIProvider, WeekStartDay } from '../store/useSettingsStore'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
-import { WeeklyReportPrintView } from '../components/WeeklyReportPrintView'
+import { generateReportSlidesHTML } from '../lib/generateWeeklyReportHTML'
 import { GlowButton } from '../components/effects/GlowButton'
 import { useWeekStore } from '../store/useWeekStore'
 import { usePinnedTaskStore } from '../store/usePinnedTaskStore'
@@ -33,8 +33,6 @@ export function Settings() {
   const { currentWeek, getPreviousWeekForReport, goToWeek } = useWeekStore()
   const pinnedStore = usePinnedTaskStore()
   const [isExporting, setIsExporting] = useState(false)
-  const printRef = useRef<HTMLDivElement>(null)
-  const [reportWeek, setReportWeek] = useState<WeekData | null>(null)
 
   // Local state for Model Selection
   const [localProvider, setLocalProvider] = useState<AIProvider>(settings.activeProvider)
@@ -71,11 +69,12 @@ export function Settings() {
     const run = async () => {
       const prevWeek = await getPreviousWeekForReport()
       if (!prevWeek) return
-      await handleExport(prevWeek)
+      await openReportWindow(prevWeek)
       localStorage.setItem(markerKey, '1')
     }
 
     void run()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.autoDownloadCompletedWeekReport, currentWeek?.id])
 
   // Determine if it's a custom model
@@ -107,89 +106,48 @@ export function Settings() {
     setTimeout(() => setSavedModel(false), 2000)
   }
 
-  const handleExport = async (weekToExport?: WeekData | null) => {
-    if (!printRef.current || isExporting) return
-    const targetWeek = weekToExport || reportWeek || currentWeek
-    if (!targetWeek) return
+  const openReportWindow = async (weekToExport?: WeekData | null) => {
+    const targetWeek = weekToExport || currentWeek
+    if (!targetWeek || isExporting) return
+    setIsExporting(true)
+
+    // Mount slides off-screen (1920px wide, not display:none so html2canvas can read them)
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;top:0;left:-1940px;width:1920px;z-index:-1;pointer-events:none'
+    host.innerHTML = generateReportSlidesHTML(targetWeek)
+    document.body.appendChild(host)
+
+    // Wait two animation frames for layout
+    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())))
+
     try {
-      setIsExporting(true)
-      setReportWeek(targetWeek)
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      })
-      if (document.fonts?.ready) {
-        await document.fonts.ready
-      }
+      const slides = Array.from(host.querySelectorAll('.report-slide')) as HTMLElement[]
 
-      const reportPages = Array.from(
-        printRef.current.querySelectorAll('[data-report-page="true"]')
-      ) as HTMLElement[]
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080], hotfixes: ['px_scaling'] })
 
-      const pagesToCapture = reportPages.length > 0 ? reportPages : [printRef.current]
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const margin = 6
-      const contentWidth = pdfWidth - margin * 2
-      const contentHeight = pdfHeight - margin * 2
+      for (let i = 0; i < slides.length; i++) {
+        if (i > 0) pdf.addPage([1920, 1080], 'landscape')
 
-      for (let i = 0; i < pagesToCapture.length; i++) {
-        if (i > 0) {
-          pdf.addPage('a4', 'p')
-        }
-
-        const pageNode = pagesToCapture[i]
-        const captureHost = document.createElement('div')
-        captureHost.style.position = 'fixed'
-        captureHost.style.top = '0'
-        captureHost.style.left = '0'
-        captureHost.style.width = `${pageNode.offsetWidth || 1200}px`
-        captureHost.style.zIndex = '2147483647'
-        captureHost.style.pointerEvents = 'none'
-        captureHost.style.background = '#131313'
-        captureHost.style.opacity = '0.01'
-        captureHost.style.overflow = 'hidden'
-
-        const clone = pageNode.cloneNode(true) as HTMLElement
-        clone.style.position = 'relative'
-        clone.style.top = '0'
-        clone.style.left = '0'
-        clone.style.transform = 'translateZ(0)'
-        clone.style.backfaceVisibility = 'hidden'
-
-        captureHost.appendChild(clone)
-        document.body.appendChild(captureHost)
-
-        await new Promise<void>((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-        })
-
-        const canvas = await html2canvas(clone, {
-          scale: Math.max(2, window.devicePixelRatio || 1),
+        const canvas = await html2canvas(slides[i], {
+          scale: 1,
+          width: 1920,
+          height: 1080,
+          backgroundColor: '#0b0b12',
           useCORS: true,
-          backgroundColor: '#131313',
-          foreignObjectRendering: true,
           logging: false,
+          windowWidth: 1920,
+          windowHeight: 1080,
         })
 
-        captureHost.remove()
-
-        const imgData = canvas.toDataURL('image/png')
-        const imgWidth = canvas.width
-        const imgHeight = canvas.height
-        const ratio = Math.min(contentWidth / imgWidth, contentHeight / imgHeight)
-        const drawWidth = imgWidth * ratio
-        const drawHeight = imgHeight * ratio
-        const x = (pdfWidth - drawWidth) / 2
-        const y = (pdfHeight - drawHeight) / 2
-
-        pdf.addImage(imgData, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST')
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG', 0, 0, 1920, 1080)
       }
 
       pdf.save(`weekly_report_${targetWeek.year}_w${targetWeek.weekNumber}.pdf`)
     } catch (e) {
       console.error('Export failed:', e)
+      alert('Export failed: ' + (e as Error).message)
     } finally {
+      host.remove()
       setIsExporting(false)
     }
   }
@@ -200,7 +158,7 @@ export function Settings() {
       alert('No completed week available yet.')
       return
     }
-    await handleExport(prevWeek)
+    openReportWindow(prevWeek)
   }
 
   const handleCreatePinnedTask = async () => {
@@ -648,20 +606,20 @@ export function Settings() {
               
               <GlowButton 
                 type="button"
-                onClick={() => void handleExport()}
+                onClick={() => void openReportWindow()}
                 disabled={isExporting}
                 compact
                 variant="secondary"
                 className="w-full text-sm font-bold disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">
-                  {isExporting ? 'hourglass_empty' : 'download'}
+                  {isExporting ? 'sync' : 'download'}
                 </span>
-                {isExporting ? 'Generating Image...' : 'Export Weekly Report'}
+                {isExporting ? 'Generating PDF...' : 'Export Weekly Report'}
               </GlowButton>
               <GlowButton
                 type="button"
-                onClick={handleDownloadCompletedWeek}
+                onClick={() => void handleDownloadCompletedWeek()}
                 disabled={isExporting}
                 compact
                 variant="tertiary"
@@ -676,7 +634,6 @@ export function Settings() {
 
         </div>
       </div>
-      <WeeklyReportPrintView ref={printRef} weekData={reportWeek} />
     </AppLayout>
   )
 }
