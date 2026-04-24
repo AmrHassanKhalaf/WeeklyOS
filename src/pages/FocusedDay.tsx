@@ -81,7 +81,7 @@ function TaskRow({
   const totalSeconds = (task.actualDuration || 0) + unsavedSeconds
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const formatSecs = totalSeconds > 0 ? (hours > 0 ? `${hours}h ${minutes.toString().padStart(2, '0')}m` : `${minutes}m`) : null
+  const formatSecs = hours > 0 ? `${hours}h ${minutes.toString().padStart(2, '0')}m` : `${minutes}m`
 
   return (
     <div
@@ -119,14 +119,14 @@ function TaskRow({
            {isActive ? (
               <button
                 onClick={(e) => { e.stopPropagation(); onMakeActive && onMakeActive(); }}
-               className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.16em] border border-tertiary/50 bg-gradient-to-r from-tertiary/20 to-primary/10 text-tertiary hover:from-tertiary/30 hover:to-primary/15 transition-all shadow-[0_0_18px_rgba(20,184,166,0.22)]"
+               className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-[0.16em] border border-tertiary/50 bg-gradient-to-r from-tertiary/20 to-primary/10 text-tertiary hover:from-tertiary/30 hover:to-primary/15 transition-all shadow-[0_0_18px_rgba(20,184,166,0.22)] min-w-[110px]"
               >
-                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.9)]" /> Active Focus
+                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.9)]" /> Active
               </button>
            ) : onMakeActive && !done ? (
               <button
                 onClick={(e) => { e.stopPropagation(); onMakeActive(); }}
-                className="opacity-0 group-hover:opacity-100 transition-all shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:border-white/30 hover:bg-white/10"
+                className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:border-white/30 hover:bg-white/10 min-w-[110px]"
               >
                 Focus Task
               </button>
@@ -609,42 +609,38 @@ export function FocusedDay() {
                               Est: {mainTask.estimatedTime}
                             </span>
                           )}
-                          {((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0) > 0) && (
-                            <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border flex items-center gap-1.5 ${
-                              activeTaskId === mainTask.id ? 'bg-gradient-to-r from-primary/30 to-tertiary/20 text-primary border-primary/35 shadow-[0_0_14px_rgba(124,58,237,0.18)]' : 'bg-white/5 text-neutral-300 border-white/10'
-                            }`}>
-                              <span className="material-symbols-outlined text-[12px]">data_usage</span>
-                              Spent Time: {Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 60)}m
-                            </span>
-                          )}
+                          <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border flex items-center gap-1.5 ${
+                            activeTaskId === mainTask.id ? 'bg-gradient-to-r from-primary/30 to-tertiary/20 text-primary border-primary/35 shadow-[0_0_14px_rgba(124,58,237,0.18)]' : 'bg-white/5 text-neutral-300 border-white/10'
+                          }`}>
+                            <span className="material-symbols-outlined text-[12px]">data_usage</span>
+                            Spent Time: {Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 60)}m
+                          </span>
                         </div>
                       </div>
 
-                      <div className="shrink-0 pt-1">
+                      <div className="shrink-0 pt-1 flex items-center justify-end">
                         {activeTaskId === mainTask.id ? (
                            <GlowButton
                              type="button"
                              onClick={(e) => { e.stopPropagation(); handleMakeActive(null); }}
                              compact
                              variant="tertiary"
-                             className="px-4 py-2 rounded-xl font-bold text-xs"
+                             className="px-5 py-2.5 rounded-xl font-bold text-sm min-w-[120px]"
                            >
-                             <div className="flex items-center gap-1.5">
-                               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> Active Focus
+                             <div className="flex items-center justify-center gap-2">
+                               <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(124,58,237,0.8)]" /> Active
                              </div>
                            </GlowButton>
                         ) : mainTask.status !== 'done' ? (
-                          <div className="opacity-0 group-hover:opacity-100 transition-all">
                             <GlowButton
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleMakeActive(mainTask.id); }}
                               compact
                               variant="secondary"
-                              className="px-4 py-2 rounded-xl font-bold text-xs"
+                              className="px-5 py-2.5 rounded-xl font-bold text-sm min-w-[120px]"
                             >
                               Focus Task
                             </GlowButton>
-                          </div>
                         ) : null}
                       </div>
                     </div>
@@ -707,7 +703,7 @@ export function FocusedDay() {
                   
                   const totalSeconds = (task.actualDuration || 0) + (isActive ? sessionSeconds : 0)
                   const m = Math.floor(totalSeconds / 60)
-                  const formatSecs = totalSeconds > 0 ? `${m}m` : null
+                  const formatSecs = `${m}m`
 
                   return (
                     <div
@@ -730,31 +726,31 @@ export function FocusedDay() {
                            <span className={`text-sm ${done ? 'line-through opacity-40' : isActive ? 'text-tertiary font-bold' : 'text-on-surface-variant group-hover:text-on-surface'}`}>
                              {task.title}
                            </span>
-                           {isActive ? (
-                             <button
-                               onClick={(e) => { e.stopPropagation(); handleMakeActive(null); }}
-                               className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest border border-tertiary/30 bg-tertiary/10 text-tertiary hover:bg-tertiary/20 hover:border-tertiary/50 transition-all mt-1 w-fit"
-                             >
-                               <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" /> Active
-                             </button>
-                           ) : !done ? (
-                             <button
-                               onClick={(e) => { e.stopPropagation(); handleMakeActive(task.id); }}
-                               className="opacity-0 group-hover:opacity-100 transition-all shrink-0 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:border-white/30 hover:bg-white/10 mt-1 w-fit"
-                             >
-                               Focus Task
-                             </button>
-                           ) : null}
                         </div>
                       </div>
                       
-                      {formatSecs && (
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border ${
                            isActive ? 'bg-gradient-to-r from-tertiary/25 to-primary/10 text-tertiary border-tertiary/40 shadow-[0_0_12px_rgba(20,184,166,0.16)]' : 'bg-white/5 text-neutral-300 border-white/10'
                         }`}>
                           Spent Time: {formatSecs}
                         </span>
-                      )}
+                        {isActive ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleMakeActive(null); }}
+                            className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest border border-tertiary/30 bg-tertiary/10 text-tertiary hover:bg-tertiary/20 hover:border-tertiary/50 transition-all min-w-[90px]"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" /> Active
+                          </button>
+                        ) : !done ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleMakeActive(task.id); }}
+                            className="shrink-0 px-3 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:border-white/30 hover:bg-white/10 min-w-[90px]"
+                          >
+                            Focus Task
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   )
                 })}
