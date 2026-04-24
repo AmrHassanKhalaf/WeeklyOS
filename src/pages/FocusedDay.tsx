@@ -176,6 +176,7 @@ export function FocusedDay() {
   const { isFocusMode, toggleFocusMode } = useLayoutStore()
 
   const workerRef = useRef<Worker | null>(null)
+  const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [showCustom, setShowCustom] = useState(false)
   const [customFocus, setCustomFocus] = useState(String(pomodoroFocusMin))
   const [customBreak, setCustomBreak] = useState(String(pomodoroBreakMin))
@@ -206,39 +207,66 @@ export function FocusedDay() {
     setActiveTaskId(taskId)
   }, [updateTaskActualDuration])
 
+  const handlePomodoroTick = useCallback(() => {
+    tickPomodoro()
+
+    // Accumulate time for active task during focus phase
+    if (isPomodoroRunningRef.current && pomodoroPhaseRef.current === 'focus' && activeTaskIdRef.current) {
+      setSessionSeconds(s => {
+        const next = s + 1
+        // Sync to DB every 60 seconds to avoid spam
+        if (next >= 60) {
+          void updateTaskActualDuration(activeTaskIdRef.current!, next)
+          return 0
+        }
+        return next
+      })
+    }
+  }, [tickPomodoro, updateTaskActualDuration])
+
   // ── Web Worker setup ──────────────────────────────────────────────────────
   useEffect(() => {
-    workerRef.current = new Worker('/pomodoroWorker.js')
-    workerRef.current.onmessage = () => {
-      tickPomodoro()
-
-      // Accumulate time for active task during focus phase
-      if (isPomodoroRunningRef.current && pomodoroPhaseRef.current === 'focus' && activeTaskIdRef.current) {
-        setSessionSeconds(s => {
-          const next = s + 1
-          // Sync to DB every 60 seconds to avoid spam
-          if (next >= 60) {
-            void updateTaskActualDuration(activeTaskIdRef.current!, next)
-            return 0
-          }
-          return next
-        })
+    try {
+      workerRef.current = new Worker(new URL('../workers/pomodoroWorker.ts', import.meta.url), { type: 'module' })
+      workerRef.current.onmessage = handlePomodoroTick
+      workerRef.current.onerror = () => {
+        workerRef.current?.terminate()
+        workerRef.current = null
       }
-    }
+    } catch {}
+
     return () => {
       if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
          void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
       }
+      if (fallbackIntervalRef.current) {
+        clearInterval(fallbackIntervalRef.current)
+        fallbackIntervalRef.current = null
+      }
       workerRef.current?.terminate()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [handlePomodoroTick])
 
   // Sync worker with running state
   useEffect(() => {
-    if (!workerRef.current) return
-    workerRef.current.postMessage(isPomodoroRunning ? 'start' : 'stop')
-  }, [isPomodoroRunning])
+    if (workerRef.current) {
+      workerRef.current.postMessage(isPomodoroRunning ? 'start' : 'stop')
+      return
+    }
+
+    if (isPomodoroRunning && !fallbackIntervalRef.current) {
+      fallbackIntervalRef.current = setInterval(() => {
+        handlePomodoroTick()
+      }, 1000)
+      return
+    }
+
+    if (!isPomodoroRunning && fallbackIntervalRef.current) {
+      clearInterval(fallbackIntervalRef.current)
+      fallbackIntervalRef.current = null
+    }
+  }, [handlePomodoroTick, isPomodoroRunning])
 
   // Count completed focus sessions (phase switches focus→break)
   const prevPhase = useRef(pomodoroPhase)
