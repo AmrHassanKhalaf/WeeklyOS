@@ -36,6 +36,16 @@ export interface Task {
   pinnedTaskId?: string
 }
 
+export interface FocusSession {
+  id: string
+  user_id: string
+  task_id?: string
+  start_time: string
+  end_time?: string
+  duration_seconds: number
+  session_type: 'focus' | 'break'
+}
+
 export interface WeekKey {
   weekNumber: number
   year: number
@@ -143,6 +153,11 @@ interface WeekStore {
   setPomodoroPreset: (focusMin: number, breakMin: number) => void
   updateTaskActualDuration: (taskId: string, secondsToAdd: number) => Promise<void>
   setFocusedDay: (_index: number) => void
+
+  // Focus Sessions
+  focusSessions: FocusSession[]
+  fetchTodayFocusSessions: () => Promise<void>
+  saveFocusSession: (taskId: string | undefined, durationSeconds: number, sessionType: 'focus' | 'break') => Promise<void>
 
   // Reset
   startNewPlan: () => Promise<void>
@@ -524,6 +539,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     pomodoroPhase: 'focus' as const,
     pomodoroFocusMin: 25,
     pomodoroBreakMin: 5,
+    focusSessions: [],
 
     // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -547,6 +563,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         })
 
         updateNavigationState({ weekNumber: loaded.weekNumber, year: loaded.year }, currentKey)
+        get().fetchTodayFocusSessions()
 
         // 3. Real-time subscription for tasks (DISABLED - causing WebSocket connection issues)
         // TODO: Re-enable when network connectivity is stable
@@ -1198,6 +1215,53 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         set({ currentWeek: snapshot })
       }
     },
+    fetchTodayFocusSessions: async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+      
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const { data, error } = await supabase
+        .from('focus_sessions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .gte('start_time', today.toISOString())
+        .order('start_time', { ascending: true })
+        
+      if (!error && data) {
+        set({ focusSessions: data as FocusSession[] })
+      }
+    },
+
+    saveFocusSession: async (taskId, durationSeconds, sessionType) => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+      
+      const now = new Date()
+      const startTime = new Date(now.getTime() - durationSeconds * 1000)
+      
+      const payload = {
+        user_id: session.user.id,
+        task_id: taskId || null,
+        start_time: startTime.toISOString(),
+        end_time: now.toISOString(),
+        duration_seconds: durationSeconds,
+        session_type: sessionType
+      }
+      
+      const { data, error } = await supabase
+        .from('focus_sessions')
+        .insert(payload)
+        .select()
+        .single()
+        
+      if (!error && data) {
+        const currentSessions = get().focusSessions
+        set({ focusSessions: [...currentSessions, data as FocusSession] })
+      }
+    },
+
     setFocusedDay: (_index: number) => {
       // Kept for API compat, day selection is now automatic (isToday)
     },

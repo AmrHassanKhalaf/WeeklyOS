@@ -50,9 +50,12 @@ function CircularProgress({
         stroke={phase === 'focus' ? focusColor : breakColor}
         strokeWidth={stroke}
         strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.4s' }}
+        strokeDasharray={phase === 'focus' ? `6 12` : circumference}
+        strokeDashoffset={phase === 'focus' ? undefined : offset}
+        style={{
+          transition: phase === 'focus' ? 'stroke-dashoffset 0.9s linear, stroke 0.4s' : 'stroke-dashoffset 0.9s linear, stroke 0.4s',
+          clipPath: phase === 'focus' ? `polygon(0 0, 100% 0, 100% ${100 * progress}%, 0 ${100 * progress}%)` : undefined
+        }}
         filter={`drop-shadow(0 0 10px ${phase === 'focus' ? focusColor : breakColor}aa)`}
       />
     </svg>
@@ -81,7 +84,8 @@ function TaskRow({
   const totalSeconds = (task.actualDuration || 0) + unsavedSeconds
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const formatSecs = hours > 0 ? `${hours}h ${minutes.toString().padStart(2, '0')}m` : `${minutes}m`
+  const seconds = totalSeconds % 60
+  const formatSecs = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${seconds}s`
 
   return (
     <div
@@ -175,7 +179,9 @@ export function FocusedDay() {
     setPomodoroPreset,
     toggleTaskComplete,
     markDayComplete,
-    updateTaskActualDuration
+    updateTaskActualDuration,
+    focusSessions,
+    saveFocusSession
   } = useWeekStore()
   const { isFocusMode, toggleFocusMode } = useLayoutStore()
 
@@ -206,10 +212,11 @@ export function FocusedDay() {
   const handleMakeActive = useCallback((taskId: string | null) => {
     if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
       void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
+      void saveFocusSession(activeTaskIdRef.current, sessionSecondsRef.current, pomodoroPhaseRef.current)
     }
     setSessionSeconds(0)
     setActiveTaskId(taskId)
-  }, [updateTaskActualDuration])
+  }, [updateTaskActualDuration, saveFocusSession])
 
   const handlePomodoroTick = useCallback(() => {
     tickPomodoro()
@@ -275,11 +282,18 @@ export function FocusedDay() {
   // Count completed focus sessions (phase switches focus→break)
   const prevPhase = useRef(pomodoroPhase)
   useEffect(() => {
-    if (prevPhase.current === 'focus' && pomodoroPhase === 'break') {
-      setSessionCount(c => c + 1)
+    if (prevPhase.current !== pomodoroPhase) {
+      if (prevPhase.current === 'focus' && pomodoroPhase === 'break') {
+        setSessionCount(c => c + 1)
+      }
+      if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
+        void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
+        void saveFocusSession(activeTaskIdRef.current, sessionSecondsRef.current, prevPhase.current)
+        setSessionSeconds(0)
+      }
     }
     prevPhase.current = pomodoroPhase
-  }, [pomodoroPhase])
+  }, [pomodoroPhase, updateTaskActualDuration, saveFocusSession])
 
   // Browser notification on phase switch
   useEffect(() => {
@@ -302,13 +316,23 @@ export function FocusedDay() {
   const handleToggle = useCallback(() => {
     if (isPomodoroRunning) {
       stopPomodoro()
+      if (workerRef.current) workerRef.current.postMessage('stop')
+      if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current)
+      
+      if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
+        void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
+        void saveFocusSession(activeTaskIdRef.current, sessionSecondsRef.current, pomodoroPhaseRef.current)
+        setSessionSeconds(0)
+      }
     } else {
       if ('Notification' in window && Notification.permission !== 'granted') {
         void Notification.requestPermission()
       }
       startPomodoro()
+      if (workerRef.current) workerRef.current.postMessage('start')
+      else fallbackIntervalRef.current = setInterval(handlePomodoroTick, 1000)
     }
-  }, [isPomodoroRunning, startPomodoro, stopPomodoro])
+  }, [isPomodoroRunning, startPomodoro, stopPomodoro, handlePomodoroTick, saveFocusSession, updateTaskActualDuration])
 
   const applyCustomPreset = () => {
     const f = Math.max(1, Math.min(120, Number(customFocus) || 25))
@@ -341,12 +365,17 @@ export function FocusedDay() {
   const totalCount = [mainTask, ...mediumTasks, ...quickWins].filter(Boolean).length
   const dayProgress = totalCount > 0 ? completedCount / totalCount : 0
 
+  const todayFocusSeconds = focusSessions.reduce((acc, curr) => acc + curr.duration_seconds, 0)
+
   return (
     <AppLayout>
-      <div className="max-w-[820px] mx-auto px-4 md:px-8 py-10 pb-24 space-y-10">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-10 pb-24 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start">
+        
+        {/* ── Left Column (Main Content) ─────────────────────────────────── */}
+        <div className="space-y-10">
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          {/* ── Header ─────────────────────────────────────────────────────── */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <span className="material-symbols-outlined text-primary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -553,7 +582,7 @@ export function FocusedDay() {
         </div>
 
         {/* ── Tasks ──────────────────────────────────────────────────────────── */}
-        <div className="space-y-8" onClick={() => handleMakeActive(null)}>
+        <div className="space-y-8">
 
           {/* Main Objective */}
           <section>
@@ -613,7 +642,7 @@ export function FocusedDay() {
                             activeTaskId === mainTask.id ? 'bg-gradient-to-r from-primary/30 to-tertiary/20 text-primary border-primary/35 shadow-[0_0_14px_rgba(124,58,237,0.18)]' : 'bg-white/5 text-neutral-300 border-white/10'
                           }`}>
                             <span className="material-symbols-outlined text-[12px]">data_usage</span>
-                            Spent Time: {Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 60)}m
+                            Spent Time: {Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 3600) > 0 ? `${Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 3600)}h ${Math.floor((((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 3600) / 60)}m` : `${Math.floor((((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 3600) / 60)}m ${((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 60}s`}
                           </span>
                         </div>
                       </div>
@@ -766,30 +795,100 @@ export function FocusedDay() {
               <p className="text-neutral-600 text-sm mt-1">Go to Weekly Distribution to assign tasks.</p>
             </div>
           )}
+
+          {/* ── Day Complete ───────────────────────────────────────────────────── */}
+          <div className="pt-6 pb-10 flex justify-center">
+            <GlowButton
+              type="button"
+              onClick={() => todayPlan && markDayComplete(todayPlan.day)}
+              compact
+              variant="secondary"
+              className="px-12 py-4 rounded-2xl font-bold group"
+            >
+              <div className="flex flex-col items-center gap-1.5">
+                <span
+                  className="material-symbols-outlined text-3xl mb-0.5 group-hover:scale-110 transition-transform"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  verified
+                </span>
+                <span className="text-base">Mark Day Complete</span>
+                <span className="text-[10px] font-normal uppercase tracking-widest text-tertiary/60">
+                  Finalize All Progress
+                </span>
+              </div>
+            </GlowButton>
+          </div>
         </div>
 
-        {/* ── Day Complete ───────────────────────────────────────────────────── */}
-        <div className="pt-6 pb-10 flex justify-center">
-          <GlowButton
-            type="button"
-            onClick={() => todayPlan && markDayComplete(todayPlan.day)}
-            compact
-            variant="secondary"
-            className="px-12 py-4 rounded-2xl font-bold group"
-          >
-            <div className="flex flex-col items-center gap-1.5">
-              <span
-                className="material-symbols-outlined text-3xl mb-0.5 group-hover:scale-110 transition-transform"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                verified
-              </span>
-              <span className="text-base">Mark Day Complete</span>
-              <span className="text-[10px] font-normal uppercase tracking-widest text-tertiary/60">
-                Finalize All Progress
-              </span>
+        {/* ── Right Column (Sidebar) ─────────────────────────────────────── */}
+        <div className="space-y-6 xl:sticky xl:top-8 self-start">
+          {/* 1. FOCUS TIME TODAY */}
+          <div className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50 backdrop-blur-xl">
+             <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-4">Focus Time Today</h3>
+             <div className="flex items-end justify-between">
+               <div>
+                 <span className="text-3xl font-black text-on-surface">{Math.floor(todayFocusSeconds / 3600)}h {Math.floor((todayFocusSeconds % 3600) / 60)}m</span>
+                 <p className="text-xs text-tertiary mt-1.5 flex items-center gap-1">
+                   <span className="material-symbols-outlined text-[14px]">trending_up</span>
+                   +15m from yesterday
+                 </p>
+               </div>
+               {/* Sparkline mock */}
+               <svg width="60" height="30" viewBox="0 0 60 30" fill="none">
+                 <path d="M0 25 Q 10 15, 20 20 T 40 10 T 60 5" stroke="#14b8a6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+               </svg>
+             </div>
+          </div>
+
+          {/* 2. TODAY'S TASKS */}
+          <div className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50 backdrop-blur-xl">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-5">Today's Tasks</h3>
+            <div className="space-y-4">
+              {[todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).map(task => (
+                <div key={task!.id} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`shrink-0 w-2 h-2 rounded-full ${task!.priority === 'high' ? 'bg-primary shadow-[0_0_8px_#7c3aed]' : task!.priority === 'medium' ? 'bg-tertiary shadow-[0_0_8px_#14b8a6]' : 'bg-sky-500 shadow-[0_0_8px_#0ea5e9]'}`} />
+                    <span className={`text-sm font-medium truncate ${task!.status === 'done' ? 'line-through text-neutral-500' : 'text-neutral-200'}`}>
+                      {task!.title}
+                    </span>
+                  </div>
+                  <span className="shrink-0 pl-3 text-xs font-mono text-neutral-500">
+                    {Math.floor((task!.actualDuration || 0) / 3600)}h {Math.floor(((task!.actualDuration || 0) % 3600) / 60)}m
+                  </span>
+                </div>
+              ))}
             </div>
-          </GlowButton>
+          </div>
+
+          {/* 3. FOCUS TIME RECORDS */}
+          <div className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50 backdrop-blur-xl">
+             <div className="flex items-center justify-between mb-6">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Focus Time Records</h3>
+                <span className="material-symbols-outlined text-neutral-500 text-[18px]">history</span>
+             </div>
+             <div className="space-y-5 relative">
+               <div className="absolute left-2 top-2 bottom-2 w-px bg-white/10" />
+               {focusSessions.map((session, i) => {
+                 const task = [todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).find(t => t!.id === session.task_id)
+                 const date = new Date(session.start_time)
+                 const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                 return (
+                   <div key={session.id || i} className="flex gap-4 relative">
+                     <div className="shrink-0 w-4 h-4 rounded-full border-4 border-[#121212] bg-neutral-600 z-10" />
+                     <div className="-mt-1">
+                       <p className="text-[11px] font-mono tracking-wider text-neutral-500 mb-1">{timeStr} — {session.duration_seconds >= 60 ? `${Math.floor(session.duration_seconds/60)}m` : `${session.duration_seconds}s`} {session.session_type}</p>
+                       <p className="text-sm font-medium text-neutral-200">{task ? task.title : (session.session_type === 'break' ? 'Break Session' : 'Focus Session')}</p>
+                     </div>
+                   </div>
+                 )
+               })}
+               {focusSessions.length === 0 && (
+                 <p className="text-sm text-neutral-500 italic pl-8">No records yet today.</p>
+               )}
+             </div>
+          </div>
+
         </div>
 
       </div>
