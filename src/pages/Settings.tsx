@@ -232,332 +232,99 @@ export function Settings() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8">
-          
-          {/* AI Settings */}
-          <section className="space-y-6 xl:col-span-5">
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
-            <div className="flex items-center gap-3 text-primary mb-5">
-              <span className="material-symbols-outlined">smart_toy</span>
-              <h2 className="text-[13px] font-bold uppercase tracking-widest">AI Integration</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Primary Model Selection</label>
-                <div className="flex flex-col gap-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <select 
-                      value={localProvider}
-                      onChange={e => {
-                        const p = e.target.value as AIProvider;
-                        setLocalProvider(p)
-                        if (p === 'grok') setLocalModel('grok-2-mini')
-                        if (p === 'gemini') setLocalModel('gemini-1.5-flash')
-                      }}
-                      className="bg-surface-container-low px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface"
-                    >
-                      <option value="gemini">Google Gemini</option>
-                      <option value="grok">Grok (xAI)</option>
-                    </select>
-                    
-                    <select
-                      value={isCustom ? 'custom' : localModel}
-                      onChange={e => {
-                        if (e.target.value !== 'custom') {
-                          setLocalModel(e.target.value)
-                        } else {
-                          setLocalModel('') // clear for custom typing
-                        }
-                      }}
-                      className="bg-surface-container-low px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface text-tertiary font-medium"
-                    >
-                      {localProvider === 'grok' && (
-                        <>
-                          <option value="grok-4">grok-4</option>
-                          <option value="grok-4.1-fast">grok-4.1-fast</option>
-                          <option value="grok-4-vision">grok-4-vision</option>
-                          <option value="grok-code-fast-1">grok-code-fast-1</option>
-                        </>
-                      )}
-                      {localProvider === 'gemini' && (
-                        <>
-                           <option value="gemini-flash-latest">gemini-flash-latest</option>
-                           <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
-                           <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
-                           <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-                           <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-                           <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
-                           <option value="gemini-live-2.5-flash-native-audio">gemini-live-audio</option>
-                        </>
-                      )}
-                      <option value="custom">Other (Custom...)</option>
-                    </select>
-                  </div>
+        {/* ══ 3-Column Grid ═══════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8 items-start">
 
-                  {isCustom && (
-                    <input
-                      type="text"
-                      value={localModel}
-                      onChange={e => setLocalModel(e.target.value)}
-                      placeholder={`Enter custom ${localProvider} model name...`}
-                      className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface font-mono focus:border-tertiary/50 transition-colors"
-                    />
-                  )}
+          {/* ── Col 1: AI Integration + Pinned Tasks ───────────────── */}
+          <div className="space-y-6">
 
-                  <div className="flex items-center gap-3">
-                    <GlowButton
-                      type="button"
-                      onClick={handleSaveModel}
-                      disabled={isSavingModel || (!localModel.trim()) || (localProvider === settings.activeProvider && localModel === settings.activeModel)}
-                      compact
-                      variant="secondary"
-                      className="text-[11px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSavingModel ? 'Saving...' : savedModel ? 'Saved!' : 'Save Model Selection'}
-                    </GlowButton>
-                    {savedModel && <span className="text-tertiary text-[11px] font-medium uppercase tracking-widest">Successfully updated</span>}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 py-4 border-y border-white/10">
-                <ProviderInput provider="gemini" label="Google Gemini" settings={settings} />
-                <ProviderInput provider="grok" label="xAI Grok" settings={settings} />
-              </div>
-
-              <Toggle 
-                label="Fallback Provider" 
-                desc="Automatically switch to another provider if the primary one fails."
-                checked={settings.fallbackEnabled}
-                onChange={settings.setFallbackEnabled}
-              />
-            </div>
-            </div>
-          </section>
-
-          {/* General & Privacy */}
-          <section className="space-y-6 xl:col-span-7">
-            
-            {/* UI Settings */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
-              <div className="flex items-center gap-3 text-tertiary mb-5">
-                <span className="material-symbols-outlined">palette</span>
-                <h2 className="text-[13px] font-bold uppercase tracking-widest">Appearance</h2>
-              </div>
-              <div className="flex gap-4">
-                {['dark', 'light', 'system'].map(t => (
-                  <GlowButton 
-                    key={t}
-                    type="button"
-                    onClick={() => settings.setTheme(t as any)}
-                    compact
-                    variant={settings.theme === t ? 'secondary' : 'tertiary'}
-                    className={`flex-1 text-[12px] font-bold uppercase tracking-wider ${settings.theme === t ? '' : 'opacity-75 hover:opacity-100'}`}
-                  >
-                    {t}
-                  </GlowButton>
-                ))}
-              </div>
-            </div>
-
-            {/* Notifications */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
-              <div className="flex items-center gap-3 text-neutral-400 mb-5">
-                <span className="material-symbols-outlined">notifications</span>
-                <h2 className="text-[13px] font-bold uppercase tracking-widest">Notifications</h2>
+            {/* AI Integration */}
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-primary mb-5">
+                <span className="material-symbols-outlined">smart_toy</span>
+                <h2 className="text-[13px] font-bold uppercase tracking-widest">AI Integration</h2>
               </div>
               <div className="space-y-4">
-                <Toggle 
-                  label="Daily Reminders" 
-                  desc="Get notified about your main objective every morning."
-                  checked={settings.dailyReminders}
-                  onChange={settings.setDailyReminders}
-                />
-                <Toggle 
-                  label="Weekly Summary" 
-                  desc="Receive an email report of your week's performance."
-                  checked={settings.weeklySummaries}
-                  onChange={settings.setWeeklySummaries}
-                />
-                <Toggle
-                  label="Auto-download completed week report"
-                  desc="When enabled, WeeklyOS downloads last completed week's PDF once after rollover."
-                  checked={settings.autoDownloadCompletedWeekReport}
-                  onChange={settings.setAutoDownloadCompletedWeekReport}
-                />
-              </div>
-            </div>
-
-            {/* Work Schedule */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
-              <div className="flex items-center gap-3 text-primary mb-5">
-                <span className="material-symbols-outlined">calendar_month</span>
-                <h2 className="text-[13px] font-bold uppercase tracking-widest">Work Schedule</h2>
-              </div>
-              <div className="bg-surface-container-low rounded-xl border border-white/10 p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Timezone</label>
-                    <select
-                      value={settings.timezone}
-                      onChange={e => settings.setTimezone(e.target.value)}
-                      className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface"
-                    >
-                      <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>System ({Intl.DateTimeFormat().resolvedOptions().timeZone})</option>
-                      {TIMEZONE_OPTIONS.map((tz) => (
-                        <option key={tz} value={tz}>{tz}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Week Starts On</label>
-                    <select
-                      value={settings.weekStartDay}
-                      onChange={e => settings.setWeekStartDay(e.target.value as WeekStartDay)}
-                      className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface"
-                    >
-                      {WEEK_START_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <p className="text-[12px] text-neutral-400 mb-2">Select your rest days. These days will be marked as "Rest Day" on your dashboard.</p>
-                <div className="flex flex-wrap gap-2">
-                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
-                    const isRest = (settings.restDays || []).includes(day)
-                    return (
-                      <GlowButton
-                        key={day}
-                        type="button"
-                        onClick={() => {
-                          const current = settings.restDays || []
-                          const next = isRest 
-                            ? current.filter(d => d !== day)
-                            : [...current, day]
-                          settings.setRestDays(next)
-                        }}
-                        compact
-                        variant={isRest ? 'secondary' : 'tertiary'}
-                        className={`uppercase tracking-wider text-[11px] font-bold ${isRest ? 'text-white' : 'text-neutral-400'}`}
-                      >
-                        {day.slice(0, 3)}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Primary Model</label>
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <select value={localProvider}
+                        onChange={e => { const p=e.target.value as AIProvider; setLocalProvider(p); if(p==='grok')setLocalModel('grok-2-mini'); if(p==='gemini')setLocalModel('gemini-1.5-flash') }}
+                        className="bg-surface-container-low px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm text-on-surface">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="grok">Grok (xAI)</option>
+                      </select>
+                      <select value={isCustom?'custom':localModel}
+                        onChange={e => { if(e.target.value!=='custom')setLocalModel(e.target.value); else setLocalModel('') }}
+                        className="bg-surface-container-low px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm text-on-surface text-tertiary font-medium">
+                        {localProvider==='grok'&&(<><option value="grok-4">grok-4</option><option value="grok-4.1-fast">grok-4.1-fast</option><option value="grok-4-vision">grok-4-vision</option><option value="grok-code-fast-1">grok-code-fast-1</option></>)}
+                        {localProvider==='gemini'&&(<><option value="gemini-flash-latest">gemini-flash-latest</option><option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option><option value="gemini-3-flash-preview">gemini-3-flash-preview</option><option value="gemini-2.5-pro">gemini-2.5-pro</option><option value="gemini-2.5-flash">gemini-2.5-flash</option><option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option><option value="gemini-live-2.5-flash-native-audio">gemini-live-audio</option></>)}
+                        <option value="custom">Other (Custom...)</option>
+                      </select>
+                    </div>
+                    {isCustom && (
+                      <input type="text" value={localModel} onChange={e=>setLocalModel(e.target.value)}
+                        placeholder={`Custom ${localProvider} model...`}
+                        className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm font-mono focus:border-tertiary/50 transition-colors" />
+                    )}
+                    <div className="flex items-center gap-3">
+                      <GlowButton type="button" onClick={handleSaveModel} compact variant="secondary"
+                        disabled={isSavingModel||!localModel.trim()||(localProvider===settings.activeProvider&&localModel===settings.activeModel)}
+                        className="text-[11px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">
+                        {isSavingModel?'Saving...':savedModel?'Saved!':'Save Selection'}
                       </GlowButton>
-                    )
-                  })}
+                      {savedModel&&<span className="text-tertiary text-[11px] font-medium uppercase tracking-widest">Updated</span>}
+                    </div>
+                  </div>
                 </div>
+                <div className="space-y-4 py-4 border-y border-white/10">
+                  <ProviderInput provider="gemini" label="Google Gemini" settings={settings} />
+                  <ProviderInput provider="grok" label="xAI Grok" settings={settings} />
+                </div>
+                <Toggle label="Fallback Provider" desc="Switch to another provider if the primary fails." checked={settings.fallbackEnabled} onChange={settings.setFallbackEnabled} />
               </div>
             </div>
+
 
             {/* Pinned Tasks */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
               <div className="flex items-center gap-3 text-primary mb-5">
                 <span className="material-symbols-outlined">push_pin</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Pinned Tasks</h2>
               </div>
-              <div className="bg-surface-container-low rounded-xl border border-white/10 p-4 space-y-3">
-                <p className="text-xs text-neutral-500">Pinned tasks repeat every week on your selected day/time until you disable or delete them.</p>
-                <input
-                  type="text"
-                  placeholder="Pinned task title"
-                  value={pinnedDraft.title}
-                  onChange={e => setPinnedDraft(p => ({ ...p, title: e.target.value }))}
-                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm"
-                />
-                <textarea
-                  rows={2}
-                  placeholder="Description (optional)"
-                  value={pinnedDraft.description}
-                  onChange={e => setPinnedDraft(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm resize-none"
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <select
-                    value={pinnedDraft.priority}
-                    onChange={e => setPinnedDraft(p => ({ ...p, priority: e.target.value as Priority }))}
-                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm"
-                  >
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
+              <div className="space-y-3">
+                <p className="text-xs text-neutral-500">Pinned tasks repeat every week on your selected day/time until disabled or deleted.</p>
+                <input type="text" placeholder="Task title" value={pinnedDraft.title} onChange={e=>setPinnedDraft(p=>({...p,title:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm" />
+                <textarea rows={2} placeholder="Description (optional)" value={pinnedDraft.description} onChange={e=>setPinnedDraft(p=>({...p,description:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm resize-none" />
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={pinnedDraft.priority} onChange={e=>setPinnedDraft(p=>({...p,priority:e.target.value as Priority}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm">
+                    <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
                   </select>
-                  <select
-                    value={pinnedDraft.dayOfWeek}
-                    onChange={e => setPinnedDraft(p => ({ ...p, dayOfWeek: e.target.value as DayOfWeek }))}
-                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm"
-                  >
-                    {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
+                  <select value={pinnedDraft.dayOfWeek} onChange={e=>setPinnedDraft(p=>({...p,dayOfWeek:e.target.value as DayOfWeek}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm">
+                    {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map(d=><option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="time"
-                    value={pinnedDraft.startTime}
-                    onChange={e => setPinnedDraft(p => ({ ...p, startTime: e.target.value }))}
-                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]"
-                  />
-                  <input
-                    type="time"
-                    value={pinnedDraft.endTime}
-                    onChange={e => setPinnedDraft(p => ({ ...p, endTime: e.target.value }))}
-                    className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="time" value={pinnedDraft.startTime} onChange={e=>setPinnedDraft(p=>({...p,startTime:e.target.value}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]" />
+                  <input type="time" value={pinnedDraft.endTime} onChange={e=>setPinnedDraft(p=>({...p,endTime:e.target.value}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]" />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Tags (comma separated)"
-                  value={pinnedDraft.tags}
-                  onChange={e => setPinnedDraft(p => ({ ...p, tags: e.target.value }))}
-                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm"
-                />
-                <input
-                  type="date"
-                  value={pinnedDraft.untilDate}
-                  onChange={e => setPinnedDraft(p => ({ ...p, untilDate: e.target.value }))}
-                  className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm [color-scheme:dark]"
-                />
-                <p className="text-[11px] text-neutral-500 -mt-1">
-                  Leave date empty to repeat every week until you pause or delete this pinned task.
-                </p>
-                <GlowButton
-                  type="button"
-                  onClick={handleCreatePinnedTask}
-                  compact
-                  variant="secondary"
-                  className="text-[11px] font-bold uppercase tracking-widest"
-                >
-                  Create Pinned Task
-                </GlowButton>
-
+                <input type="text" placeholder="Tags (comma separated)" value={pinnedDraft.tags} onChange={e=>setPinnedDraft(p=>({...p,tags:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm" />
+                <input type="date" value={pinnedDraft.untilDate} onChange={e=>setPinnedDraft(p=>({...p,untilDate:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm [color-scheme:dark]" />
+                <p className="text-[11px] text-neutral-500">Leave date empty to repeat indefinitely.</p>
+                <GlowButton type="button" onClick={handleCreatePinnedTask} compact variant="secondary" className="text-[11px] font-bold uppercase tracking-widest">Create Pinned Task</GlowButton>
                 <div className="space-y-2 pt-2 border-t border-white/10 max-h-64 overflow-y-auto pr-1">
-                  {pinnedStore.items.length === 0 && (
-                    <p className="text-xs text-neutral-500">No pinned tasks created yet.</p>
-                  )}
-                  {pinnedStore.items.map((item) => (
+                  {pinnedStore.items.length===0&&<p className="text-xs text-neutral-500">No pinned tasks yet.</p>}
+                  {pinnedStore.items.map(item=>(
                     <div key={item.id} className="bg-surface-container-lowest border border-white/5 rounded-lg px-3 py-2.5">
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold leading-tight">{item.title}</p>
-                          <p className="text-[12px] text-neutral-500 mt-0.5">{item.dayOfWeek} • {item.startTime || '--:--'} to {item.endTime || '--:--'}</p>
+                          <p className="text-[12px] text-neutral-500 mt-0.5">{item.dayOfWeek} • {item.startTime||'--:--'} – {item.endTime||'--:--'}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => void handleTogglePinnedTask(item.id, !item.isActive)}
-                            className={`px-2.5 py-1 rounded text-[11px] uppercase tracking-wider font-bold ${item.isActive ? 'bg-tertiary/15 text-tertiary' : 'bg-neutral-700/30 text-neutral-400'}`}
-                          >
-                            {item.isActive ? 'Active' : 'Paused'}
-                          </button>
-                          <button
-                            onClick={() => void handleDeletePinnedTask(item.id)}
-                            className="px-2.5 py-1 rounded text-[11px] uppercase tracking-wider font-bold bg-error/15 text-error"
-                          >
-                            Delete
-                          </button>
+                          <button onClick={()=>void handleTogglePinnedTask(item.id,!item.isActive)} className={`px-2.5 py-1 rounded text-[11px] uppercase tracking-wider font-bold ${item.isActive?'bg-tertiary/15 text-tertiary':'bg-neutral-700/30 text-neutral-400'}`}>{item.isActive?'Active':'Paused'}</button>
+                          <button onClick={()=>void handleDeletePinnedTask(item.id)} className="px-2.5 py-1 rounded text-[11px] uppercase tracking-wider font-bold bg-error/15 text-error">Delete</button>
                         </div>
                       </div>
                     </div>
@@ -566,117 +333,145 @@ export function Settings() {
               </div>
             </div>
 
+          </div>{/* /col1 */}
 
-            {/* ── Report Settings ─────────────────────────────────── */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
+
+          {/* ── Col 2: Work Schedule + Appearance + Notifications ──────── */}
+          <div className="space-y-6">
+
+            {/* Work Schedule */}
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-primary mb-5">
+                <span className="material-symbols-outlined">calendar_month</span>
+                <h2 className="text-[13px] font-bold uppercase tracking-widest">Work Schedule</h2>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Timezone</label>
+                    <select value={settings.timezone} onChange={e=>settings.setTimezone(e.target.value)}
+                      className="w-full bg-surface-container-lowest px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm">
+                      <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>System</option>
+                      {TIMEZONE_OPTIONS.map(tz=><option key={tz} value={tz}>{tz}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Week Starts</label>
+                    <select value={settings.weekStartDay} onChange={e=>settings.setWeekStartDay(e.target.value as WeekStartDay)}
+                      className="w-full bg-surface-container-lowest px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm">
+                      {WEEK_START_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Rest Days</p>
+                  <div className="flex flex-wrap gap-2">
+                    {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(day=>{
+                      const isRest=(settings.restDays||[]).includes(day)
+                      return(<GlowButton key={day} type="button" compact
+                        onClick={()=>{const c=settings.restDays||[];settings.setRestDays(isRest?c.filter(d=>d!==day):[...c,day])}}
+                        variant={isRest?'secondary':'tertiary'}
+                        className={`uppercase tracking-wider text-[11px] font-bold ${isRest?'text-white':'text-neutral-400'}`}>
+                        {day.slice(0,3)}</GlowButton>)
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Appearance */}
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-tertiary mb-5">
+                <span className="material-symbols-outlined">palette</span>
+                <h2 className="text-[13px] font-bold uppercase tracking-widest">Appearance</h2>
+              </div>
+              <div className="flex gap-3">
+                {['dark','light','system'].map(t=>(
+                  <GlowButton key={t} type="button" compact onClick={()=>settings.setTheme(t as any)}
+                    variant={settings.theme===t?'secondary':'tertiary'}
+                    className={`flex-1 text-[12px] font-bold uppercase tracking-wider ${settings.theme===t?'':'opacity-75 hover:opacity-100'}`}>{t}</GlowButton>
+                ))}
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+              <div className="flex items-center gap-3 text-neutral-400 mb-5">
+                <span className="material-symbols-outlined">notifications</span>
+                <h2 className="text-[13px] font-bold uppercase tracking-widest">Notifications</h2>
+              </div>
+              <div className="space-y-3">
+                <Toggle label="Daily Reminders" desc="Get notified about your main objective every morning." checked={settings.dailyReminders} onChange={settings.setDailyReminders} />
+                <Toggle label="Weekly Summary" desc="Receive a report of your week's performance." checked={settings.weeklySummaries} onChange={settings.setWeeklySummaries} />
+                <Toggle label="Auto-download Report" desc="Downloads last completed week's PDF once after rollover." checked={settings.autoDownloadCompletedWeekReport} onChange={settings.setAutoDownloadCompletedWeekReport} />
+              </div>
+            </div>
+
+          </div>{/* /col2 */}
+
+
+          {/* ── Col 3: Report Settings + Privacy ───────────────────────── */}
+          <div className="space-y-6">
+
+            {/* Report Settings */}
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
               <div className="flex items-center gap-3 text-tertiary mb-5">
                 <span className="material-symbols-outlined">picture_as_pdf</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Report Settings</h2>
               </div>
-
-              {/* Days included in report */}
-              <div className="mb-5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3">Days Included in Report</p>
-                <div className="flex flex-wrap gap-2">
-                  {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map(day => {
-                    const included = (settings.reportIncludedDays ?? []).includes(day)
-                    return (
-                      <GlowButton
-                        key={day}
-                        type="button"
-                        onClick={() => {
-                          const current = settings.reportIncludedDays ?? []
-                          const next = included
-                            ? current.filter(d => d !== day)
-                            : [...current, day]
-                          settings.setReportIncludedDays(next)
-                        }}
-                        compact
-                        variant={included ? 'secondary' : 'tertiary'}
-                        className={`uppercase tracking-wider text-[11px] font-bold ${
-                          included ? 'text-white' : 'text-neutral-500'
-                        }`}
-                      >
-                        {day.slice(0, 3)}
-                      </GlowButton>
-                    )
-                  })}
+              <div className="space-y-5">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Days in Report</p>
+                  <div className="flex flex-wrap gap-2">
+                    {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map(day=>{
+                      const included=(settings.reportIncludedDays??[]).includes(day)
+                      return(<GlowButton key={day} type="button" compact
+                        onClick={()=>{const c=settings.reportIncludedDays??[];settings.setReportIncludedDays(included?c.filter(d=>d!==day):[...c,day])}}
+                        variant={included?'secondary':'tertiary'}
+                        className={`uppercase tracking-wider text-[11px] font-bold ${included?'text-white':'text-neutral-500'}`}>
+                        {day.slice(0,3)}</GlowButton>)
+                    })}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 mt-2">Disabled days won't appear in the exported PDF.</p>
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-2">
-                  Days turned off won't appear in the exported PDF.
-                </p>
-              </div>
-
-              {/* Closing quote */}
-              <div className="mb-5">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">
-                  Closing Page Quote
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="e.g. The secret of getting ahead is getting started. — Mark Twain"
-                  value={settings.reportClosingQuote ?? ''}
-                  onChange={e => settings.setReportClosingQuote(e.target.value)}
-                  className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface resize-none focus:border-tertiary/50 transition-colors"
-                />
-                <p className="text-[11px] text-neutral-500 mt-1">
-                  Appears on the last report page when a day ends up alone. Use " — Author" at the end to add an attribution.
-                </p>
-              </div>
-
-              {/* Export buttons */}
-              <div className="space-y-3">
-                <GlowButton
-                  type="button"
-                  onClick={() => void openReportWindow()}
-                  disabled={isExporting}
-                  compact
-                  variant="secondary"
-                  className="w-full text-sm font-bold disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    {isExporting ? 'sync' : 'download'}
-                  </span>
-                  {isExporting ? 'Generating...' : 'Export This Week Report'}
-                </GlowButton>
-                <GlowButton
-                  type="button"
-                  onClick={() => void handleDownloadCompletedWeek()}
-                  disabled={isExporting}
-                  compact
-                  variant="tertiary"
-                  className="w-full text-sm font-bold disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-[18px]">history</span>
-                  Export Previous Week Report
-                </GlowButton>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Closing Page Quote</label>
+                  <textarea rows={3}
+                    placeholder="e.g. The secret of getting ahead is getting started. — Mark Twain"
+                    value={settings.reportClosingQuote??''}
+                    onChange={e=>settings.setReportClosingQuote(e.target.value)}
+                    className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface resize-none focus:border-tertiary/50 transition-colors" />
+                  <p className="text-[11px] text-neutral-500 mt-1">Use " — Author" at the end to add an attribution.</p>
+                </div>
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <GlowButton type="button" onClick={()=>void openReportWindow()} disabled={isExporting} compact variant="secondary" className="w-full text-sm font-bold disabled:opacity-50">
+                    <span className="material-symbols-outlined text-[18px]">{isExporting?'sync':'download'}</span>
+                    {isExporting?'Generating...':'Export This Week'}
+                  </GlowButton>
+                  <GlowButton type="button" onClick={()=>void handleDownloadCompletedWeek()} disabled={isExporting} compact variant="tertiary" className="w-full text-sm font-bold disabled:opacity-50">
+                    <span className="material-symbols-outlined text-[18px]">history</span>
+                    Export Previous Week
+                  </GlowButton>
+                </div>
               </div>
             </div>
 
-            {/* ── Privacy & Data ───────────────────────────────────── */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6 lg:p-7">
+            {/* Privacy & Data */}
+            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
               <div className="flex items-center gap-3 text-error mb-5">
                 <span className="material-symbols-outlined">security</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Privacy &amp; Data</h2>
               </div>
-              <div className="space-y-2">
-                <Toggle
-                  label="Analytics Tracking"
-                  desc="Share anonymous usage data to help us improve."
-                  checked={settings.analyticsEnabled}
-                  onChange={settings.setAnalyticsEnabled}
-                />
-              </div>
+              <Toggle label="Analytics Tracking" desc="Share anonymous usage data to help us improve." checked={settings.analyticsEnabled} onChange={settings.setAnalyticsEnabled} />
             </div>
 
-          </section>
+          </div>{/* /col3 */}
 
-        </div>
+        </div>{/* /3-col grid */}
       </div>
     </AppLayout>
   )
 }
-
 function ProviderInput({ provider, label, settings }: { provider: AIProvider, label: string, settings: any }) {
   const [localVal, setLocalVal] = useState(settings.aiKeys[provider] || '')
   const [isVis, setIsVis] = useState(false)

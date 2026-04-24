@@ -30,6 +30,7 @@ export interface Task {
   weekId?: string
   startTime?: string
   estimatedTime?: string
+  actualDuration?: number   // seconds spent via focus timer
   tags?: string[]
   pinnedTaskId?: string
 }
@@ -109,6 +110,9 @@ interface WeekStore {
 
   pomodoroTime: number
   isPomodoroRunning: boolean
+  pomodoroPhase: 'focus' | 'break'
+  pomodoroFocusMin: number
+  pomodoroBreakMin: number
 
   // Init
   initialize: () => Promise<void>
@@ -134,6 +138,9 @@ interface WeekStore {
   startPomodoro: () => void
   stopPomodoro: () => void
   tickPomodoro: () => void
+  resetPomodoro: () => void
+  setPomodoroPreset: (focusMin: number, breakMin: number) => void
+  updateTaskActualDuration: (taskId: string, secondsToAdd: number) => Promise<void>
   setFocusedDay: (_index: number) => void
 
   // Reset
@@ -202,6 +209,7 @@ function mapDbTask(t: Record<string, unknown>): Task {
     weekId: t.week_id ? String(t.week_id) : undefined,
     startTime: t.start_time ? String(t.start_time) : undefined,
     estimatedTime: t.estimated_duration ? String(t.estimated_duration) : undefined,
+    actualDuration: typeof t.actual_duration === 'number' ? t.actual_duration : undefined,
     tags: (t.tags as string[] | null) ?? undefined,
     pinnedTaskId: t.pinned_task_id ? String(t.pinned_task_id) : undefined,
   }
@@ -496,6 +504,9 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     isSyncing: false,
     pomodoroTime: 25 * 60,
     isPomodoroRunning: false,
+    pomodoroPhase: 'focus' as const,
+    pomodoroFocusMin: 25,
+    pomodoroBreakMin: 5,
 
     // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -1107,10 +1118,69 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     startPomodoro: () => set({ isPomodoroRunning: true }),
     stopPomodoro: () => set({ isPomodoroRunning: false }),
     tickPomodoro: () =>
+      set(state => {
+        if (state.pomodoroTime > 1) {
+          return { pomodoroTime: state.pomodoroTime - 1 }
+        }
+        // Phase switch on zero
+        const nextPhase = state.pomodoroPhase === 'focus' ? 'break' : 'focus'
+        const nextTime = nextPhase === 'focus'
+          ? state.pomodoroFocusMin * 60
+          : state.pomodoroBreakMin * 60
+        return { pomodoroTime: nextTime, pomodoroPhase: nextPhase, isPomodoroRunning: false }
+      }),
+    resetPomodoro: () =>
       set(state => ({
-        pomodoroTime: state.pomodoroTime > 0 ? state.pomodoroTime - 1 : 0,
-        isPomodoroRunning: state.pomodoroTime > 0 ? state.isPomodoroRunning : false,
+        pomodoroTime: state.pomodoroFocusMin * 60,
+        pomodoroPhase: 'focus',
+        isPomodoroRunning: false,
       })),
+    setPomodoroPreset: (focusMin: number, breakMin: number) =>
+      set({
+        pomodoroFocusMin: focusMin,
+        pomodoroBreakMin: breakMin,
+        pomodoroTime: focusMin * 60,
+        pomodoroPhase: 'focus',
+        isPomodoroRunning: false,
+      }),
+    updateTaskActualDuration: async (taskId: string, secondsToAdd: number) => {
+      const snapshot = get().currentWeek
+      if (!snapshot) return
+
+      let currentDuration = 0
+      
+      // Optimistic update
+      set(state => ({
+        currentWeek: state.currentWeek ? {
+          ...state.currentWeek,
+          days: state.currentWeek.days.map(d => {
+            const updateIfMatch = (t: Task) => {
+              if (t.id === taskId) {
+                currentDuration = t.actualDuration || 0
+                return { ...t, actualDuration: currentDuration + secondsToAdd }
+              }
+              return t
+            }
+            return {
+              ...d,
+              highTask: d.highTask ? updateIfMatch(d.highTask) : undefined,
+              mediumTasks: d.mediumTasks.map(updateIfMatch),
+              smallTasks: d.smallTasks.map(updateIfMatch),
+            }
+          })
+        } : null
+      }))
+
+      // Sync to DB
+      const { error } = await supabase.from('tasks')
+        .update({ actual_duration: currentDuration + secondsToAdd })
+        .eq('id', taskId)
+
+      if (error) {
+        console.error('[updateTaskActualDuration] Failed', error)
+        set({ currentWeek: snapshot })
+      }
+    },
     setFocusedDay: (_index: number) => {
       // Kept for API compat, day selection is now automatic (isToday)
     },

@@ -24,8 +24,17 @@ function taskRow(task: Task, accent: string): string {
   const title = task.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const dotBg = done ? GREEN : 'transparent'
   const textColor = done ? MUTED : TEXT
-  const time  = task.estimatedTime
-    ? `<span style="flex-shrink:0;margin-left:6px;font-size:10px;font-family:${FONT};color:${accent};white-space:nowrap">⌛ ${task.estimatedTime}</span>`
+  const formatSecs = (sec?: number) => {
+    if (!sec) return ''
+    const m = Math.floor(sec / 60)
+    return `${m}m`
+  }
+
+  const estHtml = task.estimatedTime
+    ? `<span style="flex-shrink:0;margin-left:6px;font-size:10px;font-family:${FONT};color:#a3a3a3;white-space:nowrap">Est: ${task.estimatedTime}</span>`
+    : ''
+  const spentHtml = task.actualDuration
+    ? `<span style="flex-shrink:0;margin-left:6px;font-size:10px;font-family:${FONT};color:${accent};white-space:nowrap;border:1px solid ${accent}40;padding:2px 4px;border-radius:4px;background-color:${accent}15">Spent: ${formatSecs(task.actualDuration)}</span>`
     : ''
   return `
   <div style="
@@ -51,7 +60,8 @@ function taskRow(task: Task, accent: string): string {
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
       display:block;
     ">${title}</span>
-    ${time}
+    ${estHtml}
+    ${spentHtml}
   </div>`
 }
 

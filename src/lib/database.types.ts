@@ -137,6 +137,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          actual_duration: number | null
           created_at: string
           day: string | null
           description: string | null
@@ -153,6 +154,7 @@ export type Database = {
           week_id: string | null
         }
         Insert: {
+          actual_duration?: number | null
           created_at?: string
           day?: string | null
           description?: string | null
@@ -169,6 +171,7 @@ export type Database = {
           week_id?: string | null
         }
         Update: {
+          actual_duration?: number | null
           created_at?: string
           day?: string | null
           description?: string | null
