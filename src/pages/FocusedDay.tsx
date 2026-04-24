@@ -795,8 +795,9 @@ export function FocusedDay() {
               <p className="text-neutral-600 text-sm mt-1">Go to Weekly Distribution to assign tasks.</p>
             </div>
           )}
+        </div>
 
-          {/* ── Day Complete ───────────────────────────────────────────────────── */}
+        {/* ── Day Complete ───────────────────────────────────────────────────── */}
           <div className="pt-6 pb-10 flex justify-center">
             <GlowButton
               type="button"
