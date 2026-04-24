@@ -79,27 +79,31 @@ function TaskRow({
 }) {
   const done = task.status === 'done'
   const totalSeconds = (task.actualDuration || 0) + unsavedSeconds
-  const m = Math.floor(totalSeconds / 60)
-  const formatSecs = totalSeconds > 0 ? `${m}m` : null
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const formatSecs = totalSeconds > 0 ? (hours > 0 ? `${hours}h ${minutes.toString().padStart(2, '0')}m` : `${minutes}m`) : null
 
   return (
     <div
-      className={`group flex items-start gap-4 rounded-2xl border transition-all duration-300 ${
+      className={`group relative flex items-start gap-4 rounded-2xl border transition-all duration-300 ${
         isActive 
-          ? 'border-tertiary/50 bg-tertiary/10 shadow-[0_0_15px_rgba(20,184,166,0.15)] scale-[1.02] z-10 relative' 
+          ? 'border-tertiary/60 bg-gradient-to-r from-tertiary/20 via-tertiary/10 to-transparent shadow-[0_0_24px_rgba(20,184,166,0.25)] scale-[1.02] z-10 ring-1 ring-tertiary/40' 
           : isDimmed 
             ? 'border-white/5 bg-white/[0.01] opacity-40 grayscale hover:opacity-60'
             : done
               ? 'border-white/5 bg-white/[0.02] opacity-50'
-              : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/20'
+              : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/20 hover:-translate-y-0.5'
       } ${size === 'lg' ? 'p-5' : size === 'md' ? 'p-4' : 'p-3'}`}
     >
+      {isActive && (
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl bg-gradient-to-b from-tertiary to-primary shadow-[0_0_16px_rgba(20,184,166,0.5)]" />
+      )}
       {/* Checkbox */}
       <div 
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
         className={`cursor-pointer mt-0.5 shrink-0 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
         size === 'lg' ? 'w-7 h-7' : size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'
-      } ${done ? 'bg-primary border-primary' : 'border-white/20 hover:border-primary/70'}`}>
+      } ${done ? 'bg-primary border-primary' : isActive ? 'border-tertiary/80 shadow-[0_0_10px_rgba(20,184,166,0.35)]' : 'border-white/20 hover:border-primary/70'}`}>
         {done && (
           <span className="material-symbols-outlined text-white text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>
             check
@@ -115,9 +119,9 @@ function TaskRow({
            {isActive ? (
               <button
                 onClick={(e) => { e.stopPropagation(); onMakeActive && onMakeActive(); }}
-                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-tertiary/30 bg-tertiary/10 text-tertiary hover:bg-tertiary/20 hover:border-tertiary/50 transition-all shadow-[0_0_15px_rgba(20,184,166,0.1)]"
+               className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.16em] border border-tertiary/50 bg-gradient-to-r from-tertiary/20 to-primary/10 text-tertiary hover:from-tertiary/30 hover:to-primary/15 transition-all shadow-[0_0_18px_rgba(20,184,166,0.22)]"
               >
-                 <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" /> Active Focus
+                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.9)]" /> Active Focus
               </button>
            ) : onMakeActive && !done ? (
               <button
@@ -141,11 +145,11 @@ function TaskRow({
               </span>
             )}
             {formatSecs && (
-              <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded uppercase tracking-wider border ${
-                 isActive ? 'bg-tertiary/20 text-tertiary border-tertiary/30' : 'bg-white/5 text-neutral-400 border-white/10'
+              <span className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border ${
+                 isActive ? 'bg-gradient-to-r from-tertiary/25 to-primary/15 text-tertiary border-tertiary/45 shadow-[0_0_14px_rgba(20,184,166,0.18)]' : 'bg-white/5 text-neutral-300 border-white/10'
               }`}>
-                <span className="material-symbols-outlined text-[12px]">timer</span>
-                Spent: {formatSecs}
+                <span className="material-symbols-outlined text-[12px]">data_usage</span>
+                Spent Time: {formatSecs}
               </span>
             )}
         </div>
@@ -399,9 +403,13 @@ export function FocusedDay() {
                   }`}>
                     {pomodoroPhase === 'focus' ? '● Focus' : '◎ Break'}
                   </span>
-                  <span className="text-5xl font-mono font-light text-on-surface tabular-nums tracking-tight">
-                    {formatTime(pomodoroTime)}
-                  </span>
+                  <div className={`px-4 py-2 rounded-2xl border backdrop-blur-sm shadow-[0_0_25px_rgba(124,58,237,0.2)] ${
+                    pomodoroPhase === 'focus' ? 'bg-violet-500/10 border-violet-300/30' : 'bg-sky-500/10 border-sky-300/30'
+                  }`}>
+                    <span className="text-6xl md:text-7xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
+                      {formatTime(pomodoroTime)}
+                    </span>
+                  </div>
                   {sessionCount > 0 && (
                     <span className="mt-2 text-[10px] text-neutral-500 tracking-widest uppercase">
                       {sessionCount} {sessionCount === 1 ? 'session' : 'sessions'}
@@ -602,11 +610,11 @@ export function FocusedDay() {
                             </span>
                           )}
                           {((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0) > 0) && (
-                            <span className={`text-[10px] font-mono px-2 py-1 rounded-md uppercase tracking-wider border flex items-center gap-1 ${
-                              activeTaskId === mainTask.id ? 'bg-primary/20 text-primary border-primary/30' : 'bg-white/5 text-neutral-400 border-white/10'
+                            <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border flex items-center gap-1.5 ${
+                              activeTaskId === mainTask.id ? 'bg-gradient-to-r from-primary/30 to-tertiary/20 text-primary border-primary/35 shadow-[0_0_14px_rgba(124,58,237,0.18)]' : 'bg-white/5 text-neutral-300 border-white/10'
                             }`}>
-                              <span className="material-symbols-outlined text-[12px]">timer</span>
-                              Spent: {Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 60)}m
+                              <span className="material-symbols-outlined text-[12px]">data_usage</span>
+                              Spent Time: {Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 60)}m
                             </span>
                           )}
                         </div>
@@ -741,10 +749,10 @@ export function FocusedDay() {
                       </div>
                       
                       {formatSecs && (
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase tracking-wider ${
-                           isActive ? 'bg-tertiary/20 text-tertiary' : 'bg-white/5 text-neutral-500'
+                        <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border ${
+                           isActive ? 'bg-gradient-to-r from-tertiary/25 to-primary/10 text-tertiary border-tertiary/40 shadow-[0_0_12px_rgba(20,184,166,0.16)]' : 'bg-white/5 text-neutral-300 border-white/10'
                         }`}>
-                          Spent: {formatSecs}
+                          Spent Time: {formatSecs}
                         </span>
                       )}
                     </div>
