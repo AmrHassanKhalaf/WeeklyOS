@@ -25,6 +25,7 @@ export interface Task {
   title: string
   description?: string
   priority: Priority
+  type?: 'main' | 'medium' | 'small' | 'pinned'
   status: TaskStatus
   day?: DayOfWeek
   weekId?: string
@@ -204,6 +205,7 @@ function mapDbTask(t: Record<string, unknown>): Task {
     title: String(t.title),
     description: t.description ? String(t.description) : undefined,
     priority: (t.priority as Priority) ?? 'low',
+    type: t.type ? (t.type as Task['type']) : undefined,
     status: (t.status as TaskStatus) ?? 'pending',
     day: (t.day as DayOfWeek | null) ?? undefined,
     weekId: t.week_id ? String(t.week_id) : undefined,
@@ -426,7 +428,12 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
     if (!pinnedTasks || pinnedTasks.length === 0) return
 
-    const rows = pinnedTasks.map((item) => ({
+    const existingPinnedIds = new Set((existingPinnedWeekTasks ?? []).map(t => String(t.pinned_task_id)))
+    const missingPinnedTasks = pinnedTasks.filter(p => !existingPinnedIds.has(String(p.id)))
+
+    if (missingPinnedTasks.length === 0) return
+
+    const rows = missingPinnedTasks.map((item) => ({
       user_id: userId,
       week_id: weekId,
       title: item.title,
@@ -441,14 +448,24 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       pinned_task_id: item.id,
     }))
 
-    const { error: upsertErr } = await supabase.from('tasks').upsert(rows, {
-      onConflict: 'week_id,pinned_task_id',
-      ignoreDuplicates: true,
-    })
+    const { error: insertErr } = await supabase.from('tasks').insert(rows)
 
-    if (upsertErr) {
+    if (insertErr) {
+      const errCode = (insertErr as { code?: string }).code
+      const errMsg = (insertErr as { message?: string }).message || ''
+
+      // Backward-compatible fallback for deployments that still have the old tasks_type_check.
+      if (errCode === '23514' && errMsg.includes('tasks_type_check')) {
+        const fallbackRows = rows.map(({ type, ...rest }) => rest)
+        const { error: retryErr } = await supabase.from('tasks').insert(fallbackRows)
+        if (!retryErr) return
+        console.error('[materializePinnedTasksForWeek] Retry insert without type failed:', retryErr)
+      } else {
+        console.error('[materializePinnedTasksForWeek] Failed to insert missing pinned tasks:', insertErr)
+      }
+
       // If schema is still old, stop trying to materialize until migration is present.
-      if ((upsertErr as { code?: string }).code === 'PGRST204' || (upsertErr as { code?: string }).code === '42703') {
+      if (errCode === 'PGRST204' || errCode === '42703') {
         _pinnedFeatureAvailable = false
       }
     }

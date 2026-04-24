@@ -553,8 +553,11 @@ export function FocusedDay() {
                     </div>
                     <div className="flex-1 min-w-0 flex justify-between items-start gap-4">
                       <div>
-                        <h3 className={`text-xl font-bold mb-1.5 leading-snug ${mainTask.status === 'done' ? 'line-through opacity-50' : ''}`}>
+                        <h3 className={`text-xl font-bold mb-1.5 leading-snug flex items-center gap-2 ${mainTask.status === 'done' ? 'line-through opacity-50' : ''}`}>
                           {mainTask.title}
+                          {mainTask.type === 'pinned' && (
+                            <span className="material-symbols-outlined text-[16px] text-primary" title="Pinned Task">push_pin</span>
+                          )}
                         </h3>
                         {mainTask.description && (
                           <p className="text-sm text-neutral-400 leading-relaxed">{mainTask.description}</p>

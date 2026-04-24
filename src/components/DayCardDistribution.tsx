@@ -158,7 +158,12 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             <span className="material-symbols-outlined text-[12px] font-bold">check</span>
         </button>
         <div className="flex-1 min-w-0" onClick={() => setIsEditing(true)}>
-            <div className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}>{task.title}</div>
+            <div className="flex items-center gap-2">
+              <div className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}>{task.title}</div>
+              {task.type === 'pinned' && (
+                <span className="material-symbols-outlined text-[12px] text-primary" title="Pinned Task">push_pin</span>
+              )}
+            </div>
             {showTags && task.tags && task.tags.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                 {task.tags.map(tag => (
