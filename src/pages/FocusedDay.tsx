@@ -13,154 +13,129 @@ const PRESETS = [
 ]
 
 // ── Circular SVG progress ─────────────────────────────────────────────────────
-function CircularProgress({
-  progress, // 0..1
-  phase,
-  size = 280,
-}: {
-  progress: number
-  phase: 'focus' | 'break'
-  size?: number
-}) {
-  const stroke = 8
+function CircularProgress({ progress, phase, size = 240 }: { progress: number; phase: 'focus' | 'break'; size?: number }) {
+  const stroke = 10
   const r = (size - stroke * 2) / 2
   const circumference = 2 * Math.PI * r
   const offset = circumference * (1 - progress)
-
-  const focusColor = '#7c3aed'   // violet
-  const breakColor = '#0ea5e9'   // sky
-
+  const color = phase === 'focus' ? '#8b5cf6' : '#0ea5e9'
   return (
-    <svg width={size} height={size} className="rotate-[-90deg]">
-      {/* Track */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="rgba(255,255,255,0.06)"
-        strokeWidth={stroke}
-      />
-      {/* Progress arc */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={phase === 'focus' ? focusColor : breakColor}
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={phase === 'focus' ? `6 12` : circumference}
-        strokeDashoffset={phase === 'focus' ? undefined : offset}
-        style={{
-          transition: phase === 'focus' ? 'stroke-dashoffset 0.9s linear, stroke 0.4s' : 'stroke-dashoffset 0.9s linear, stroke 0.4s',
-          clipPath: phase === 'focus' ? `polygon(0 0, 100% 0, 100% ${100 * progress}%, 0 ${100 * progress}%)` : undefined
-        }}
-        filter={`drop-shadow(0 0 10px ${phase === 'focus' ? focusColor : breakColor}aa)`}
-      />
+    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx={size/2} cy={size/2} r={r+10} fill="none" stroke={color} strokeWidth={1} strokeOpacity={0.1} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={stroke} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(139,92,246,0.12)" strokeWidth={stroke} strokeDasharray="3 9" strokeLinecap="round" />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
+        strokeDasharray={circumference} strokeDashoffset={offset}
+        style={{ transition: 'stroke-dashoffset 0.8s linear, stroke 0.4s' }}
+        filter={`drop-shadow(0 0 12px ${color}bb)`} />
     </svg>
   )
 }
 
+
 // ── Task row ──────────────────────────────────────────────────────────────────
-function TaskRow({ 
-  task, 
-  onToggle, 
+function TaskRow({
+  task,
+  onToggle,
   isActive,
   onMakeActive,
   unsavedSeconds = 0,
   isDimmed,
-  size = 'md' 
-}: { 
-  task: Task; 
-  onToggle: () => void; 
-  isActive?: boolean;
-  onMakeActive?: () => void;
-  unsavedSeconds?: number;
-  isDimmed?: boolean;
-  size?: 'lg' | 'md' | 'sm' 
+  accentColor = 'teal',
+}: {
+  task: Task
+  onToggle: () => void
+  isActive?: boolean
+  onMakeActive?: () => void
+  unsavedSeconds?: number
+  isDimmed?: boolean
+  accentColor?: 'purple' | 'teal' | 'orange'
 }) {
   const done = task.status === 'done'
-  const totalSeconds = (task.actualDuration || 0) + unsavedSeconds
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  const formatSecs = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${seconds}s`
+  const totalSecs = (task.actualDuration || 0) + unsavedSeconds
+  const mm = Math.floor(totalSecs / 60)
+  const ss = (totalSecs % 60).toString().padStart(2, '0')
+  const taskDuration = `${mm}m ${ss}s`
+
+  const ringCls = isActive
+    ? accentColor === 'purple'
+      ? 'border-violet-500/50 bg-violet-500/[0.07] shadow-[0_0_18px_rgba(139,92,246,0.2)]'
+      : accentColor === 'orange'
+      ? 'border-orange-500/40 bg-orange-500/[0.06] shadow-[0_0_14px_rgba(249,115,22,0.18)]'
+      : 'border-teal-500/40 bg-teal-500/[0.06] shadow-[0_0_14px_rgba(20,184,166,0.16)]'
+    : done
+    ? 'border-white/5 opacity-40'
+    : isDimmed
+    ? 'border-white/5 opacity-30 grayscale'
+    : 'border-white/[0.07] hover:border-white/[0.14] hover:bg-white/[0.025]'
+
+  const durationPillCls = isActive
+    ? accentColor === 'purple'
+      ? 'border-violet-500/30 bg-violet-500/10 text-violet-300'
+      : accentColor === 'orange'
+      ? 'border-orange-500/30 bg-orange-500/10 text-orange-300'
+      : 'border-teal-500/30 bg-teal-500/10 text-teal-300'
+    : 'border-white/10 bg-white/5 text-neutral-500'
+
+  const activeBtnCls =
+    accentColor === 'purple'
+      ? 'border-violet-500/40 bg-violet-500/10 text-violet-300'
+      : accentColor === 'orange'
+      ? 'border-orange-500/40 bg-orange-500/10 text-orange-300'
+      : 'border-teal-500/40 bg-teal-500/10 text-teal-300'
+
+  const dotCls =
+    accentColor === 'purple' ? 'bg-violet-400' : accentColor === 'orange' ? 'bg-orange-400' : 'bg-teal-400'
 
   return (
-    <div
-      className={`group relative flex items-start gap-4 rounded-2xl border transition-all duration-300 ${
-        isActive 
-          ? 'border-tertiary/60 bg-gradient-to-r from-tertiary/20 via-tertiary/10 to-transparent shadow-[0_0_24px_rgba(20,184,166,0.25)] scale-[1.02] z-10 ring-1 ring-tertiary/40' 
-          : isDimmed 
-            ? 'border-white/5 bg-white/[0.01] opacity-40 grayscale hover:opacity-60'
-            : done
-              ? 'border-white/5 bg-white/[0.02] opacity-50'
-              : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/20 hover:-translate-y-0.5'
-      } ${size === 'lg' ? 'p-5' : size === 'md' ? 'p-4' : 'p-3'}`}
-    >
-      {isActive && (
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl bg-gradient-to-b from-tertiary to-primary shadow-[0_0_16px_rgba(20,184,166,0.5)]" />
-      )}
-      {/* Checkbox */}
-      <div 
-        onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className={`cursor-pointer mt-0.5 shrink-0 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
-        size === 'lg' ? 'w-7 h-7' : size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'
-      } ${done ? 'bg-primary border-primary' : isActive ? 'border-tertiary/80 shadow-[0_0_10px_rgba(20,184,166,0.35)]' : 'border-white/20 hover:border-primary/70'}`}>
-        {done && (
-          <span className="material-symbols-outlined text-white text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            check
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200 ${ringCls}`}>
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle() }}
+        className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
+          ${done ? 'border-neutral-600 bg-neutral-700' : 'border-neutral-600 hover:border-neutral-400'}`}
+      >
+        {done && <span className="material-symbols-outlined text-[11px] text-neutral-300" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>}
+      </button>
+
+      <span className={`flex-1 min-w-0 text-sm font-medium truncate ${done ? 'line-through text-neutral-600' : 'text-neutral-200'}`}>
+        {task.title}
+      </span>
+
+      <div className="hidden sm:flex items-center gap-2 shrink-0">
+        {task.estimatedTime && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border border-white/10 bg-white/5 text-neutral-500 uppercase tracking-wider whitespace-nowrap">
+            <span className="material-symbols-outlined text-[10px]">schedule</span>
+            Duration: {task.estimatedTime}
           </span>
         )}
+        <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border uppercase tracking-wider whitespace-nowrap ${durationPillCls}`}>
+          <span className="material-symbols-outlined text-[10px]">timer</span>
+          Task Duration: {taskDuration}
+        </span>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start gap-2">
-           <p className={`font-semibold leading-snug ${done ? 'line-through' : ''} ${size === 'lg' ? 'text-base' : 'text-sm'}`}>
-             {task.title}
-           </p>
-           {isActive ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); onMakeActive && onMakeActive(); }}
-               className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-[0.16em] border border-tertiary/50 bg-gradient-to-r from-tertiary/20 to-primary/10 text-tertiary hover:from-tertiary/30 hover:to-primary/15 transition-all shadow-[0_0_18px_rgba(20,184,166,0.22)] min-w-[110px]"
-              >
-                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.9)]" /> Active
-              </button>
-           ) : onMakeActive && !done ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); onMakeActive(); }}
-                className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:border-white/30 hover:bg-white/10 min-w-[110px]"
-              >
-                Focus Task
-              </button>
-           ) : null}
-        </div>
-        
-        {task.description && size === 'lg' && (
-          <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{task.description}</p>
-        )}
-        
-        <div className="mt-2.5 flex flex-wrap gap-2 items-center">
-            {task.estimatedTime && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-mono bg-white/5 text-neutral-400 px-2 py-0.5 rounded uppercase tracking-wider">
-                <span className="material-symbols-outlined text-[12px]">schedule</span>
-                Est: {task.estimatedTime}
-              </span>
-            )}
-            {formatSecs && (
-              <span className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border ${
-                 isActive ? 'bg-gradient-to-r from-tertiary/25 to-primary/15 text-tertiary border-tertiary/45 shadow-[0_0_14px_rgba(20,184,166,0.18)]' : 'bg-white/5 text-neutral-300 border-white/10'
-              }`}>
-                <span className="material-symbols-outlined text-[12px]">data_usage</span>
-                Spent Time: {formatSecs}
-              </span>
-            )}
-        </div>
-      </div>
+      {isActive ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); onMakeActive && onMakeActive() }}
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all ${activeBtnCls}`}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${dotCls} animate-pulse`} />
+          Active
+        </button>
+      ) : !done ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); onMakeActive && onMakeActive() }}
+          className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all
+            ${accentColor === 'orange' ? 'border-orange-500/30 text-orange-400 hover:bg-orange-500/10' : 'border-white/15 text-neutral-400 hover:border-white/30 hover:text-white'}`}
+        >
+          Focus Task
+        </button>
+      ) : null}
     </div>
   )
 }
+
+
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function FocusedDay() {
@@ -424,7 +399,7 @@ export function FocusedDay() {
 
               {/* Circular timer */}
               <div className="relative shrink-0">
-                <CircularProgress progress={progress} phase={pomodoroPhase} size={220} />
+                <CircularProgress progress={progress} phase={pomodoroPhase} size={240} />
                 {/* Center content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className={`text-[11px] uppercase tracking-[0.25em] font-bold mb-2 ${
@@ -588,8 +563,8 @@ export function FocusedDay() {
           <section>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="w-1 h-5 rounded-full bg-primary inline-block" />
-                <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/90">Main Objective</h2>
+                <span className="w-1 h-4 rounded-full bg-violet-500 inline-block" />
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-violet-400">Main Objective</h2>
               </div>
               <span className="text-[10px] text-neutral-600 uppercase tracking-widest">The One Thing</span>
             </div>
@@ -628,21 +603,21 @@ export function FocusedDay() {
                           <p className="text-sm text-neutral-400 leading-relaxed">{mainTask.description}</p>
                         )}
                         <div className="mt-4 flex flex-wrap gap-2 items-center">
-                          <span className="text-[10px] font-mono bg-primary/10 text-primary px-2 py-1 rounded-md uppercase tracking-wider border border-primary/20 flex items-center gap-1">
+                          <span className="text-[10px] font-mono bg-violet-500/10 text-violet-300 px-2 py-1 rounded-md uppercase tracking-wider border border-violet-500/20 flex items-center gap-1">
                             <span className="material-symbols-outlined text-[12px]">star</span>
                             Priority: Critical
                           </span>
                           {mainTask.estimatedTime && (
-                            <span className="text-[10px] font-mono bg-white/5 text-neutral-400 px-2 py-1 rounded-md uppercase tracking-wider flex items-center gap-1">
+                            <span className="text-[10px] font-mono bg-white/5 text-neutral-400 px-2 py-1 rounded-md uppercase tracking-wider flex items-center gap-1 border border-white/10">
                               <span className="material-symbols-outlined text-[12px]">schedule</span>
-                              Est: {mainTask.estimatedTime}
+                              Duration: {mainTask.estimatedTime}
                             </span>
                           )}
                           <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border flex items-center gap-1.5 ${
-                            activeTaskId === mainTask.id ? 'bg-gradient-to-r from-primary/30 to-tertiary/20 text-primary border-primary/35 shadow-[0_0_14px_rgba(124,58,237,0.18)]' : 'bg-white/5 text-neutral-300 border-white/10'
+                            activeTaskId === mainTask.id ? 'bg-violet-500/15 text-violet-300 border-violet-500/30 shadow-[0_0_14px_rgba(139,92,246,0.2)]' : 'bg-white/5 text-neutral-400 border-white/10'
                           }`}>
-                            <span className="material-symbols-outlined text-[12px]">data_usage</span>
-                            Spent Time: {Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 3600) > 0 ? `${Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 3600)}h ${Math.floor((((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 3600) / 60)}m` : `${Math.floor((((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 3600) / 60)}m ${((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 60}s`}
+                            <span className="material-symbols-outlined text-[12px]">timer</span>
+                            Task Duration: {`${Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 60)}m ${((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 60}s`}
                           </span>
                         </div>
                       </div>
@@ -688,24 +663,24 @@ export function FocusedDay() {
           {/* Medium Tasks */}
           {mediumTasks.length > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-1 h-5 rounded-full bg-tertiary inline-block" />
-                <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-tertiary/80">Supporting Work</h2>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1 h-4 rounded-full bg-teal-500 inline-block" />
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-teal-400">Supporting Tasks</h2>
                 <span className="ml-auto text-[10px] text-neutral-600 uppercase tracking-widest">
-                  {mediumTasks.filter(t => t.status === 'done').length}/{mediumTasks.length} done
+                  {mediumTasks.filter(t => t.status === 'done').length}/{mediumTasks.length} Done
                 </span>
               </div>
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 {mediumTasks.map(task => (
-                  <TaskRow 
-                    key={task.id} 
-                    task={task} 
-                    onToggle={() => toggleTaskComplete(task.id)} 
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onToggle={() => toggleTaskComplete(task.id)}
                     isActive={activeTaskId === task.id}
                     isDimmed={activeTaskId !== null && activeTaskId !== task.id}
-                    onMakeActive={(e) => { e?.stopPropagation(); handleMakeActive(activeTaskId === task.id ? null : task.id) }}
+                    onMakeActive={() => handleMakeActive(activeTaskId === task.id ? null : task.id)}
                     unsavedSeconds={activeTaskId === task.id ? sessionSeconds : 0}
-                    size="md" 
+                    accentColor="teal"
                   />
                 ))}
               </div>
@@ -715,74 +690,26 @@ export function FocusedDay() {
           {/* Quick Wins */}
           {quickWins.length > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-1 h-5 rounded-full bg-neutral-500 inline-block" />
-                <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-500">Quick Wins</h2>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1 h-4 rounded-full bg-orange-500 inline-block" />
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-400">Quick Wins</h2>
                 <span className="ml-auto text-[10px] text-neutral-600 uppercase tracking-widest">
-                  {quickWins.filter(t => t.status === 'done').length}/{quickWins.length} done
+                  {quickWins.filter(t => t.status === 'done').length}/{quickWins.length} Done
                 </span>
               </div>
-              <div className={`rounded-2xl border bg-surface-container-low/30 overflow-hidden divide-y divide-white/5 transition-all duration-300 ${
-                activeTaskId ? 'border-white/5 opacity-40 grayscale' : 'border-white/8'
-              }`}>
-                {quickWins.map(task => {
-                  const done = task.status === 'done'
-                  const isActive = activeTaskId === task.id
-                  const isDimmed = activeTaskId !== null && !isActive
-                  
-                  const totalSeconds = (task.actualDuration || 0) + (isActive ? sessionSeconds : 0)
-                  const m = Math.floor(totalSeconds / 60)
-                  const formatSecs = `${m}m`
-
-                  return (
-                    <div
-                      key={task.id}
-                      className={`flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.04] transition-colors group ${
-                        isActive ? 'bg-tertiary/10 border-l-2 border-l-tertiary' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          onClick={(e) => { e.stopPropagation(); toggleTaskComplete(task.id) }}
-                          className={`cursor-pointer material-symbols-outlined text-xl shrink-0 transition-colors ${
-                            done ? 'text-tertiary' : 'text-neutral-600 group-hover:text-neutral-400 hover:text-tertiary/70'
-                          }`}
-                          style={done ? { fontVariationSettings: "'FILL' 1" } : {}}
-                        >
-                          {done ? 'check_circle' : 'radio_button_unchecked'}
-                        </span>
-                        <div className="flex flex-col">
-                           <span className={`text-sm ${done ? 'line-through opacity-40' : isActive ? 'text-tertiary font-bold' : 'text-on-surface-variant group-hover:text-on-surface'}`}>
-                             {task.title}
-                           </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border ${
-                           isActive ? 'bg-gradient-to-r from-tertiary/25 to-primary/10 text-tertiary border-tertiary/40 shadow-[0_0_12px_rgba(20,184,166,0.16)]' : 'bg-white/5 text-neutral-300 border-white/10'
-                        }`}>
-                          Spent Time: {formatSecs}
-                        </span>
-                        {isActive ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleMakeActive(null); }}
-                            className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest border border-tertiary/30 bg-tertiary/10 text-tertiary hover:bg-tertiary/20 hover:border-tertiary/50 transition-all min-w-[90px]"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" /> Active
-                          </button>
-                        ) : !done ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleMakeActive(task.id); }}
-                            className="shrink-0 px-3 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 text-neutral-400 hover:text-white hover:border-white/30 hover:bg-white/10 min-w-[90px]"
-                          >
-                            Focus Task
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="space-y-1.5">
+                {quickWins.map(task => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onToggle={() => toggleTaskComplete(task.id)}
+                    isActive={activeTaskId === task.id}
+                    isDimmed={activeTaskId !== null && activeTaskId !== task.id}
+                    onMakeActive={() => handleMakeActive(activeTaskId === task.id ? null : task.id)}
+                    unsavedSeconds={activeTaskId === task.id ? sessionSeconds : 0}
+                    accentColor="orange"
+                  />
+                ))}
               </div>
             </section>
           )}
