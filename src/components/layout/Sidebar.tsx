@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { signOut } from '../../lib/supabase'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { GlowButton } from '../effects/GlowButton'
+import { FeedbackModal } from '../FeedbackModal'
 
 const navItems = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -15,6 +17,7 @@ const navItems = [
 export function Sidebar() {
   const navigate = useNavigate()
   const { isLeftSidebarOpen, isFocusMode, toggleLeftSidebar, closeSidebarsOnMobile } = useLayoutStore()
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
   const isActuallyOpen = isLeftSidebarOpen && !isFocusMode
 
@@ -56,7 +59,7 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom CTA + User */}
-        <div className="mt-auto pt-6 space-y-4">
+        <div className="mt-auto pt-6 space-y-3">
           <GlowButton
             type="button"
             onClick={() => { navigate('/brain-dump'); closeSidebarsOnMobile(); }}
@@ -66,6 +69,16 @@ export function Sidebar() {
             <span className="material-symbols-outlined text-sm">add</span>
             New Plan
           </GlowButton>
+
+          {/* Feedback button */}
+          <button
+            type="button"
+            onClick={() => setIsFeedbackOpen(true)}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[#A1A1A1] hover:bg-[#2A2A2A] hover:text-[#E5E2E1] transition-colors duration-200 text-sm"
+          >
+            <span className="material-symbols-outlined text-[20px] text-amber-400">lightbulb</span>
+            Feedback & Support
+          </button>
           <div className="flex items-center gap-3 p-2 bg-surface-container-lowest rounded-lg">
             <div className="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-on-surface-variant text-lg">account_circle</span>
@@ -97,6 +110,8 @@ export function Sidebar() {
           {isLeftSidebarOpen ? 'chevron_left' : 'chevron_right'}
         </span>
       </button>
+
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </>
   )
 }
