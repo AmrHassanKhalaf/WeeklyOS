@@ -22,6 +22,12 @@ export const signUp = (email: string, password: string) =>
 export const signIn = (email: string, password: string) =>
   supabase.auth.signInWithPassword({ email, password });
 
+export const signInWithGoogle = (redirectTo: string) =>
+  supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo },
+  });
+
 export const signOut = () => supabase.auth.signOut();
 
 export const getSession = () => supabase.auth.getSession();
