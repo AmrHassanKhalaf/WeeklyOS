@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { signIn, signUp } from '../lib/supabase'
+import { signIn, signInWithGoogle, signUp } from '../lib/supabase'
 import { GlowButton } from '../components/effects/GlowButton'
 
 type Mode = 'signin' | 'signup'
@@ -11,6 +11,7 @@ export function SignIn() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -31,6 +32,22 @@ export function SignIn() {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setError(null)
+    setMessage(null)
+    setIsOAuthLoading(true)
+
+    try {
+      const redirectTo = new URL('/dashboard', window.location.origin).toString()
+      const { error } = await signInWithGoogle(redirectTo)
+      if (error) throw error
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setIsOAuthLoading(false)
     }
   }
 
@@ -58,6 +75,35 @@ export function SignIn() {
               ? 'Sign in to access your productivity system.'
               : 'Start planning your best weeks.'}
           </p>
+        </div>
+
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading || isOAuthLoading}
+            aria-busy={isOAuthLoading}
+            className="w-full flex items-center justify-between gap-3 bg-[#201F1F] border border-white/10 rounded-lg px-4 py-3 text-[#E5E2E1] hover:border-white/20 hover:bg-[#242323] transition-colors disabled:opacity-60"
+          >
+            <span className="inline-flex items-center gap-3">
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.1 0 5.9 1.1 8.1 3.2l6-6C34.4 3 29.6 1 24 1 14.9 1 7.2 6.3 3.5 13.9l7.2 5.6C12.5 13.3 17.8 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.1 24.5c0-1.7-.2-3.3-.6-4.8H24v9.1h12.3c-.5 2.8-2.1 5.2-4.5 6.8l6.9 5.4c4-3.7 6.4-9.1 6.4-16.5z" />
+                <path fill="#FBBC05" d="M10.7 28.1c-1-2.8-1-5.8 0-8.6l-7.2-5.6C.7 18.5 0 21.2 0 24s.7 5.5 3.5 10.1l7.2-6z" />
+                <path fill="#34A853" d="M24 47c5.6 0 10.4-1.8 13.9-4.9l-6.9-5.4c-1.9 1.3-4.3 2-7 2-6.2 0-11.5-3.8-13.3-9.2l-7.2 6C7.2 41.7 14.9 47 24 47z" />
+              </svg>
+              <span className="text-sm font-semibold">Continue with Google</span>
+            </span>
+            {isOAuthLoading && (
+              <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+            )}
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A7A7A]">or</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -103,7 +149,7 @@ export function SignIn() {
           {/* Submit */}
           <GlowButton
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isOAuthLoading}
             className="w-full mt-2 text-sm font-bold disabled:opacity-50"
           >
             {isLoading ? (
