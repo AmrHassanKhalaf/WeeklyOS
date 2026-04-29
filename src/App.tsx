@@ -34,13 +34,34 @@ function AppRouter() {
   const dashboardPrefetchedRef = useRef(false)
 
   useEffect(() => {
-    if (user) {
-      const boot = async () => {
-        await useSettingsStore.getState().loadFromDb()
-        await initialize()
-      }
-      void boot()
-      return () => cleanup()
+    if (!user) return
+    let isActive = true
+
+    const boot = async () => {
+      const settingsStore = useSettingsStore.getState()
+      const prevWeekStartDay = settingsStore.weekStartDay
+      const prevTimezone = settingsStore.timezone
+
+      await initialize()
+
+      void (async () => {
+        try {
+          await settingsStore.loadFromDb()
+          const latest = useSettingsStore.getState()
+          if (!isActive) return
+          if (latest.weekStartDay !== prevWeekStartDay || latest.timezone !== prevTimezone) {
+            await initialize()
+          }
+        } catch {
+          // Ignore settings sync errors to keep startup fast
+        }
+      })()
+    }
+
+    void boot()
+    return () => {
+      isActive = false
+      cleanup()
     }
   }, [user, initialize, cleanup])
 
