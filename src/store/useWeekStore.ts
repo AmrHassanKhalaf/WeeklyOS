@@ -107,15 +107,45 @@ export interface WeekData {
   challengeCompleted?: boolean
 }
 
+export interface WeekSummary {
+  id: string
+  weekNumber: number
+  year: number
+  title: string
+  dateRange: string
+  score: number
+  challengeTitle?: string
+  challengeDescription?: string
+  challengeProgress?: number
+  challengeEndsIn?: string
+  challengeDays?: ChallengeDay[]
+  evalWentWell?: string
+  evalStruggle?: string
+  evalLessons?: string
+  activities?: ActivityItem[]
+  dailyNotes?: Record<string, string>
+  challengeCompleted?: boolean
+}
+
+export interface WeekTasks {
+  days: DayPlan[]
+  totalCompleted: number
+  totalPlanned: number
+}
+
 // ─── Store interface ──────────────────────────────────────────────────────────
 
 interface WeekStore {
   currentWeek: WeekData | null
+  weekSummary: WeekSummary | null
+  weekTasks: WeekTasks | null
   selectedWeek: WeekKey | null
   currentWeekKey: WeekKey | null
   canGoPreviousWeek: boolean
   canGoNextWeek: boolean
   isLoadingWeek: boolean
+  isLoadingSummary: boolean
+  isLoadingTasks: boolean
   weekError: string | null
   isSyncing: boolean
 
@@ -251,61 +281,55 @@ function processTasksForDay(dayPlan: DayPlan, allTasks: Task[]): DayPlan {
   }
 }
 
-function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, unknown>[]): WeekData {
+function buildBaseDayPlans(dbWeek: Record<string, unknown>): DayPlan[] {
   const weekNumber = dbWeek.week_number as number
   const year = dbWeek.year as number
   const { timeZone, weekStartDay } = getWeekSettings()
   const orderedDays = getOrderedDays(weekStartDay)
   const weekStartDaySerial = getWeekStartDaySerial(year, weekNumber, weekStartDay)
-
   const nowWeekInfo = getWeekInfoForDate(new Date(), timeZone, weekStartDay)
   const todayIdx = nowWeekInfo.todayIndex
-
-  // Is the loaded week the current one?
   const isCurrentWeek = weekNumber === nowWeekInfo.weekNumber && year === nowWeekInfo.year
+  const dailyNotes = (dbWeek.daily_notes as Record<string, string>) || {}
 
-  const mappedTasks = tasks.map(mapDbTask)
-
-    const dayPlans: DayPlan[] = orderedDays.map((day, idx) => {
+  return orderedDays.map((day, idx) => {
     const dateStr = formatDaySerial(weekStartDaySerial + idx, timeZone)
-    const dailyNotes = (dbWeek.daily_notes as Record<string, string>) || {}
-
-    const baseDayPlan = {
+    return {
       day,
       date: dateStr,
       shortName: DAY_SHORT[day],
       isToday: isCurrentWeek && idx === todayIdx,
       isRestDay: false,
-      progress: 0, 
+      progress: 0,
       highTask: undefined,
       mediumTasks: [],
       smallTasks: [],
       dailyNote: dailyNotes[day] || '',
     }
-    return processTasksForDay(baseDayPlan, mappedTasks)
   })
+}
 
-  const allScheduled = mappedTasks.filter(t => t.day !== undefined)
-  const totalCompleted = allScheduled.filter(t => t.status === 'done').length
-  const totalPlanned = allScheduled.length
-  const score = (dbWeek.score as number | null) ??
-    (totalPlanned > 0 ? Math.round((totalCompleted / totalPlanned) * 100) : 0)
-
+function parseActivities(dbWeek: Record<string, unknown>): ActivityItem[] {
   let activities: ActivityItem[] = []
   try {
-    activities = dbWeek.activities ? (typeof dbWeek.activities === 'string' ? JSON.parse(dbWeek.activities) : dbWeek.activities) : []
+    activities = dbWeek.activities
+      ? (typeof dbWeek.activities === 'string' ? JSON.parse(dbWeek.activities) : dbWeek.activities)
+      : []
   } catch (e) {
-    console.error("Failed to parse activities:", e)
+    console.error('Failed to parse activities:', e)
   }
+  return activities
+}
 
-  // Initialize challengeDays from DB or create default pending days (Fri -> Thu)
-  let challengeDays: ChallengeDay[] = []
+function buildChallengeDays(dbWeek: Record<string, unknown>, dayPlans: DayPlan[]): ChallengeDay[] {
   const challengeOrder: DayOfWeek[] = ['friday', 'saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']
   const defaultChallengeDays = challengeOrder.map((day) => ({
     dayOfWeek: day,
     date: dayPlans.find((dp) => dp.day === day)?.date || '',
     status: 'pending' as ChallengeDayStatus,
   }))
+
+  let challengeDays: ChallengeDay[] = []
   try {
     if (dbWeek.challenge_days) {
       const parsedDays = typeof dbWeek.challenge_days === 'string'
@@ -324,16 +348,71 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
       challengeDays = defaultChallengeDays
     }
   } catch (e) {
-    console.error("Failed to parse challenge_days:", e)
+    console.error('Failed to parse challenge_days:', e)
     challengeDays = defaultChallengeDays
   }
+
+  return challengeDays
+}
+
+function buildWeekSummary(dbWeek: Record<string, unknown>): WeekSummary {
+  const weekNumber = dbWeek.week_number as number
+  const year = dbWeek.year as number
+  const dayPlans = buildBaseDayPlans(dbWeek)
+  const activities = parseActivities(dbWeek)
+  const challengeDays = buildChallengeDays(dbWeek, dayPlans)
+  const title = (dbWeek.title as string) ?? 'The Digital Obsidian'
+  const dateRange = dayPlans.length > 0
+    ? `${dayPlans[0].date} — ${dayPlans[dayPlans.length - 1].date}`
+    : ''
 
   return {
     id: dbWeek.id as string,
     weekNumber,
     year,
-    title: (dbWeek.title as string) ?? 'The Digital Obsidian',
-    dateRange: `${dayPlans[0].date} — ${dayPlans[6].date}`,
+    title,
+    dateRange,
+    score: (dbWeek.score as number | null) ?? 0,
+    challengeTitle: (dbWeek.challenge_title as string | null) ?? undefined,
+    challengeDescription: (dbWeek.challenge_description as string | null) ?? undefined,
+    challengeProgress: (dbWeek.challenge_progress as number | null) ?? undefined,
+    challengeEndsIn: (dbWeek.challenge_ends_in as string | null) ?? undefined,
+    challengeDays,
+    evalWentWell: (dbWeek.eval_went_well as string | null) ?? undefined,
+    evalStruggle: (dbWeek.eval_struggle as string | null) ?? undefined,
+    evalLessons: (dbWeek.eval_lessons as string | null) ?? undefined,
+    activities,
+    dailyNotes: (dbWeek.daily_notes as Record<string, string>) || {},
+    challengeCompleted: !!dbWeek.challenge_completed,
+  }
+}
+
+function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, unknown>[]): WeekData {
+  const weekNumber = dbWeek.week_number as number
+  const year = dbWeek.year as number
+  const baseDayPlans = buildBaseDayPlans(dbWeek)
+  const mappedTasks = tasks.map(mapDbTask)
+  const dayPlans = baseDayPlans.map(dayPlan => processTasksForDay(dayPlan, mappedTasks))
+
+  const allScheduled = mappedTasks.filter(t => t.day !== undefined)
+  const totalCompleted = allScheduled.filter(t => t.status === 'done').length
+  const totalPlanned = allScheduled.length
+  const score = (dbWeek.score as number | null) ??
+    (totalPlanned > 0 ? Math.round((totalCompleted / totalPlanned) * 100) : 0)
+
+  const activities = parseActivities(dbWeek)
+  const challengeDays = buildChallengeDays(dbWeek, dayPlans)
+  const title = (dbWeek.title as string) ?? 'The Digital Obsidian'
+  const dateRange = dayPlans.length > 0
+    ? `${dayPlans[0].date} — ${dayPlans[dayPlans.length - 1].date}`
+    : ''
+
+  return {
+    id: dbWeek.id as string,
+    weekNumber,
+    year,
+    title,
+    dateRange,
     score,
     totalCompleted,
     totalPlanned,
@@ -486,6 +565,49 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     }
   }
 
+  const loadWeekSummaryByKey = async (weekNumber: number, year: number, options?: { createIfMissing?: boolean }): Promise<{ week: Record<string, unknown>; summary: WeekSummary } | null> => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
+    if (!user) return null
+
+    let { data: week, error: weekErr } = await supabase
+      .from('weeks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('week_number', weekNumber)
+      .eq('year', year)
+      .maybeSingle()
+
+    if (weekErr) throw weekErr
+
+    if (!week && options?.createIfMissing) {
+      const { data: newWeek, error: createErr } = await supabase
+        .from('weeks')
+        .insert({ user_id: user.id, week_number: weekNumber, year })
+        .select()
+        .single()
+      if (createErr) throw createErr
+      week = newWeek
+    }
+
+    if (!week) return null
+
+    return { week: week as Record<string, unknown>, summary: buildWeekSummary(week as Record<string, unknown>) }
+  }
+
+  const loadWeekTasksByWeek = async (userId: string, week: Record<string, unknown>): Promise<WeekData> => {
+    await materializePinnedTasksForWeek(userId, week)
+
+    const { data: tasks, error: tasksErr } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('week_id', week.id)
+
+    if (tasksErr) throw tasksErr
+    return buildWeekData(week as Record<string, unknown>, (tasks ?? []) as Record<string, unknown>[])
+  }
+
   const loadWeekByKey = async (weekNumber: number, year: number, options?: { createIfMissing?: boolean }): Promise<WeekData | null> => {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
@@ -527,11 +649,15 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
   return {
     currentWeek: null,
+    weekSummary: null,
+    weekTasks: null,
     selectedWeek: null,
     currentWeekKey: null,
     canGoPreviousWeek: false,
     canGoNextWeek: false,
     isLoadingWeek: true,
+    isLoadingSummary: true,
+    isLoadingTasks: true,
     weekError: null,
     isSyncing: false,
     pomodoroTime: 25 * 60,
@@ -548,22 +674,49 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       const user = session?.user
       if (!user) return
 
-      set({ isLoadingWeek: true, weekError: null })
-
       try {
         const currentKey = getCurrentWeekInfo()
         const selected = get().selectedWeek || currentKey
-        const loaded = await loadWeekByKey(selected.weekNumber, selected.year, { createIfMissing: true })
-
-        if (!loaded) throw new Error('Failed to load selected week')
-
         set({
-          currentWeek: loaded,
-          isLoadingWeek: false,
+          currentWeek: null,
+          weekSummary: null,
+          weekTasks: null,
+          isLoadingWeek: true,
+          isLoadingSummary: true,
+          isLoadingTasks: true,
+          weekError: null,
         })
 
-        updateNavigationState({ weekNumber: loaded.weekNumber, year: loaded.year }, currentKey)
+        const summaryResult = await loadWeekSummaryByKey(selected.weekNumber, selected.year, { createIfMissing: true })
+        if (!summaryResult) throw new Error('Failed to load selected week')
+
+        const { week, summary } = summaryResult
+
+        set({
+          weekSummary: summary,
+          isLoadingSummary: false,
+        })
+
+        updateNavigationState({ weekNumber: summary.weekNumber, year: summary.year }, currentKey)
         get().fetchTodayFocusSessions()
+
+        void (async () => {
+          try {
+            const fullWeek = await loadWeekTasksByWeek(user.id, week)
+            set({
+              currentWeek: fullWeek,
+              weekTasks: {
+                days: fullWeek.days,
+                totalCompleted: fullWeek.totalCompleted,
+                totalPlanned: fullWeek.totalPlanned,
+              },
+              isLoadingTasks: false,
+              isLoadingWeek: false,
+            })
+          } catch (taskErr) {
+            set({ weekError: (taskErr as Error).message, isLoadingTasks: false, isLoadingWeek: false })
+          }
+        })()
 
         // 3. Real-time subscription for tasks (DISABLED - causing WebSocket connection issues)
         // TODO: Re-enable when network connectivity is stable
@@ -617,28 +770,73 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         }
         */
       } catch (err) {
-        set({ weekError: (err as Error).message, isLoadingWeek: false })
+        set({
+          weekError: (err as Error).message,
+          isLoadingSummary: false,
+          isLoadingTasks: false,
+          isLoadingWeek: false,
+        })
       }
 
       // 4. Brain dump (MIGRATED to useBrainDumpStore)
     },
 
     goToWeek: async (weekNumber, year) => {
-      set({ isLoadingWeek: true, weekError: null })
       try {
-        const loaded = await loadWeekByKey(weekNumber, year, { createIfMissing: true })
+        const { data: { session } } = await supabase.auth.getSession()
+        const user = session?.user
+        if (!user) return
+
+        set({
+          currentWeek: null,
+          weekSummary: null,
+          weekTasks: null,
+          isLoadingWeek: true,
+          isLoadingSummary: true,
+          isLoadingTasks: true,
+          weekError: null,
+        })
+
+        const summaryResult = await loadWeekSummaryByKey(weekNumber, year, { createIfMissing: true })
         const currentKey = getCurrentWeekInfo()
-        if (!loaded) {
-          set({ isLoadingWeek: false })
+        if (!summaryResult) {
+          set({ isLoadingSummary: false, isLoadingTasks: false, isLoadingWeek: false })
           return
         }
+
+        const { week, summary } = summaryResult
+
         set({
-          currentWeek: loaded,
+          weekSummary: summary,
+          isLoadingSummary: false,
+        })
+
+        updateNavigationState({ weekNumber: summary.weekNumber, year: summary.year }, currentKey)
+
+        void (async () => {
+          try {
+            const fullWeek = await loadWeekTasksByWeek(user.id, week)
+            set({
+              currentWeek: fullWeek,
+              weekTasks: {
+                days: fullWeek.days,
+                totalCompleted: fullWeek.totalCompleted,
+                totalPlanned: fullWeek.totalPlanned,
+              },
+              isLoadingTasks: false,
+              isLoadingWeek: false,
+            })
+          } catch (taskErr) {
+            set({ weekError: (taskErr as Error).message, isLoadingTasks: false, isLoadingWeek: false })
+          }
+        })()
+      } catch (err) {
+        set({
+          weekError: (err as Error).message,
+          isLoadingSummary: false,
+          isLoadingTasks: false,
           isLoadingWeek: false,
         })
-        updateNavigationState({ weekNumber: loaded.weekNumber, year: loaded.year }, currentKey)
-      } catch (err) {
-        set({ weekError: (err as Error).message, isLoadingWeek: false })
       }
     },
 

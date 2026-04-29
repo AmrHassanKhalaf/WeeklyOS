@@ -1,8 +1,10 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, lazy, Suspense, useCallback, useEffect, useRef } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
-import { AIAssistant } from './AIAssistant'
 import { useLayoutStore } from '../../store/useLayoutStore'
+
+const loadAIAssistant = () => import('./AIAssistant').then(m => ({ default: m.AIAssistant }))
+const AIAssistant = lazy(loadAIAssistant)
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 interface AppLayoutProps {
@@ -12,6 +14,15 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, aiVariant = 'default' }: AppLayoutProps) {
   const { isLeftSidebarOpen, isRightSidebarOpen, isMobile, isFocusMode, setMobile, closeSidebarsOnMobile } = useLayoutStore()
+  const assistantPrefetchedRef = useRef(false)
+
+  const warmAIAssistant = useCallback(() => {
+    if (assistantPrefetchedRef.current) return
+    assistantPrefetchedRef.current = true
+    void loadAIAssistant()
+  }, [])
+
+  const shouldShowAssistant = isRightSidebarOpen && !isFocusMode
 
   useEffect(() => {
     const handleResize = () => setMobile(window.innerWidth < 1024)
@@ -19,6 +30,30 @@ export function AppLayout({ children, aiVariant = 'default' }: AppLayoutProps) {
     handleResize()
     return () => window.removeEventListener('resize', handleResize)
   }, [setMobile])
+
+  useEffect(() => {
+    if (assistantPrefetchedRef.current || isFocusMode) return
+    let idleId: number | null = null
+    if (window.requestIdleCallback) {
+      idleId = window.requestIdleCallback(() => warmAIAssistant(), { timeout: 1500 }) as unknown as number
+    } else {
+      idleId = window.setTimeout(() => warmAIAssistant(), 1200)
+    }
+    return () => {
+      if (idleId === null) return
+      if (window.cancelIdleCallback) {
+        window.cancelIdleCallback(idleId)
+      } else {
+        window.clearTimeout(idleId)
+      }
+    }
+  }, [warmAIAssistant, isFocusMode])
+
+  useEffect(() => {
+    if (shouldShowAssistant) {
+      warmAIAssistant()
+    }
+  }, [shouldShowAssistant, warmAIAssistant])
 
   return (
     <div className="min-h-screen bg-[#131313] text-[#E5E2E1] font-['Inter'] relative overflow-hidden">
@@ -44,7 +79,11 @@ export function AppLayout({ children, aiVariant = 'default' }: AppLayoutProps) {
         {children}
       </main>
 
-      <AIAssistant variant={aiVariant} />
+      {shouldShowAssistant && (
+        <Suspense fallback={null}>
+          <AIAssistant variant={aiVariant} />
+        </Suspense>
+      )}
     </div>
   )
 }

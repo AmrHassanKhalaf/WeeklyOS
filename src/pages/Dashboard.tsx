@@ -2,13 +2,15 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { DayCard } from '../components/DayCard'
 import { useWeekStore } from '../store/useWeekStore'
 import { useAiApi } from '../hooks/useApi'
-import { useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
 import { GlowButton } from '../components/effects/GlowButton'
 import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
-import RotatingText from '../components/effects/RotatingText'
+
+const loadRotatingText = () => import('../components/effects/RotatingText')
+const RotatingText = lazy(loadRotatingText)
 
 function LoadingCard() {
   return (
@@ -17,7 +19,7 @@ function LoadingCard() {
 }
 
 export function Dashboard() {
-  const { currentWeek, isLoadingWeek, deleteWeekData } = useWeekStore()
+  const { currentWeek, weekSummary, isLoadingTasks, isLoadingWeek, deleteWeekData } = useWeekStore()
   const { restDays } = useSettingsStore()
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
@@ -26,6 +28,33 @@ export function Dashboard() {
   const [isEditingChallenge, setIsEditingChallenge] = useState(false)
   const [manualChallenge, setManualChallenge] = useState('')
   const [aiError, setAiError] = useState<string | null>(null)
+  const [isMotionReady, setIsMotionReady] = useState(false)
+
+  useEffect(() => {
+    let idleId: number | null = null
+    const warm = () => {
+      void loadRotatingText()
+      setIsMotionReady(true)
+    }
+    if (window.requestIdleCallback) {
+      idleId = window.requestIdleCallback(warm, { timeout: 1500 }) as unknown as number
+    } else {
+      idleId = window.setTimeout(warm, 800)
+    }
+    return () => {
+      if (idleId === null) return
+      if (window.cancelIdleCallback) {
+        window.cancelIdleCallback(idleId)
+      } else {
+        window.clearTimeout(idleId)
+      }
+    }
+  }, [])
+
+  const summary = weekSummary ?? currentWeek
+  const hasSummary = !!summary
+  const tasksReady = !!currentWeek && !isLoadingTasks
+  const challengeTitle = currentWeek?.challengeTitle ?? summary?.challengeTitle
 
   const generateChallenge = async () => {
     if (!currentWeek || isGeneratingChallenge) return
@@ -66,7 +95,7 @@ export function Dashboard() {
     }
   }
 
-  const deepWorkData = currentWeek ? currentWeek.days.map(d => {
+  const deepWorkData = tasksReady ? currentWeek.days.map(d => {
     let completedCount = 0
     if (d.highTask?.status === 'done') completedCount++
     completedCount += d.mediumTasks.filter(t => t.status === 'done').length
@@ -79,7 +108,7 @@ export function Dashboard() {
     }
   }) : []
 
-  if (isLoadingWeek || !currentWeek) {
+  if (!hasSummary && isLoadingWeek) {
     return (
       <AppLayout>
         <div className="max-w-4xl mx-auto p-8 space-y-8">
@@ -113,20 +142,37 @@ export function Dashboard() {
         {/* Hero Stats */}
         <section className="flex justify-between items-end gap-8">
           <div className="flex-1">
-            <h2 className="text-4xl font-extrabold tracking-tight mb-2">{currentWeek.title}</h2>
-            <p className="text-on-surface-variant max-w-lg">
-              {currentWeek.dateRange}. Week {currentWeek.weekNumber} status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
-            </p>
+            {hasSummary ? (
+              <>
+                <h2 className="text-4xl font-extrabold tracking-tight mb-2">{summary.title}</h2>
+                <p className="text-on-surface-variant max-w-lg">
+                  {summary.dateRange}. Week {summary.weekNumber} status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
+                </p>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <div className="h-10 w-2/3 bg-surface-container-low rounded-lg animate-pulse" />
+                <div className="h-5 w-1/2 bg-surface-container-low rounded-lg animate-pulse" />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6 shrink-0">
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Week Score</p>
-              <p className="text-3xl font-mono font-bold text-tertiary">{currentWeek.score}/100</p>
+              {hasSummary ? (
+                <p className="text-3xl font-mono font-bold text-tertiary">{summary.score}/100</p>
+              ) : (
+                <div className="h-8 w-16 bg-surface-container-low rounded-lg animate-pulse" />
+              )}
             </div>
             <div className="w-px h-10 bg-surface-variant" />
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Completed</p>
-              <p className="text-3xl font-mono font-bold text-primary">{currentWeek.totalCompleted}/{currentWeek.totalPlanned}</p>
+              {tasksReady ? (
+                <p className="text-3xl font-mono font-bold text-primary">{currentWeek.totalCompleted}/{currentWeek.totalPlanned}</p>
+              ) : (
+                <div className="h-8 w-20 bg-surface-container-low rounded-lg animate-pulse" />
+              )}
             </div>
             <div className="w-px h-10 bg-surface-variant" />
             <button 
@@ -135,7 +181,8 @@ export function Dashboard() {
                   deleteWeekData()
                 }
               }}
-              className="p-3 text-on-surface-variant hover:text-error transition-colors rounded-xl hover:bg-error/5 group"
+              disabled={!tasksReady}
+              className="p-3 text-on-surface-variant hover:text-error transition-colors rounded-xl hover:bg-error/5 group disabled:opacity-40 disabled:cursor-not-allowed"
               title="Clear Entire Week Data"
             >
               <span className="material-symbols-outlined text-2xl group-active:scale-95 transition-transform">delete_forever</span>
@@ -143,8 +190,17 @@ export function Dashboard() {
           </div>
         </section>
 
+        {!tasksReady ? (
+          <div className="space-y-6">
+            <LoadingCard />
+            <LoadingCard />
+            <LoadingCard />
+          </div>
+        ) : (
+          <>
+
         {/* Weekly Challenge - Unified */}
-        {currentWeek.challengeTitle && !isEditingChallenge ? (
+        {challengeTitle && !isEditingChallenge ? (
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <section>
             <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group space-y-6">
@@ -161,27 +217,33 @@ export function Dashboard() {
                       Fri -&gt; Thu
                     </span>
                     <button 
-                      onClick={() => { setManualChallenge(currentWeek.challengeTitle || ''); setIsEditingChallenge(true); }}
+                      onClick={() => { setManualChallenge(challengeTitle || ''); setIsEditingChallenge(true); }}
                       className="ml-2 text-primary hover:text-white transition-colors flex items-center justify-center w-5 h-5 rounded-full hover:bg-white/10"
                       title="Edit Challenge"
                     >
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                     </button>
                   </div>
-                  <RotatingText
-                    texts={[currentWeek.challengeTitle]}
-                    auto={false}
-                    splitBy="characters"
-                    staggerFrom="last"
-                    staggerDuration={0.012}
-                    initial={{ y: '100%', opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: '-120%', opacity: 0 }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 380 }}
-                    mainClassName="text-[2rem] font-black tracking-tight"
-                    splitLevelClassName="overflow-hidden pb-1"
-                    elementLevelClassName="inline-block text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
-                  />
+                  {isMotionReady ? (
+                    <Suspense fallback={<h3 className="text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>}>
+                      <RotatingText
+                        texts={[challengeTitle]}
+                        auto={false}
+                        splitBy="characters"
+                        staggerFrom="last"
+                        staggerDuration={0.012}
+                        initial={{ y: '100%', opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: '-120%', opacity: 0 }}
+                        transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+                        mainClassName="text-[2rem] font-black tracking-tight"
+                        splitLevelClassName="overflow-hidden pb-1"
+                        elementLevelClassName="inline-block text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
+                      />
+                    </Suspense>
+                  ) : (
+                    <h3 className="text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>
+                  )}
                 </div>
               </div>
 
@@ -314,6 +376,8 @@ export function Dashboard() {
           </div>
           </BorderGlow>
         </section>
+        </>
+        )}
       </div>
     </AppLayout>
   )
