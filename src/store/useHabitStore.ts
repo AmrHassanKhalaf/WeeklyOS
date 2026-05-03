@@ -17,6 +17,7 @@ export interface Habit {
   motivation: string
   color: string
   is_active: boolean
+  is_bad_habit: boolean
   month: number
   year: number
   sort_order: number
@@ -40,6 +41,7 @@ export interface NewHabitData {
   group_label: HabitGroup
   motivation: string
   color: string
+  is_bad_habit: boolean
   month: number
   year: number
 }

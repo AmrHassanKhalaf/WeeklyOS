@@ -1,0 +1,1 @@
+import{j as t}from"./index-CFMw273_.js";import{c as n}from"./Button-Cu23qT_9.js";function a({variant:s="glass",className:i,...o}){return t.jsx("section",{...o,className:n("ui-section",s==="glass"?"ui-section--glass":"ui-section--solid",i)})}export{a as S};

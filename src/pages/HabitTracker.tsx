@@ -5,6 +5,7 @@ import { useHabitStore } from '../store/useHabitStore'
 import type { Habit } from '../store/useHabitStore'
 import { HabitGroupSection } from '../components/habittracker/HabitGroupSection'
 import { HabitFormModal } from '../components/habittracker/HabitFormModal'
+import { HabitDetailModal } from '../components/habittracker/HabitDetailModal'
 import { HabitSummaryBar } from '../components/habittracker/HabitSummaryBar'
 import { HabitAnalyticsPanel } from '../components/habittracker/HabitAnalyticsPanel'
 
@@ -63,6 +64,7 @@ export function HabitTracker() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
+  const [detailHabit, setDetailHabit] = useState<Habit | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [weekOffset, setWeekOffset] = useState(0)
 
@@ -92,6 +94,10 @@ export function HabitTracker() {
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setEditingHabit(null)
+  }
+
+  const handleViewDetail = (habit: Habit) => {
+    setDetailHabit(habit)
   }
 
   const todayMonth = new Date().getMonth() + 1
@@ -289,6 +295,7 @@ export function HabitTracker() {
                     isWeeklyView={viewMode === 'weekly'}
                     weekOffset={weekOffset}
                     onEdit={handleEdit}
+                    onViewDetail={handleViewDetail}
                   />
                   <HabitGroupSection
                     key="anytime"
@@ -298,6 +305,7 @@ export function HabitTracker() {
                     isWeeklyView={viewMode === 'weekly'}
                     weekOffset={weekOffset}
                     onEdit={handleEdit}
+                    onViewDetail={handleViewDetail}
                   />
                   <HabitGroupSection
                     key="evening"
@@ -307,6 +315,7 @@ export function HabitTracker() {
                     isWeeklyView={viewMode === 'weekly'}
                     weekOffset={weekOffset}
                     onEdit={handleEdit}
+                    onViewDetail={handleViewDetail}
                   />
                 </AnimatePresence>
               </div>
@@ -335,11 +344,18 @@ export function HabitTracker() {
         )}
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── Form Modal ── */}
       <HabitFormModal
         isOpen={isModalOpen}
         editingHabit={editingHabit}
         onClose={handleCloseModal}
+      />
+
+      {/* ── Detail Modal ── */}
+      <HabitDetailModal
+        habit={detailHabit}
+        totalDays={totalDays}
+        onClose={() => setDetailHabit(null)}
       />
     </AppLayout>
   )

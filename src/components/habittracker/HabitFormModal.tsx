@@ -39,6 +39,7 @@ interface FormState {
   group_label: HabitGroup
   motivation: string
   color: string
+  is_bad_habit: boolean
 }
 
 const DEFAULT_FORM: FormState = {
@@ -48,6 +49,7 @@ const DEFAULT_FORM: FormState = {
   group_label: 'anytime',
   motivation: '',
   color: '#4ade80',
+  is_bad_habit: false,
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -80,6 +82,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
         group_label: editingHabit.group_label,
         motivation: editingHabit.motivation ?? '',
         color: editingHabit.color ?? '#4ade80',
+        is_bad_habit: editingHabit.is_bad_habit ?? false,
       })
     } else {
       setForm(DEFAULT_FORM)
@@ -167,6 +170,57 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                 </p>
               )}
 
+              {/* Good / Bad habit toggle */}
+              <div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
+                  Habit Role
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => set('is_bad_habit', false)}
+                    className={`flex items-center gap-2.5 rounded-xl px-4 py-3 border-2 transition-all font-semibold text-sm ${
+                      !form.is_bad_habit
+                        ? 'border-emerald-400 bg-emerald-400/10 text-emerald-400'
+                        : 'border-outline-variant/30 bg-surface-container-low/50 text-on-surface-variant hover:border-outline-variant'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-xl">trending_up</span>
+                    <div className="text-left">
+                      <p className="text-[13px] font-bold">Good Habit</p>
+                      <p className="text-[10px] font-normal opacity-70">Build it ✓</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => set('is_bad_habit', true)}
+                    className={`flex items-center gap-2.5 rounded-xl px-4 py-3 border-2 transition-all font-semibold text-sm ${
+                      form.is_bad_habit
+                        ? 'border-rose-400 bg-rose-400/10 text-rose-400'
+                        : 'border-outline-variant/30 bg-surface-container-low/50 text-on-surface-variant hover:border-outline-variant'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-xl">trending_down</span>
+                    <div className="text-left">
+                      <p className="text-[13px] font-bold">Bad Habit</p>
+                      <p className="text-[10px] font-normal opacity-70">Break it ✗</p>
+                    </div>
+                  </button>
+                </div>
+                {form.is_bad_habit && (
+                  <p className="text-[11px] text-rose-300/70 mt-1.5 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">info</span>
+                    Tap a day to mark it as a relapse. Clean days = success.
+                  </p>
+                )}
+                {!form.is_bad_habit && (
+                  <p className="text-[11px] text-emerald-300/70 mt-1.5 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">info</span>
+                    Tap a day to mark it as done. More done days = success.
+                  </p>
+                )}
+              </div>
+
               {/* Name */}
               <div>
                 <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
@@ -176,7 +230,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                   type="text"
                   value={form.name}
                   onChange={e => set('name', e.target.value)}
-                  placeholder="e.g., Read 20 pages, Meditate 10 min..."
+                  placeholder={form.is_bad_habit ? 'e.g., Smoking, Social media scrolling...' : 'e.g., Read 20 pages, Meditate 10 min...'}
                   className="input-base"
                   autoFocus
                 />

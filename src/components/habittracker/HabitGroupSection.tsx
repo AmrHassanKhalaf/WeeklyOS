@@ -10,6 +10,7 @@ interface HabitGroupSectionProps {
   isWeeklyView?: boolean
   weekOffset?: number
   onEdit: (habit: Habit) => void
+  onViewDetail: (habit: Habit) => void
 }
 
 const GROUP_META = {
@@ -25,6 +26,7 @@ export function HabitGroupSection({
   isWeeklyView,
   weekOffset,
   onEdit,
+  onViewDetail,
 }: HabitGroupSectionProps) {
   const [isOpen, setIsOpen] = useState(true)
   const meta = GROUP_META[groupLabel]
@@ -48,7 +50,8 @@ export function HabitGroupSection({
           {habits.length}
         </span>
         <div className="flex-1 h-px bg-outline-variant/30 ml-2" />
-        <span className="material-symbols-outlined text-[16px] text-on-surface-variant transition-transform duration-200 group-hover:text-on-surface"
+        <span
+          className="material-symbols-outlined text-[16px] text-on-surface-variant transition-transform duration-200 group-hover:text-on-surface"
           style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
         >
           expand_more
@@ -75,6 +78,7 @@ export function HabitGroupSection({
                     isWeeklyView={isWeeklyView}
                     weekOffset={weekOffset}
                     onEdit={onEdit}
+                    onViewDetail={onViewDetail}
                   />
                 ))}
               </AnimatePresence>
