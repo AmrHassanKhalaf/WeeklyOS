@@ -7,7 +7,7 @@ import { useAiApi } from '../hooks/useApi'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
-import { GlowButton } from '../components/effects/GlowButton'
+import { Button } from '../components/ui/Button'
 
 function extractJsonFromText(raw: string) {
   const trimmed = raw.trim()
@@ -213,39 +213,40 @@ Make sure:
             </p>
           </div>
           <div className="flex gap-3">
-            <GlowButton
+            <Button
               type="button"
               onClick={openAssignModal}
               disabled={brainDumpItems.length === 0}
-              compact
+              size="sm"
               variant="secondary"
               className={brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
             >
               <span className="material-symbols-outlined text-lg">psychology</span>
               Assign Braindump
-            </GlowButton>
-            <GlowButton
+            </Button>
+            <Button
               type="button"
               onClick={() => setShowTags(s => !s)}
-              compact
-              variant="tertiary"
-              className="text-xs font-semibold"
+              size="sm"
+              variant="ghost"
+              className="text-xs font-semibold border border-white/10 hover:border-white/20"
             >
               <span className="material-symbols-outlined text-lg">sell</span>
               {showTags ? 'Hide Tags' : 'Show Tags'}
-            </GlowButton>
-            <GlowButton
+            </Button>
+            <Button
               type="button"
               onClick={handleAutoDistribute}
               disabled={isDistributing || brainDumpItems.length === 0}
-              compact
+              size="sm"
+              variant="primary"
               className={isDistributing || brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed grayscale' : ''}
             >
               <span className={`material-symbols-outlined text-lg ${isDistributing ? 'animate-spin' : ''}`}>
                 {isDistributing ? 'sync' : 'auto_mode'}
               </span>
               {isDistributing ? 'Distributing...' : 'Auto-distribute'}
-            </GlowButton>
+            </Button>
           </div>
         </div>
 
@@ -351,24 +352,25 @@ Make sure:
                   {assignDrafts.filter(d => d.selected).length} selected
                 </span>
                 <div className="flex items-center gap-3">
-                  <GlowButton
+                  <Button
                     type="button"
                     onClick={() => setIsAssignModalOpen(false)}
-                    compact
-                    variant="tertiary"
-                    className="text-xs font-semibold"
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs font-semibold border border-white/10 hover:border-white/20"
                   >
                     Cancel
-                  </GlowButton>
-                  <GlowButton
+                  </Button>
+                  <Button
                     type="button"
                     onClick={handleAssignBrainDump}
                     disabled={isAssigning || assignDrafts.every(d => !d.selected)}
-                    compact
+                    size="sm"
+                    variant="primary"
                     className={isAssigning || assignDrafts.every(d => !d.selected) ? 'opacity-50 cursor-not-allowed' : ''}
                   >
                     {isAssigning ? 'Assigning...' : 'Assign Selected'}
-                  </GlowButton>
+                  </Button>
                 </div>
               </div>
             </div>

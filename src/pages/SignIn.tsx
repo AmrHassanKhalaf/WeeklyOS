@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { signIn, signInWithGoogle, signUp } from '../lib/supabase'
-import { GlowButton } from '../components/effects/GlowButton'
+import { Button } from '../components/ui/Button'
 
 type Mode = 'signin' | 'signup'
 
@@ -52,7 +52,7 @@ export function SignIn() {
   }
 
   return (
-    <div className="min-h-screen bg-[#131313] flex flex-col items-center justify-center p-6 font-['Inter']">
+    <div className="min-h-screen bg-[#131313] flex flex-col items-center justify-center p-6">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-12">
         <div className="w-10 h-10 rounded-lg obsidian-gradient flex items-center justify-center">
@@ -147,9 +147,10 @@ export function SignIn() {
           )}
 
           {/* Submit */}
-          <GlowButton
+          <Button
             type="submit"
             disabled={isLoading || isOAuthLoading}
+            size="lg"
             className="w-full mt-2 text-sm font-bold disabled:opacity-50"
           >
             {isLoading ? (
@@ -157,7 +158,7 @@ export function SignIn() {
             ) : (
               mode === 'signin' ? 'Sign In' : 'Create Account'
             )}
-          </GlowButton>
+          </Button>
         </form>
 
         {/* Toggle mode */}

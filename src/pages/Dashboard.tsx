@@ -6,7 +6,10 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
-import { GlowButton } from '../components/effects/GlowButton'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
+import { Section } from '../components/ui/Section'
 import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
 
 const loadRotatingText = () => import('../components/effects/RotatingText')
@@ -202,8 +205,7 @@ export function Dashboard() {
         {/* Weekly Challenge - Unified */}
         {challengeTitle && !isEditingChallenge ? (
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <section>
-            <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group space-y-6">
+          <Section variant="glass" className="border border-primary/20 bg-primary/5 relative overflow-hidden space-y-6">
               {/* Header Section */}
               <div className="relative z-10 flex flex-col gap-6">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -252,13 +254,11 @@ export function Dashboard() {
                 <WeeklyChallengeCircles />
               </div>
 
-            </div>
-          </section>
+          </Section>
           </BorderGlow>
         ) : (
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <section>
-            <div className="bg-surface-container-low rounded-xl border border-dashed border-white/20 p-6 flex flex-col gap-5">
+          <Section variant="glass" className="border border-dashed border-white/20 flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-2xl text-primary">psychology</span>
                 <div>
@@ -267,12 +267,12 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="flex flex-col gap-3">
-                <input
+                <Input
                   type="text"
                   value={manualChallenge}
                   onChange={e => setManualChallenge(e.target.value)}
                   placeholder="E.g., Clear the backlog or Focus on Priority Project X..."
-                  className="bg-surface-container-highest border border-white/10 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary/50 focus:outline-none w-full"
+                  className="text-sm"
                   onKeyDown={e => {
                     if (e.key === 'Enter' && manualChallenge.trim()) {
                       useWeekStore.getState().updateChallenge(manualChallenge.trim(), '')
@@ -281,7 +281,7 @@ export function Dashboard() {
                   }}
                 />
                 <div className="flex flex-wrap gap-3 items-center">
-                  <button 
+                  <Button
                     onClick={() => {
                       if (manualChallenge.trim()) {
                         useWeekStore.getState().updateChallenge(manualChallenge.trim(), '')
@@ -289,34 +289,39 @@ export function Dashboard() {
                       }
                     }}
                     disabled={!manualChallenge.trim()}
-                    className="bg-surface-container-highest hover:bg-surface-variant text-on-surface font-bold px-6 py-2 rounded-lg transition-colors text-sm disabled:opacity-50"
+                    variant="secondary"
+                    size="sm"
+                    className="text-sm font-semibold disabled:opacity-50"
                   >
                     Save Manual Challenge
-                  </button>
+                  </Button>
                   <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">OR</span>
-                  <button 
+                  <Button
                     onClick={async () => {
                       await generateChallenge()
                       setIsEditingChallenge(false)
                     }} 
                     disabled={isGeneratingChallenge}
-                    className="bg-primary/10 text-primary font-bold px-6 py-2 rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                    variant="primary"
+                    size="sm"
+                    className="text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined text-sm">auto_awesome</span>
                     {isGeneratingChallenge ? 'Generating...' : 'Auto-Generate via AI'}
-                  </button>
+                  </Button>
                   {isEditingChallenge && currentWeek.challengeTitle && (
-                    <button 
+                    <Button
                       onClick={() => setIsEditingChallenge(false)} 
-                      className="ml-auto text-neutral-500 hover:text-white text-sm"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto text-sm"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
-            </div>
-          </section>
+          </Section>
           </BorderGlow>
         )}
 
@@ -337,7 +342,7 @@ export function Dashboard() {
         {/* Bottom Stats */}
         <section className="grid grid-cols-3 gap-8 pb-12">
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-2">
-          <div className="col-span-2 bg-surface-container-low rounded-xl p-8 border border-white/5">
+          <Card variant="glass" className="col-span-2 p-8">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-xl font-bold">Deep Work Distribution</h3>
               <div className="flex gap-4">
@@ -353,27 +358,27 @@ export function Dashboard() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
           </BorderGlow>
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <div className="bg-tertiary-container text-on-tertiary-container rounded-xl p-8 relative overflow-hidden flex flex-col">
+          <Card variant="glass" className="bg-tertiary-container text-on-tertiary-container p-8 relative overflow-hidden flex flex-col">
             <span className="material-symbols-outlined absolute top-[-20px] right-[-20px] text-9xl opacity-10 rotate-12">bolt</span>
             <h3 className="text-xl font-bold mb-4">Focus Mode</h3>
             <p className="text-sm opacity-90 mb-8 leading-relaxed">
               {isInsightLoading ? 'Analyzing week data...' : (insight || "You're on track. Batch your remaining tasks to clear your schedule.")}
             </p>
             <div className="mt-auto">
-              <GlowButton
+              <Button
                 type="button"
                 onClick={fetchInsight}
                 disabled={isInsightLoading}
                 variant="secondary"
-                className="w-full text-tertiary-container py-3 text-sm disabled:opacity-50"
+                className="w-full text-tertiary-container border-tertiary/30 bg-tertiary/15 hover:bg-tertiary/25 py-3 text-sm disabled:opacity-50"
               >
                 {isInsightLoading ? 'Generating...' : 'Analyze My Week'}
-              </GlowButton>
+              </Button>
             </div>
-          </div>
+          </Card>
           </BorderGlow>
         </section>
         </>

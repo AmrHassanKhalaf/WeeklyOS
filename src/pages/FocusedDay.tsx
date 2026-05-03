@@ -3,7 +3,9 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
 import { useWeekStore } from '../store/useWeekStore'
 import type { Task } from '../store/useWeekStore'
-import { GlowButton } from '../components/effects/GlowButton'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 const PRESETS = [
@@ -442,42 +444,42 @@ export function FocusedDay() {
 
                 {/* Main buttons */}
                 <div className="flex flex-wrap gap-3">
-                  <GlowButton
+                  <Button
                     type="button"
                     onClick={handleToggle}
-                    compact
                     variant="secondary"
+                    size="sm"
                     className="px-6 py-2.5 rounded-xl font-bold text-sm min-w-[140px]"
                   >
                     <span className="material-symbols-outlined text-[18px]">
                       {isPomodoroRunning ? 'pause' : 'play_arrow'}
                     </span>
                     {isPomodoroRunning ? 'Pause Focus' : 'Start Focus'}
-                  </GlowButton>
+                  </Button>
 
-                  <GlowButton
+                  <Button
                     type="button"
                     onClick={resetPomodoro}
-                    compact
-                    variant="tertiary"
-                    className="px-4 py-2.5 rounded-xl font-bold text-sm"
+                    variant="ghost"
+                    size="sm"
+                    className="px-4 py-2.5 rounded-xl font-bold text-sm border border-white/10 hover:border-white/20"
                   >
                     <span className="material-symbols-outlined text-[18px]">restart_alt</span>
                     Reset
-                  </GlowButton>
+                  </Button>
 
-                  <GlowButton
+                  <Button
                     type="button"
                     onClick={toggleFocusMode}
-                    compact
-                    variant="tertiary"
-                    className="px-4 py-2.5 rounded-xl font-bold text-sm"
+                    variant="ghost"
+                    size="sm"
+                    className="px-4 py-2.5 rounded-xl font-bold text-sm border border-white/10 hover:border-white/20"
                   >
                     <span className="material-symbols-outlined text-[18px]">
                       {isFocusMode ? 'visibility' : 'visibility_off'}
                     </span>
                     {isFocusMode ? 'Show' : 'Hide'} UI
-                  </GlowButton>
+                  </Button>
                 </div>
 
                 {/* Presets */}
@@ -521,31 +523,33 @@ export function FocusedDay() {
                         <div className="flex items-center gap-3 pt-2">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Focus</span>
-                            <input
+                            <Input
                               type="number"
                               min={1} max={120}
                               value={customFocus}
                               onChange={e => setCustomFocus(e.target.value)}
-                              className="w-14 bg-surface-container-lowest border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:border-primary/50"
+                              className="w-14 px-2 py-1.5 text-sm text-center"
                             />
                           </div>
                           <span className="text-neutral-600">/</span>
                           <div className="flex items-center gap-1.5">
                             <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Break</span>
-                            <input
+                            <Input
                               type="number"
                               min={1} max={60}
                               value={customBreak}
                               onChange={e => setCustomBreak(e.target.value)}
-                              className="w-14 bg-surface-container-lowest border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:border-primary/50"
+                              className="w-14 px-2 py-1.5 text-sm text-center"
                             />
                           </div>
-                          <button
+                          <Button
                             onClick={applyCustomPreset}
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-colors uppercase tracking-wider"
+                            variant="secondary"
+                            size="sm"
+                            className="text-xs uppercase tracking-wider"
                           >
                             Apply
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -624,27 +628,28 @@ export function FocusedDay() {
 
                       <div className="shrink-0 pt-1 flex items-center justify-end">
                         {activeTaskId === mainTask.id ? (
-                           <GlowButton
+                           <Button
                              type="button"
                              onClick={(e) => { e.stopPropagation(); handleMakeActive(null); }}
-                             compact
-                             variant="tertiary"
-                             className="px-5 py-2.5 rounded-xl font-bold text-sm min-w-[120px]"
+                             variant="ghost"
+                             size="sm"
+                             className="px-5 py-2.5 rounded-xl font-bold text-sm min-w-[120px] border border-primary/30 text-primary"
+                             active
                            >
                              <div className="flex items-center justify-center gap-2">
                                <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(124,58,237,0.8)]" /> Active
                              </div>
-                           </GlowButton>
+                           </Button>
                         ) : mainTask.status !== 'done' ? (
-                            <GlowButton
+                            <Button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleMakeActive(mainTask.id); }}
-                              compact
                               variant="secondary"
+                              size="sm"
                               className="px-5 py-2.5 rounded-xl font-bold text-sm min-w-[120px]"
                             >
                               Focus Task
-                            </GlowButton>
+                            </Button>
                         ) : null}
                       </div>
                     </div>
@@ -726,11 +731,11 @@ export function FocusedDay() {
 
         {/* ── Day Complete ───────────────────────────────────────────────────── */}
           <div className="pt-6 pb-10 flex justify-center">
-            <GlowButton
+            <Button
               type="button"
               onClick={() => todayPlan && markDayComplete(todayPlan.day)}
-              compact
               variant="secondary"
+              size="lg"
               className="px-12 py-4 rounded-2xl font-bold group"
             >
               <div className="flex flex-col items-center gap-1.5">
@@ -745,14 +750,14 @@ export function FocusedDay() {
                   Finalize All Progress
                 </span>
               </div>
-            </GlowButton>
+            </Button>
           </div>
         </div>
 
         {/* ── Right Column (Sidebar) ─────────────────────────────────────── */}
         <div className="space-y-6 xl:sticky xl:top-8 self-start">
           {/* 1. FOCUS TIME TODAY */}
-          <div className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50 backdrop-blur-xl">
+          <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
              <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-4">Focus Time Today</h3>
              <div className="flex items-end justify-between">
                <div>
@@ -767,10 +772,10 @@ export function FocusedDay() {
                  <path d="M0 25 Q 10 15, 20 20 T 40 10 T 60 5" stroke="#14b8a6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                </svg>
              </div>
-          </div>
+          </Card>
 
           {/* 2. TODAY'S TASKS */}
-          <div className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50 backdrop-blur-xl">
+          <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-5">Today's Tasks</h3>
             <div className="space-y-4">
               {[todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).map(task => (
@@ -787,10 +792,10 @@ export function FocusedDay() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* 3. FOCUS TIME RECORDS */}
-          <div className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50 backdrop-blur-xl">
+           <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Focus Time Records</h3>
                 <span className="material-symbols-outlined text-neutral-500 text-[18px]">history</span>
@@ -815,7 +820,7 @@ export function FocusedDay() {
                  <p className="text-sm text-neutral-500 italic pl-8">No records yet today.</p>
                )}
              </div>
-          </div>
+          </Card>
 
         </div>
 

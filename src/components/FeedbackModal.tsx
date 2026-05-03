@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { GlowButton } from './effects/GlowButton'
+import { Button } from './ui/Button'
 
 interface FeedbackModalProps {
   isOpen: boolean
@@ -97,7 +97,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               </div>
 
               <div className="pt-2">
-                <GlowButton
+                <Button
                   type="submit"
                   disabled={isSubmitting || !message.trim()}
                   className="w-full flex items-center justify-center gap-2 py-3"
@@ -108,7 +108,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     <span className="material-symbols-outlined text-sm">send</span>
                   )}
                   {isSubmitting ? 'Sending...' : 'Send Feedback'}
-                </GlowButton>
+                </Button>
               </div>
             </form>
           )}

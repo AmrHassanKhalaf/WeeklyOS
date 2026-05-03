@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { signOut } from '../../lib/supabase'
 import { useLayoutStore } from '../../store/useLayoutStore'
-import { GlowButton } from '../effects/GlowButton'
+import { Button } from '../ui/Button'
 import { FeedbackModal } from '../FeedbackModal'
 
 const navItems = [
@@ -23,7 +23,7 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className={`h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#1C1B1B] z-50 font-['Inter'] antialiased text-sm font-medium transition-transform duration-300 shadow-xl border-r border-white/5 ${
+      <aside className={`h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#1C1B1B] z-50 antialiased text-sm font-medium transition-transform duration-300 shadow-xl border-r border-white/5 ${
         isActuallyOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
       <div className="flex flex-col h-full p-4">
@@ -60,15 +60,15 @@ export function Sidebar() {
 
         {/* Bottom CTA + User */}
         <div className="mt-auto pt-6 space-y-3">
-          <GlowButton
+          <Button
             type="button"
             onClick={() => { navigate('/brain-dump'); closeSidebarsOnMobile(); }}
-            compact
+            size="sm"
             className="w-full text-on-primary-container font-bold"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             New Plan
-          </GlowButton>
+          </Button>
 
           {/* Feedback button */}
           <button
