@@ -3,21 +3,25 @@ import { supabase } from '../lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type HabitType = 'health' | 'learning' | 'productivity' | 'spiritual' | 'breaking_bad'
-export type HabitDifficulty = 'easy' | 'medium' | 'hard'
+export type HabitCategory = 'health' | 'learning' | 'productivity' | 'spiritual' | 'break_habit'
+/** @deprecated alias kept for any imports that still use HabitType */
+export type HabitType = HabitCategory
+
 export type HabitGroup = 'morning' | 'evening' | 'anytime'
+
+/** Returns true when the habit is a "break it" (bad) habit */
+export const isBadHabit = (h: Pick<Habit, 'type'>): boolean => h.type === 'break_habit'
 
 export interface Habit {
   id: string
   user_id: string
   name: string
-  type: HabitType
-  difficulty: HabitDifficulty
+  type: HabitCategory
   group_label: HabitGroup
   motivation: string
   color: string
   is_active: boolean
-  is_bad_habit: boolean
+  is_bad_habit: boolean   // kept for DB compat — always equals (type === 'break_habit')
   month: number
   year: number
   sort_order: number
@@ -36,12 +40,9 @@ export interface HabitCompletion {
 
 export interface NewHabitData {
   name: string
-  type: HabitType
-  difficulty: HabitDifficulty
+  type: HabitCategory
   group_label: HabitGroup
   motivation: string
-  color: string
-  is_bad_habit: boolean
   month: number
   year: number
 }
@@ -57,36 +58,33 @@ export type ViewMode = 'monthly' | 'weekly'
 
 function computeStreaks(
   completions: HabitCompletion[],
-  habitId: string,
+  habit: Habit,
   month: number,
   year: number,
   today: number
 ): HabitStreakInfo {
   const days = new Set(
     completions
-      .filter(c => c.habit_id === habitId && c.month === month && c.year === year)
+      .filter(c => c.habit_id === habit.id && c.month === month && c.year === year)
       .map(c => c.day)
   )
 
+  const bad = isBadHabit(habit)
+
+  // For break habits: streak = consecutive clean days (not in completions)
+  // For build habits: streak = consecutive done days (in completions)
+  const isSuccess = (d: number) => bad ? !days.has(d) : days.has(d)
+
   let current = 0
+  for (let d = today; d >= 1; d--) {
+    if (isSuccess(d)) current++
+    else break
+  }
+
   let longest = 0
   let streak = 0
-
-  // Walk backwards from today
-  for (let d = today; d >= 1; d--) {
-    if (days.has(d)) {
-      streak++
-      if (d === today || d === today - current) current = streak
-    } else {
-      break
-    }
-  }
-  current = streak
-
-  // Find longest streak
-  streak = 0
   for (let d = 1; d <= 31; d++) {
-    if (days.has(d)) {
+    if (isSuccess(d)) {
       streak++
       longest = Math.max(longest, streak)
     } else {
@@ -229,10 +227,18 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
 
     const { habits } = get()
     const sort_order = habits.length
+    const is_bad_habit = data.type === 'break_habit'
 
     const { data: newHabit, error } = await supabase
       .from('habits')
-      .insert({ ...data, user_id: user.id, sort_order })
+      .insert({
+        ...data,
+        user_id: user.id,
+        sort_order,
+        is_bad_habit,
+        // difficulty has a DB default of 'medium', no need to send
+        color: is_bad_habit ? '#f87171' : '#4ade80',
+      })
       .select()
       .single()
 
@@ -241,9 +247,12 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
   },
 
   editHabit: async (id, updates) => {
+    const is_bad_habit = updates.type !== undefined ? updates.type === 'break_habit' : undefined
+    const payload = is_bad_habit !== undefined ? { ...updates, is_bad_habit } : updates
+
     const { data: updated, error } = await supabase
       .from('habits')
-      .update(updates)
+      .update(payload)
       .eq('id', id)
       .select()
       .single()
@@ -259,7 +268,6 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
     set({ habits: get().habits.filter(h => h.id !== id) })
     const { error } = await supabase.from('habits').update({ is_active: false }).eq('id', id)
     if (error) {
-      // Rollback
       void get().loadData()
       throw error
     }
@@ -317,7 +325,7 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
         .single()
 
       if (error) {
-        set({ completions: get().completions.filter(c => c.id !== optimistic.id) }) // rollback
+        set({ completions: get().completions.filter(c => c.id !== optimistic.id) })
       } else {
         set({
           completions: get().completions.map(c =>
@@ -352,17 +360,21 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
   },
 
   getStreak: (habitId) => {
-    const { completions, currentMonth, currentYear } = get()
+    const { habits, completions, currentMonth, currentYear } = get()
+    const habit = habits.find(h => h.id === habitId)
+    if (!habit) return { current: 0, longest: 0 }
     const today = new Date().getDate()
-    return computeStreaks(completions, habitId, currentMonth, currentYear, today)
+    return computeStreaks(completions, habit, currentMonth, currentYear, today)
   },
 
   getPerfectDays: (totalDays) => {
     const { habits, completions, currentMonth, currentYear } = get()
     if (habits.length === 0) return new Set()
+    const buildHabits = habits.filter(h => !isBadHabit(h))
+    if (buildHabits.length === 0) return new Set()
     const perfect = new Set<number>()
     for (let d = 1; d <= totalDays; d++) {
-      const allDone = habits.every(h =>
+      const allDone = buildHabits.every(h =>
         completions.some(
           c => c.habit_id === h.id && c.day === d && c.month === currentMonth && c.year === currentYear
         )
