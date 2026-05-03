@@ -13,6 +13,7 @@ const FocusedDay = lazy(() => import('./pages/FocusedDay').then(m => ({ default:
 const BrainDump = lazy(() => import('./pages/BrainDump').then(m => ({ default: m.BrainDump })))
 const WeeklyEvaluation = lazy(() => import('./pages/WeeklyEvaluation').then(m => ({ default: m.WeeklyEvaluation })))
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
+const HabitTracker = lazy(() => import('./pages/HabitTracker').then(m => ({ default: m.HabitTracker })))
 
 function LoadingScreen() {
   return (
@@ -89,6 +90,7 @@ function AppRouter() {
       <Route path="/brain-dump" element={<BrainDump />} />
       <Route path="/weekly-evaluation" element={<WeeklyEvaluation />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/habit-tracker" element={<HabitTracker />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
     </Suspense>

@@ -11,6 +11,7 @@ const navItems = [
   { to: '/focused-day', icon: 'target', label: 'Focused Day' },
   { to: '/brain-dump', icon: 'psychology', label: 'Prep & Brain Dump' },
   { to: '/weekly-evaluation', icon: 'assessment', label: 'Weekly Evaluation' },
+  { to: '/habit-tracker', icon: 'local_fire_department', label: 'Habit Tracker' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
 ]
 
