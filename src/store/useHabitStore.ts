@@ -21,7 +21,7 @@ export interface Habit {
   motivation: string
   color: string
   is_active: boolean
-  is_bad_habit: boolean   // kept for DB compat — always equals (type === 'break_habit')
+  is_bad_habit: boolean   // DB compat — always equals (type === 'break_habit')
   month: number
   year: number
   sort_order: number
@@ -54,6 +54,15 @@ export interface HabitStreakInfo {
 
 export type ViewMode = 'monthly' | 'weekly'
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Today's day-of-month (or totalDays + 1 when viewing a past month) */
+function todayDayOf(currentMonth: number, currentYear: number): number {
+  const now = new Date()
+  const isCurrentMonth = now.getMonth() + 1 === currentMonth && now.getFullYear() === currentYear
+  return isCurrentMonth ? now.getDate() : 32   // 32 = "month already passed, all days are past"
+}
+
 // ─── Streak Computation ───────────────────────────────────────────────────────
 
 function computeStreaks(
@@ -63,24 +72,24 @@ function computeStreaks(
   year: number,
   today: number
 ): HabitStreakInfo {
-  const days = new Set(
+  const logged = new Set(
     completions
       .filter(c => c.habit_id === habit.id && c.month === month && c.year === year)
       .map(c => c.day)
   )
 
   const bad = isBadHabit(habit)
+  // Build: success = logged; Break: success = NOT logged (clean day)
+  const isSuccess = (d: number) => bad ? !logged.has(d) : logged.has(d)
 
-  // For break habits: streak = consecutive clean days (not in completions)
-  // For build habits: streak = consecutive done days (in completions)
-  const isSuccess = (d: number) => bad ? !days.has(d) : days.has(d)
-
+  // Current streak — walk backwards from today
   let current = 0
   for (let d = today; d >= 1; d--) {
     if (isSuccess(d)) current++
     else break
   }
 
+  // Longest streak in month
   let longest = 0
   let streak = 0
   for (let d = 1; d <= 31; d++) {
@@ -126,15 +135,33 @@ interface HabitStore {
   // Completions
   toggleDay: (habitId: string, day: number) => Promise<void>
 
-  // Derived helpers
+  // ── Build-habit derived helpers ──────────────────────────────────────────────
   getCompletedDays: (habitId: string) => Set<number>
   getCompletionCount: (habitId: string) => number
+  /** completion_rate = completed_days / totalDays  (build habits only) */
   getCompletionRate: (habitId: string, totalDays: number) => number
   getStreak: (habitId: string) => HabitStreakInfo
-  getPerfectDays: (totalDays: number) => Set<number>
+  /** Avg completion rate across BUILD habits only */
   getAverageCompletionRate: (totalDays: number) => number
+  /** Build habit with highest completion_rate */
   getBestHabit: (totalDays: number) => Habit | null
+  /** Build habit with lowest completion_rate */
   getWorstHabit: (totalDays: number) => Habit | null
+
+  // ── Break-habit derived helpers ──────────────────────────────────────────────
+  /** clean_rate = (pastDays - slips) / pastDays — ONLY for break habits */
+  getBreakHabitCleanRate: (habitId: string) => number
+  /** Break habit with highest clean_rate */
+  getStrongestBreakHabit: () => Habit | null
+  /** Break habit with lowest clean_rate (most slips) */
+  getNeedsAttentionBreakHabit: () => Habit | null
+
+  // ── Cross-type helpers ───────────────────────────────────────────────────────
+  /**
+   * A perfect day = ALL build habits completed + ZERO break habit slips.
+   * Days where no build habits exist are never counted as perfect.
+   */
+  getPerfectDays: (totalDays: number) => Set<number>
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -236,7 +263,6 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
         user_id: user.id,
         sort_order,
         is_bad_habit,
-        // difficulty has a DB default of 'medium', no need to send
         color: is_bad_habit ? '#f87171' : '#4ade80',
       })
       .select()
@@ -264,7 +290,6 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
   },
 
   deleteHabit: async (id) => {
-    // Optimistic
     set({ habits: get().habits.filter(h => h.id !== id) })
     const { error } = await supabase.from('habits').update({ is_active: false }).eq('id', id)
     if (error) {
@@ -293,14 +318,10 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
     )
 
     if (existing) {
-      // Optimistic remove
       set({ completions: completions.filter(c => c.id !== existing.id) })
       const { error } = await supabase.from('habit_completions').delete().eq('id', existing.id)
-      if (error) {
-        set({ completions: [...get().completions, existing] }) // rollback
-      }
+      if (error) set({ completions: [...get().completions, existing] })
     } else {
-      // Optimistic add
       const optimistic: HabitCompletion = {
         id: `tmp-${Date.now()}`,
         user_id: user.id,
@@ -314,13 +335,7 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
 
       const { data: inserted, error } = await supabase
         .from('habit_completions')
-        .insert({
-          user_id: user.id,
-          habit_id: habitId,
-          day,
-          month: currentMonth,
-          year: currentYear,
-        })
+        .insert({ user_id: user.id, habit_id: habitId, day, month: currentMonth, year: currentYear })
         .select()
         .single()
 
@@ -336,7 +351,7 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
     }
   },
 
-  // ── Derived Helpers ─────────────────────────────────────────────────────────
+  // ── Build-habit Derived Helpers ─────────────────────────────────────────────
 
   getCompletedDays: (habitId) => {
     const { completions, currentMonth, currentYear } = get()
@@ -367,43 +382,86 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
     return computeStreaks(completions, habit, currentMonth, currentYear, today)
   },
 
-  getPerfectDays: (totalDays) => {
-    const { habits, completions, currentMonth, currentYear } = get()
-    if (habits.length === 0) return new Set()
-    const buildHabits = habits.filter(h => !isBadHabit(h))
-    if (buildHabits.length === 0) return new Set()
-    const perfect = new Set<number>()
-    for (let d = 1; d <= totalDays; d++) {
-      const allDone = buildHabits.every(h =>
-        completions.some(
-          c => c.habit_id === h.id && c.day === d && c.month === currentMonth && c.year === currentYear
-        )
-      )
-      if (allDone) perfect.add(d)
-    }
-    return perfect
-  },
-
+  /** Only considers BUILD habits */
   getAverageCompletionRate: (totalDays) => {
     const { habits } = get()
-    if (habits.length === 0 || totalDays === 0) return 0
-    const total = habits.reduce((sum, h) => sum + get().getCompletionRate(h.id, totalDays), 0)
-    return Math.round(total / habits.length)
+    const buildHabits = habits.filter(h => !isBadHabit(h))
+    if (buildHabits.length === 0 || totalDays === 0) return 0
+    const total = buildHabits.reduce((sum, h) => sum + get().getCompletionRate(h.id, totalDays), 0)
+    return Math.round(total / buildHabits.length)
   },
 
+  /** Build habit with the highest completion_rate */
   getBestHabit: (totalDays) => {
-    const { habits } = get()
-    if (habits.length === 0) return null
-    return habits.reduce((best, h) =>
+    const buildHabits = get().habits.filter(h => !isBadHabit(h))
+    if (buildHabits.length === 0) return null
+    return buildHabits.reduce((best, h) =>
       get().getCompletionRate(h.id, totalDays) > get().getCompletionRate(best.id, totalDays) ? h : best
     )
   },
 
+  /** Build habit with the lowest completion_rate */
   getWorstHabit: (totalDays) => {
-    const { habits } = get()
-    if (habits.length === 0) return null
-    return habits.reduce((worst, h) =>
+    const buildHabits = get().habits.filter(h => !isBadHabit(h))
+    if (buildHabits.length === 0) return null
+    return buildHabits.reduce((worst, h) =>
       get().getCompletionRate(h.id, totalDays) < get().getCompletionRate(worst.id, totalDays) ? h : worst
     )
+  },
+
+  // ── Break-habit Derived Helpers ─────────────────────────────────────────────
+
+  /** clean_rate = (pastDays - slips) / pastDays — 100% if no past days yet */
+  getBreakHabitCleanRate: (habitId) => {
+    const { currentMonth, currentYear } = get()
+    const todayDay = todayDayOf(currentMonth, currentYear)
+    const pastDays = Math.max(0, todayDay - 1)
+    if (pastDays === 0) return 100
+    const slips = get().getCompletionCount(habitId)
+    const cleanDays = Math.max(0, pastDays - slips)
+    return Math.round((cleanDays / pastDays) * 100)
+  },
+
+  /** Break habit with the highest clean_rate */
+  getStrongestBreakHabit: () => {
+    const breakHabits = get().habits.filter(h => isBadHabit(h))
+    if (breakHabits.length === 0) return null
+    return breakHabits.reduce((best, h) =>
+      get().getBreakHabitCleanRate(h.id) > get().getBreakHabitCleanRate(best.id) ? h : best
+    )
+  },
+
+  /** Break habit with the lowest clean_rate (most problematic) */
+  getNeedsAttentionBreakHabit: () => {
+    const breakHabits = get().habits.filter(h => isBadHabit(h))
+    if (breakHabits.length === 0) return null
+    return breakHabits.reduce((worst, h) =>
+      get().getBreakHabitCleanRate(h.id) < get().getBreakHabitCleanRate(worst.id) ? h : worst
+    )
+  },
+
+  // ── Cross-type: Perfect Days ─────────────────────────────────────────────────
+
+  getPerfectDays: (totalDays) => {
+    const { habits, completions, currentMonth, currentYear } = get()
+    const buildHabits = habits.filter(h => !isBadHabit(h))
+    const breakHabits = habits.filter(h => isBadHabit(h))
+
+    // Need at least one build habit to define a "perfect day"
+    if (buildHabits.length === 0) return new Set()
+
+    const perfect = new Set<number>()
+    for (let d = 1; d <= totalDays; d++) {
+      // All build habits completed on this day
+      const allBuildDone = buildHabits.every(h =>
+        completions.some(c => c.habit_id === h.id && c.day === d && c.month === currentMonth && c.year === currentYear)
+      )
+      // Zero break habit slips on this day
+      const noBreakSlips = breakHabits.every(h =>
+        !completions.some(c => c.habit_id === h.id && c.day === d && c.month === currentMonth && c.year === currentYear)
+      )
+      if (allBuildDone && noBreakSlips) perfect.add(d)
+    }
+    return perfect
   },
 }))
