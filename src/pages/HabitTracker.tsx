@@ -7,7 +7,6 @@ import { HabitGroupSection } from '../components/habittracker/HabitGroupSection'
 import { HabitFormModal } from '../components/habittracker/HabitFormModal'
 import { HabitDetailModal } from '../components/habittracker/HabitDetailModal'
 import { HabitSummaryBar } from '../components/habittracker/HabitSummaryBar'
-import { HabitAnalyticsPanel } from '../components/habittracker/HabitAnalyticsPanel'
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const getDaysInMonth = (m: number, y: number) => new Date(y, m, 0).getDate()
@@ -39,7 +38,6 @@ export function HabitTracker() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null)
-  const [showAnalytics, setShowAnalytics] = useState(false)
   const [weekOffset, setWeekOffset] = useState(0)
   const [activeTab, setActiveTab] = useState<'build' | 'break'>('build')
 
@@ -128,19 +126,13 @@ export function HabitTracker() {
               <button onClick={() => useHabitStore.getState().setMonth(todayMonth, todayYear)} className="btn btn-sm btn-secondary text-xs">Today</button>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-surface-container-low/60 border border-outline-variant/30 rounded-xl p-0.5 gap-0.5">
-              {(['monthly', 'weekly'] as const).map(mode => (
-                <button key={mode} onClick={() => setViewMode(mode)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${viewMode === mode ? 'bg-primary/20 text-primary border border-primary/30' : 'text-on-surface-variant hover:text-on-surface'}`}>
-                  {mode}
-                </button>
-              ))}
-            </div>
-            <button onClick={() => setShowAnalytics(v => !v)} className={`btn btn-sm ${showAnalytics ? 'btn-primary' : 'btn-ghost'}`}>
-              <span className="material-symbols-outlined text-[18px]">insights</span>
-              <span className="hidden sm:inline">Analytics</span>
-            </button>
+          <div className="flex items-center bg-surface-container-low/60 border border-outline-variant/30 rounded-xl p-0.5 gap-0.5">
+            {(['monthly', 'weekly'] as const).map(mode => (
+              <button key={mode} onClick={() => setViewMode(mode)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${viewMode === mode ? 'bg-primary/20 text-primary border border-primary/30' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                {mode}
+              </button>
+            ))}
           </div>
         </section>
 
@@ -228,17 +220,9 @@ export function HabitTracker() {
               </AnimatePresence>
             )}
 
-            <AnimatePresence>
-              {showAnalytics && habits.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}>
-                  <HabitAnalyticsPanel totalDays={totalDays} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {habits.length > 0 && (
               <div className="border-t border-outline-variant/20 pt-6">
-                <HabitSummaryBar totalDays={totalDays} />
+                <HabitSummaryBar totalDays={totalDays} activeTab={activeTab} />
               </div>
             )}
           </>
