@@ -3,6 +3,7 @@ import { DayCard } from '../components/DayCard'
 import { useWeekStore } from '../store/useWeekStore'
 import { useAiApi } from '../hooks/useApi'
 import { lazy, Suspense, useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
@@ -10,15 +11,14 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
 import { Section } from '../components/ui/Section'
+import { Skeleton } from '../components/ui/Skeleton'
 import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
 
 const loadRotatingText = () => import('../components/effects/RotatingText')
 const RotatingText = lazy(loadRotatingText)
 
 function LoadingCard() {
-  return (
-    <div className="rounded-xl bg-surface-container-low border border-white/5 h-32 animate-pulse" />
-  )
+  return <Skeleton className="h-32 border border-outline-variant/10" />
 }
 
 export function Dashboard() {
@@ -115,7 +115,7 @@ export function Dashboard() {
     return (
       <AppLayout>
         <div className="max-w-4xl mx-auto p-8 space-y-8">
-          <div className="h-20 bg-surface-container-low rounded-xl animate-pulse" />
+          <Skeleton className="h-20" />
           <LoadingCard />
           <LoadingCard />
           <LoadingCard />
@@ -154,8 +154,8 @@ export function Dashboard() {
               </>
             ) : (
               <div className="space-y-3">
-                <div className="h-10 w-2/3 bg-surface-container-low rounded-lg animate-pulse" />
-                <div className="h-5 w-1/2 bg-surface-container-low rounded-lg animate-pulse" />
+                <Skeleton className="h-10 w-2/3" />
+                <Skeleton className="h-5 w-1/2" />
               </div>
             )}
           </div>
@@ -163,18 +163,34 @@ export function Dashboard() {
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Week Score</p>
               {hasSummary ? (
-                <p className="text-3xl font-mono font-bold text-tertiary">{summary.score}/100</p>
+                <motion.p
+                  key={summary.score}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 260 }}
+                  className="text-3xl font-mono font-bold text-tertiary"
+                >
+                  {summary.score}/100
+                </motion.p>
               ) : (
-                <div className="h-8 w-16 bg-surface-container-low rounded-lg animate-pulse" />
+                <Skeleton className="h-8 w-16" />
               )}
             </div>
             <div className="w-px h-10 bg-surface-variant" />
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Completed</p>
               {tasksReady ? (
-                <p className="text-3xl font-mono font-bold text-primary">{currentWeek.totalCompleted}/{currentWeek.totalPlanned}</p>
+                <motion.p
+                  key={`${currentWeek.totalCompleted}-${currentWeek.totalPlanned}`}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 260 }}
+                  className="text-3xl font-mono font-bold text-primary"
+                >
+                  {currentWeek.totalCompleted}/{currentWeek.totalPlanned}
+                </motion.p>
               ) : (
-                <div className="h-8 w-20 bg-surface-container-low rounded-lg animate-pulse" />
+                <Skeleton className="h-8 w-20" />
               )}
             </div>
             <div className="w-px h-10 bg-surface-variant" />
@@ -327,15 +343,22 @@ export function Dashboard() {
 
         {/* Day Cards */}
         <section className="space-y-6">
-          {currentWeek.days.map((dayData) => (
-            <BorderGlow key={dayData.day} edgeSensitivity={28} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={36} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-              <DayCard 
-                day={{
-                  ...dayData, 
-                  isRestDay: (restDays || []).includes(dayData.day)
-                }} 
-              />
-            </BorderGlow>
+          {currentWeek.days.map((dayData, i) => (
+            <motion.div
+              key={dayData.day}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.04 + i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              <BorderGlow edgeSensitivity={28} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={36} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+                <DayCard
+                  day={{
+                    ...dayData,
+                    isRestDay: (restDays || []).includes(dayData.day),
+                  }}
+                />
+              </BorderGlow>
+            </motion.div>
           ))}
         </section>
 

@@ -112,7 +112,9 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM)
   const [isSaving, setIsSaving] = useState(false)
+  const [justSaved, setJustSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [formShake, setFormShake] = useState(false)
 
   useEffect(() => {
     if (editingHabit) {
@@ -138,6 +140,8 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
     e.preventDefault()
     if (!form.name.trim()) {
       setError('Please enter a habit name.')
+      setFormShake(true)
+      window.setTimeout(() => setFormShake(false), 420)
       return
     }
     setIsSaving(true)
@@ -149,9 +153,16 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
         const data: NewHabitData = { ...form, month: currentMonth, year: currentYear }
         await addHabit(data)
       }
-      onClose()
+      // Brief success state before closing
+      setJustSaved(true)
+      window.setTimeout(() => {
+        setJustSaved(false)
+        onClose()
+      }, 520)
     } catch (err) {
       setError((err as Error).message)
+      setFormShake(true)
+      window.setTimeout(() => setFormShake(false), 420)
     } finally {
       setIsSaving(false)
     }
@@ -182,7 +193,9 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
           >
             <form
               onSubmit={handleSubmit}
-              className="pointer-events-auto w-full max-w-md glass-panel rounded-2xl overflow-hidden"
+              className={`pointer-events-auto w-full max-w-md glass-panel rounded-2xl overflow-hidden ${
+                formShake ? 'animate-shake' : ''
+              }`}
               onClick={e => e.stopPropagation()}
             >
               {/* ── Colour accent header ── */}
@@ -230,14 +243,25 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
               <div className="px-6 pb-6 space-y-5">
 
                 {/* ── Error ── */}
-                {error && (
-                  <p className="text-sm text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2">
-                    {error}
-                  </p>
-                )}
+                <AnimatePresence>
+                  {error && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="text-sm text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2"
+                    >
+                      {error}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
 
                 {/* ── Category ── */}
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.04 }}
+                >
                   <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
                     Category
                   </label>
@@ -264,10 +288,14 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                       </button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* ── Name ── */}
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.08 }}
+                >
                   <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
                     Habit Name *
                   </label>
@@ -280,13 +308,17 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                         ? 'e.g., Smoking, Doom scrolling, Late-night snacks…'
                         : 'e.g., Read 20 pages, Meditate 10 min…'
                     }
-                    className="input-base"
+                    className="input-base focus-ring"
                     autoFocus
                   />
-                </div>
+                </motion.div>
 
                 {/* ── Time ── */}
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.12 }}
+                >
                   <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
                     When
                   </label>
@@ -307,10 +339,14 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                       </button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* ── Reason ── */}
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.16 }}
+                >
                   <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
                     {isBreakHabit ? 'Why do you want to stop?' : 'Why are you building this?'}
                     {' '}<span className="normal-case text-outline font-normal">(optional)</span>
@@ -323,24 +359,31 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                         ? 'Your reason to quit — keeps you accountable…'
                         : 'Your deeper reason — helps you stay committed…'
                     }
-                    className="input-base resize-none"
+                    className="input-base focus-ring resize-none"
                     rows={2}
                   />
-                </div>
+                </motion.div>
 
                 {/* ── Actions ── */}
-                <div className="flex gap-3 pt-1">
+                <motion.div
+                  className="flex gap-3 pt-1"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
                   <button type="button" onClick={onClose} className="btn btn-ghost flex-1">
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={isSaving || !form.name.trim()}
-                    className="btn flex-1 disabled:opacity-50 font-bold"
+                    disabled={isSaving || justSaved || !form.name.trim()}
+                    className="btn ripple-surface flex-1 disabled:opacity-80 font-bold"
                     style={{
-                      background: isBreakHabit
-                        ? 'linear-gradient(135deg, #f87171, #ef4444)'
-                        : `linear-gradient(135deg, ${selectedCategory.color}, ${selectedCategory.color}bb)`,
+                      background: justSaved
+                        ? 'linear-gradient(135deg, #4ade80, #22c55e)'
+                        : isBreakHabit
+                          ? 'linear-gradient(135deg, #f87171, #ef4444)'
+                          : `linear-gradient(135deg, ${selectedCategory.color}, ${selectedCategory.color}bb)`,
                       color: '#fff',
                       border: 'none',
                     }}
@@ -350,9 +393,14 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                         <span className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
                         Saving…
                       </span>
+                    ) : justSaved ? (
+                      <span className="flex items-center gap-2 animate-checkmark">
+                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        Saved
+                      </span>
                     ) : editingHabit ? 'Save Changes' : isBreakHabit ? 'Add to Break 🚫' : 'Add Habit ✓'}
                   </button>
-                </div>
+                </motion.div>
               </div>
             </form>
           </motion.div>

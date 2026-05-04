@@ -9,6 +9,12 @@ interface HabitBubbleGridProps {
   accentColor?: string
   /** Renders larger bubbles with checkmark/X icons (used in detail modal) */
   large?: boolean
+  /** Fired when the user's tap results in a positive outcome (build done / slip cleared).
+   *  Useful for celebration animations. */
+  onCelebrate?: () => void
+  /** Fired when the user's tap results in a negative outcome (build undone / slip added).
+   *  Useful for shake / error feedback. */
+  onNegative?: () => void
 }
 
 const DAYS_PER_WEEK = 7
@@ -20,6 +26,8 @@ export function HabitBubbleGrid({
   weekOffset = 0,
   accentColor,
   large = false,
+  onCelebrate,
+  onNegative,
 }: HabitBubbleGridProps) {
   const toggleDay = useHabitStore(s => s.toggleDay)
   const getCompletedDays = useHabitStore(s => s.getCompletedDays)
@@ -80,10 +88,21 @@ export function HabitBubbleGrid({
             ? didIt ? `Day ${day}: I slipped 😬` : `Day ${day}: Clean day ✓`
             : didIt ? `Day ${day}: Done ✅` : `Day ${day}`
 
+        // Decide the outcome of a hypothetical click (what state will the day be in after toggle?)
+        // Build habit:  !didIt -> celebrate (marking done) | didIt -> negative (un-checking)
+        // Break habit:   didIt -> celebrate (slip cleared) | !didIt -> negative (recording slip)
+        const nextWouldCelebrate = isBad ? didIt : !didIt
+        const handleClick = () => {
+          if (isFuture) return
+          if (nextWouldCelebrate) onCelebrate?.()
+          else onNegative?.()
+          void toggleDay(habitId, day)
+        }
+
         return (
           <motion.button
             key={day}
-            onClick={() => !isFuture && void toggleDay(habitId, day)}
+            onClick={handleClick}
             title={tooltip}
             whileTap={isFuture ? {} : { scale: 0.8 }}
             disabled={isFuture}

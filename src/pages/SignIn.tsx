@@ -52,25 +52,37 @@ export function SignIn() {
   }
 
   return (
-    <div className="min-h-screen bg-[#131313] flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-background text-on-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Ambient orbs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full animate-float-soft"
+        style={{ background: 'radial-gradient(circle, rgb(var(--color-primary) / 0.25), transparent 65%)' }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -right-24 w-96 h-96 rounded-full animate-float-soft"
+        style={{ background: 'radial-gradient(circle, rgb(var(--color-tertiary) / 0.22), transparent 65%)', animationDelay: '1.2s' }}
+      />
+
       {/* Logo */}
-      <div className="flex items-center gap-3 mb-12">
-        <div className="w-10 h-10 rounded-lg obsidian-gradient flex items-center justify-center">
-          <span className="material-symbols-outlined text-white text-xl">dashboard</span>
+      <div className="flex items-center gap-3 mb-12 animate-fade-up relative z-10">
+        <div className="w-10 h-10 rounded-xl obsidian-gradient flex items-center justify-center glow-primary animate-float-soft">
+          <span className="material-symbols-outlined text-white text-xl">auto_awesome</span>
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#E5E2E1]">WeeklyOS</h1>
-          <p className="text-[10px] text-[#A1A1A1] uppercase tracking-[0.2em]">Productivity Engine</p>
+          <h1 className="text-2xl font-bold tracking-tight text-on-surface">WeeklyOS</h1>
+          <p className="text-[10px] text-on-surface-variant uppercase tracking-[0.2em]">Productivity Engine</p>
         </div>
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-md bg-[#1C1B1B] rounded-2xl border border-white/5 p-10 shadow-2xl shadow-black/50">
+      <div className="w-full max-w-md glass-panel rounded-2xl p-8 sm:p-10 animate-scale-in relative z-10">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-[#E5E2E1] mb-1">
+          <h2 className="text-2xl font-bold text-on-surface mb-1">
             {mode === 'signin' ? 'Welcome back' : 'Create account'}
           </h2>
-          <p className="text-sm text-[#A1A1A1]">
+          <p className="text-sm text-on-surface-variant">
             {mode === 'signin'
               ? 'Sign in to access your productivity system.'
               : 'Start planning your best weeks.'}
@@ -83,7 +95,7 @@ export function SignIn() {
             onClick={handleGoogleSignIn}
             disabled={isLoading || isOAuthLoading}
             aria-busy={isOAuthLoading}
-            className="w-full flex items-center justify-between gap-3 bg-[#201F1F] border border-white/10 rounded-lg px-4 py-3 text-[#E5E2E1] hover:border-white/20 hover:bg-[#242323] transition-colors disabled:opacity-60"
+            className="ripple-surface focus-ring w-full flex items-center justify-between gap-3 bg-surface-container-low/80 border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface hover:border-outline-variant/60 hover:bg-surface-container/80 transition-colors disabled:opacity-60 lift-on-hover"
           >
             <span className="inline-flex items-center gap-3">
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -100,29 +112,29 @@ export function SignIn() {
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/10" />
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A7A7A]">or</span>
-            <div className="h-px flex-1 bg-white/10" />
+            <div className="h-px flex-1 bg-outline-variant/30" />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">or</span>
+            <div className="h-px flex-1 bg-outline-variant/30" />
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest font-bold text-[#A1A1A1]">Email</label>
+            <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="w-full bg-[#201F1F] border border-white/5 rounded-lg px-4 py-3 text-sm text-[#E5E2E1] placeholder:text-neutral-600 focus:outline-none focus:ring-1 focus:ring-[#2F5CFF]/50 transition-all"
+              className="input-base focus-ring"
             />
           </div>
 
           {/* Password */}
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest font-bold text-[#A1A1A1]">Password</label>
+            <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Password</label>
             <input
               type="password"
               value={password}
@@ -130,18 +142,18 @@ export function SignIn() {
               required
               minLength={6}
               placeholder="••••••••"
-              className="w-full bg-[#201F1F] border border-white/5 rounded-lg px-4 py-3 text-sm text-[#E5E2E1] placeholder:text-neutral-600 focus:outline-none focus:ring-1 focus:ring-[#2F5CFF]/50 transition-all"
+              className="input-base focus-ring"
             />
           </div>
 
           {/* Error / Message */}
           {error && (
-            <div className="p-3 bg-red-900/20 border border-red-500/20 rounded-lg text-red-400 text-sm">
+            <div className="p-3 bg-error/10 border border-error/20 rounded-xl text-error text-sm animate-shake">
               {error}
             </div>
           )}
           {message && (
-            <div className="p-3 bg-[#4edea3]/10 border border-[#4edea3]/20 rounded-lg text-[#4edea3] text-sm">
+            <div className="p-3 bg-tertiary/10 border border-tertiary/20 rounded-xl text-tertiary text-sm animate-fade-up">
               {message}
             </div>
           )}
@@ -149,25 +161,22 @@ export function SignIn() {
           {/* Submit */}
           <Button
             type="submit"
-            disabled={isLoading || isOAuthLoading}
+            loading={isLoading}
+            disabled={isOAuthLoading}
             size="lg"
-            className="w-full mt-2 text-sm font-bold disabled:opacity-50"
+            className="w-full mt-2 text-sm font-bold"
           >
-            {isLoading ? (
-              <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
-            ) : (
-              mode === 'signin' ? 'Sign In' : 'Create Account'
-            )}
+            {mode === 'signin' ? 'Sign In' : 'Create Account'}
           </Button>
         </form>
 
         {/* Toggle mode */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-[#A1A1A1]">
+          <p className="text-sm text-on-surface-variant">
             {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
             <button
               onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); setMessage(null) }}
-              className="text-[#B8C3FF] font-semibold hover:text-white transition-colors"
+              className="text-primary font-semibold hover:text-on-surface transition-colors underline-grow"
             >
               {mode === 'signin' ? 'Sign up' : 'Sign in'}
             </button>

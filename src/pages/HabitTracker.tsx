@@ -7,6 +7,9 @@ import { HabitGroupSection } from '../components/habittracker/HabitGroupSection'
 import { HabitFormModal } from '../components/habittracker/HabitFormModal'
 import { HabitDetailModal } from '../components/habittracker/HabitDetailModal'
 import { HabitSummaryBar } from '../components/habittracker/HabitSummaryBar'
+import { Skeleton } from '../components/ui/Skeleton'
+import { FloatingActionButton } from '../components/ui/FloatingActionButton'
+import { useLayoutStore } from '../store/useLayoutStore'
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const getDaysInMonth = (m: number, y: number) => new Date(y, m, 0).getDate()
@@ -35,6 +38,7 @@ function EmptyHabits({ tab, onAdd }: { tab: 'build' | 'break'; onAdd: () => void
 
 export function HabitTracker() {
   const { habits, currentMonth, currentYear, viewMode, isLoading, error, loadData, goToPrevMonth, goToNextMonth, setViewMode } = useHabitStore()
+  const { isMobile } = useLayoutStore()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null)
@@ -186,7 +190,11 @@ export function HabitTracker() {
         )}
 
         {isLoading && (
-          <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-24 rounded-xl bg-surface-container-low animate-pulse" />)}</div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
         )}
 
         {!isLoading && (
@@ -231,6 +239,16 @@ export function HabitTracker() {
 
       <HabitFormModal isOpen={isModalOpen} editingHabit={editingHabit} onClose={handleCloseModal} />
       <HabitDetailModal habit={detailHabit} totalDays={totalDays} onClose={() => setDetailHabit(null)} />
+
+      {/* Mobile FAB for quick habit add */}
+      {isMobile && (
+        <FloatingActionButton
+          label="Add habit"
+          icon={<span className="material-symbols-outlined">add</span>}
+          onClick={handleOpenAdd}
+          show={!isModalOpen && !detailHabit}
+        />
+      )}
     </AppLayout>
   )
 }

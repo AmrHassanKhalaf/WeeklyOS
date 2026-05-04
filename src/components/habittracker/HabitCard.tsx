@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Habit } from '../../store/useHabitStore'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
 import { HabitBubbleGrid } from './HabitBubbleGrid'
+import { ConfettiBurst } from '../ui/Confetti'
 
 // ─── Category metadata ────────────────────────────────────────────────────────
 
@@ -56,6 +57,8 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
   onEdit: (h: Habit) => void; onViewDetail: (h: Habit) => void; onDelete: () => void
 }) {
   const [showReason, setShowReason] = useState(false)
+  const [celebrate, setCelebrate] = useState(false)
+  const [shaking, setShaking] = useState(false)
   const getCompletionCount = useHabitStore(s => s.getCompletionCount)
   const getStreak          = useHabitStore(s => s.getStreak)
 
@@ -65,10 +68,19 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
   const rate    = totalDays > 0 ? Math.round((done / totalDays) * 100) : 0
   const { current: streak, longest } = getStreak(habit.id)
 
+  const handleCelebrate = useCallback(() => {
+    setCelebrate(true)
+    window.setTimeout(() => setCelebrate(false), 1200)
+  }, [])
+  const handleNegative = useCallback(() => {
+    setShaking(true)
+    window.setTimeout(() => setShaking(false), 420)
+  }, [])
+
   return (
     <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
       transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-      className="ui-card ui-card--glass relative overflow-hidden group"
+      className={`ui-card ui-card--glass glass-hover relative overflow-hidden group ${shaking ? 'animate-shake' : ''}`}
       style={{ borderLeft: `3px solid ${color}` }}
     >
       {/* Header */}
@@ -107,7 +119,15 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
 
       {/* Bubble grid */}
       <div className="mb-3 overflow-x-auto pb-1">
-        <HabitBubbleGrid habitId={habit.id} totalDays={totalDays} isWeeklyView={isWeeklyView} weekOffset={weekOffset} accentColor={color} />
+        <HabitBubbleGrid
+          habitId={habit.id}
+          totalDays={totalDays}
+          isWeeklyView={isWeeklyView}
+          weekOffset={weekOffset}
+          accentColor={color}
+          onCelebrate={handleCelebrate}
+          onNegative={handleNegative}
+        />
       </div>
 
       {/* Stats — BUILD ONLY: completion rate + streak */}
@@ -118,16 +138,23 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
             <span className="text-[11px] font-bold" style={{ color }}>{rate}%</span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-container-high overflow-hidden">
-            <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}99)` }}
+            <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}99)`, boxShadow: `0 0 8px ${color}55` }}
               initial={{ width: 0 }} animate={{ width: `${rate}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0 text-center">
           <div>
             <p className="text-[10px] text-on-surface-variant">Streak</p>
-            <p className="text-sm font-black flex items-center gap-0.5" style={{ color: streak >= 3 ? '#fb923c' : undefined }}>
+            <motion.p
+              key={streak}
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', damping: 16, stiffness: 320 }}
+              className="text-sm font-black flex items-center gap-0.5"
+              style={{ color: streak >= 3 ? '#fb923c' : undefined }}
+            >
               {streak >= 3 && <span className="text-[14px]">🔥</span>}{streak}
-            </p>
+            </motion.p>
           </div>
           <div className="w-px h-6 bg-outline-variant" />
           <div>
@@ -136,6 +163,9 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
           </div>
         </div>
       </div>
+
+      {/* Celebration confetti burst */}
+      <ConfettiBurst show={celebrate} count={16} colors={[color, '#fbbf24', '#60a5fa', '#f472b6']} />
     </motion.div>
   )
 }
@@ -147,9 +177,20 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
   onEdit: (h: Habit) => void; onViewDetail: (h: Habit) => void; onDelete: () => void
 }) {
   const [showReason, setShowReason] = useState(false)
+  const [celebrate, setCelebrate] = useState(false)
+  const [shaking, setShaking] = useState(false)
   const getCompletionCount = useHabitStore(s => s.getCompletionCount)
   const getStreak          = useHabitStore(s => s.getStreak)
   const getBreakHabitCleanRate = useHabitStore(s => s.getBreakHabitCleanRate)
+
+  const handleCelebrate = useCallback(() => {
+    setCelebrate(true)
+    window.setTimeout(() => setCelebrate(false), 1200)
+  }, [])
+  const handleNegative = useCallback(() => {
+    setShaking(true)
+    window.setTimeout(() => setShaking(false), 420)
+  }, [])
 
   const slips     = getCompletionCount(habit.id)
   const cleanRate = getBreakHabitCleanRate(habit.id)
@@ -169,7 +210,7 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
   return (
     <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
       transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-      className="ui-card ui-card--glass relative overflow-hidden group"
+      className={`ui-card ui-card--glass glass-hover relative overflow-hidden group ${shaking ? 'animate-shake' : ''}`}
       style={{ borderLeft: `3px solid ${color}` }}
     >
       <div className="absolute inset-0 bg-rose-500/[0.03] pointer-events-none" />
@@ -210,7 +251,15 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
 
       {/* Bubble grid */}
       <div className="mb-3 overflow-x-auto pb-1">
-        <HabitBubbleGrid habitId={habit.id} totalDays={totalDays} isWeeklyView={isWeeklyView} weekOffset={weekOffset} accentColor={color} />
+        <HabitBubbleGrid
+          habitId={habit.id}
+          totalDays={totalDays}
+          isWeeklyView={isWeeklyView}
+          weekOffset={weekOffset}
+          accentColor={color}
+          onCelebrate={handleCelebrate}
+          onNegative={handleNegative}
+        />
       </div>
 
       {/* Stats — BREAK ONLY: slips + clean days + clean streak */}
@@ -230,11 +279,21 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
         </div>
         <div className="text-center shrink-0">
           <p className="text-[10px] text-on-surface-variant">Clean streak</p>
-          <p className="text-sm font-black flex items-center gap-0.5" style={{ color: cleanStreak >= 3 ? '#60a5fa' : undefined }}>
+          <motion.p
+            key={cleanStreak}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 16, stiffness: 320 }}
+            className="text-sm font-black flex items-center gap-0.5"
+            style={{ color: cleanStreak >= 3 ? '#60a5fa' : undefined }}
+          >
             {cleanStreak >= 3 && <span className="text-[14px]">🧊</span>}{cleanStreak}
-          </p>
+          </motion.p>
         </div>
       </div>
+
+      {/* Clean-day celebration (slip cleared) */}
+      <ConfettiBurst show={celebrate} count={14} colors={['#4ade80', '#60a5fa', '#fbbf24']} />
     </motion.div>
   )
 }

@@ -1,0 +1,152 @@
+import { NavLink, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { useLayoutStore } from '../../store/useLayoutStore'
+import { useWeekStore } from '../../store/useWeekStore'
+import { RippleContainer, useRipple } from '../ui/Ripple'
+import { cn } from '../../lib/cn'
+
+/**
+ * Five primary tabs for the mobile viewport. The "Menu" tab opens the drawer
+ * containing the full sidebar nav for secondary destinations.
+ */
+const TABS = [
+  { to: '/dashboard',           icon: 'dashboard',             label: 'Home'    },
+  { to: '/weekly-distribution', icon: 'calendar_view_week',    label: 'Plan'    },
+  { to: '/habit-tracker',       icon: 'local_fire_department', label: 'Habits'  },
+  { to: '/weekly-evaluation',   icon: 'assessment',            label: 'Stats'   },
+] as const
+
+function Tab({
+  to,
+  icon,
+  label,
+  pendingBadge,
+}: {
+  to: string
+  icon: string
+  label: string
+  pendingBadge?: number
+}) {
+  const { ripples, onPointerDown } = useRipple()
+  return (
+    <NavLink
+      to={to}
+      onPointerDown={onPointerDown}
+      className="ripple-surface relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 focus-ring"
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <motion.span
+              layoutId="bottom-nav-indicator"
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full bg-primary"
+              transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+            />
+          )}
+          <span className="relative">
+            <motion.span
+              animate={{ scale: isActive ? 1.1 : 1, y: isActive ? -1 : 0 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 340 }}
+              className={cn(
+                'material-symbols-outlined text-[22px] transition-colors',
+                isActive ? 'text-primary' : 'text-on-surface-variant',
+              )}
+              style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              {icon}
+            </motion.span>
+            {typeof pendingBadge === 'number' && pendingBadge > 0 && (
+              <motion.span
+                key={pendingBadge}
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', damping: 14, stiffness: 320 }}
+                className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 text-[10px] font-black rounded-full bg-error text-on-error flex items-center justify-center"
+              >
+                {pendingBadge > 9 ? '9+' : pendingBadge}
+              </motion.span>
+            )}
+          </span>
+          <span
+            className={cn(
+              'text-[10px] font-bold tracking-wide transition-colors',
+              isActive ? 'text-primary' : 'text-on-surface-variant',
+            )}
+          >
+            {label}
+          </span>
+          <RippleContainer ripples={ripples} />
+        </>
+      )}
+    </NavLink>
+  )
+}
+
+export function MobileBottomNav() {
+  const { isMobile, isFocusMode, toggleLeftSidebar, isLeftSidebarOpen } = useLayoutStore()
+  const currentWeek = useWeekStore((s) => s.currentWeek)
+  const location = useLocation()
+  const { ripples, onPointerDown } = useRipple()
+
+  if (!isMobile || isFocusMode) return null
+
+  // Badge: count of still-pending tasks for today (if any)
+  const today = currentWeek?.days.find((d) => d.isToday)
+  let pending = 0
+  if (today) {
+    if (today.highTask?.status === 'pending') pending += 1
+    pending += today.mediumTasks.filter((t) => t.status === 'pending').length
+    pending += today.smallTasks.filter((t) => t.status === 'pending').length
+  }
+
+  // If the user is on a page that isn't in TABS, don't highlight anything
+  const activePath = TABS.find((t) => location.pathname.startsWith(t.to))?.to
+
+  return (
+    <motion.nav
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', damping: 24, stiffness: 240 }}
+      className="fixed bottom-0 inset-x-0 z-40 lg:hidden"
+      aria-label="Primary"
+      style={{ paddingBottom: 'var(--safe-bottom)' }}
+    >
+      <div className="mx-3 mb-3 rounded-2xl border border-outline-variant/30 bg-surface-container/90 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+        <div className="flex items-center">
+          {TABS.map((t) => (
+            <Tab
+              key={t.to}
+              to={t.to}
+              icon={t.icon}
+              label={t.label}
+              pendingBadge={t.to === '/dashboard' ? pending : undefined}
+            />
+          ))}
+          <button
+            type="button"
+            onPointerDown={onPointerDown}
+            onClick={toggleLeftSidebar}
+            className="ripple-surface relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 focus-ring"
+            aria-expanded={isLeftSidebarOpen}
+            aria-label="Open menu"
+          >
+            <motion.span
+              animate={{ rotate: isLeftSidebarOpen ? 90 : 0 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 280 }}
+              className={cn(
+                'material-symbols-outlined text-[22px]',
+                !activePath ? 'text-primary' : 'text-on-surface-variant',
+              )}
+            >
+              menu
+            </motion.span>
+            <span className="text-[10px] font-bold tracking-wide text-on-surface-variant">
+              More
+            </span>
+            <RippleContainer ripples={ripples} />
+          </button>
+        </div>
+      </div>
+    </motion.nav>
+  )
+}
