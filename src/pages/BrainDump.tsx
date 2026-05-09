@@ -4,7 +4,7 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { TaskCard } from '../components/TaskCard'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useEffect } from 'react'
-import { GlowButton } from '../components/effects/GlowButton'
+import { Button } from '../components/ui/Button'
 
 export function BrainDump() {
   const { brainDumpItems, isLoading, loadItems, addItem, updateItem, deleteSelected } = useBrainDumpStore()
@@ -63,11 +63,11 @@ export function BrainDump() {
             className="w-full h-48 bg-transparent border-b-2 border-surface-variant focus:border-primary focus:ring-0 text-xl font-light py-6 px-0 resize-none transition-all outline-none placeholder:text-surface-variant text-on-surface"
           />
           <div className="absolute bottom-4 right-0 flex gap-4">
-            <GlowButton
+            <Button
               type="button"
               onClick={handleStructure}
               disabled={isStructuring || !inputValue.trim()}
-              compact
+              size="sm"
               variant="secondary"
               className="text-on-surface text-sm font-semibold disabled:opacity-50"
             >
@@ -75,7 +75,7 @@ export function BrainDump() {
                 {isStructuring ? 'progress_activity' : 'auto_awesome'}
               </span>
               {isStructuring ? 'Saving...' : 'Structure Tasks'}
-            </GlowButton>
+            </Button>
           </div>
         </div>
 
@@ -88,16 +88,16 @@ export function BrainDump() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <GlowButton
+            <Button
               type="button"
               onClick={() => navigate('/weekly-distribution')}
-              compact
+              size="sm"
               variant="secondary"
               className="text-sm font-bold"
             >
               <span className="material-symbols-outlined text-sm">send</span>
               Send to Distribution
-            </GlowButton>
+            </Button>
           </div>
         </div>
 

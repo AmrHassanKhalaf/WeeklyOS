@@ -2,7 +2,10 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { useSettingsStore, AIProvider, WeekStartDay } from '../store/useSettingsStore'
 import { useState, useEffect } from 'react'
 import { generateWeeklyReportHTML } from '../lib/generateWeeklyReportHTML'
-import { GlowButton } from '../components/effects/GlowButton'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Input, Select, Textarea } from '../components/ui/Input'
+import { Section } from '../components/ui/Section'
 import { useWeekStore } from '../store/useWeekStore'
 import { usePinnedTaskStore } from '../store/usePinnedTaskStore'
 import type { DayOfWeek, Priority, WeekData } from '../store/useWeekStore'
@@ -201,7 +204,7 @@ export function Settings() {
   }
 
   const Toggle = ({ label, desc, checked, onChange }: { label: string, desc: string, checked: boolean, onChange: (c: boolean) => void }) => (
-    <div className="flex items-center justify-between gap-4 p-4 bg-surface-container-low/70 rounded-xl border border-white/10">
+    <Card variant="glass" className="flex items-center justify-between gap-4 p-4">
       <div>
         <p className="font-bold text-on-surface text-sm">{label}</p>
         <p className="text-xs text-neutral-500 mt-0.5">{desc}</p>
@@ -212,13 +215,13 @@ export function Settings() {
       >
         <div className={`w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
       </button>
-    </div>
+    </Card>
   )
 
   return (
     <AppLayout>
       <div className="max-w-[1280px] mx-auto px-4 md:px-8 lg:px-10 py-8 md:py-10">
-        <div className="mb-8 rounded-2xl border border-white/10 bg-gradient-to-br from-surface-container-low/70 to-surface-container-lowest/80 p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+        <Section variant="glass" className="mb-8 rounded-2xl border border-white/10 bg-gradient-to-br from-surface-container-low/70 to-surface-container-lowest/80 p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-on-surface mb-2">Settings</h1>
@@ -230,7 +233,7 @@ export function Settings() {
               <span className="px-2.5 py-1 rounded-full bg-error/15 text-error">Privacy</span>
             </div>
           </div>
-        </div>
+        </Section>
 
         {/* ══ 3-Column Grid ═══════════════════════════════════════════════ */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8 items-start">
@@ -239,7 +242,7 @@ export function Settings() {
           <div className="space-y-6">
 
             {/* AI Integration */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-primary mb-5">
                 <span className="material-symbols-outlined">smart_toy</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">AI Integration</h2>
@@ -249,31 +252,31 @@ export function Settings() {
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Primary Model</label>
                   <div className="flex flex-col gap-3">
                     <div className="grid grid-cols-2 gap-2">
-                      <select value={localProvider}
+                      <Select value={localProvider}
                         onChange={e => { const p=e.target.value as AIProvider; setLocalProvider(p); if(p==='grok')setLocalModel('grok-2-mini'); if(p==='gemini')setLocalModel('gemini-1.5-flash') }}
-                        className="bg-surface-container-low px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm text-on-surface">
+                        className="text-sm text-on-surface">
                         <option value="gemini">Google Gemini</option>
                         <option value="grok">Grok (xAI)</option>
-                      </select>
-                      <select value={isCustom?'custom':localModel}
+                      </Select>
+                      <Select value={isCustom?'custom':localModel}
                         onChange={e => { if(e.target.value!=='custom')setLocalModel(e.target.value); else setLocalModel('') }}
-                        className="bg-surface-container-low px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm text-on-surface text-tertiary font-medium">
+                        className="text-sm text-on-surface text-tertiary font-medium">
                         {localProvider==='grok'&&(<><option value="grok-4">grok-4</option><option value="grok-4.1-fast">grok-4.1-fast</option><option value="grok-4-vision">grok-4-vision</option><option value="grok-code-fast-1">grok-code-fast-1</option></>)}
                         {localProvider==='gemini'&&(<><option value="gemini-flash-latest">gemini-flash-latest</option><option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option><option value="gemini-3-flash-preview">gemini-3-flash-preview</option><option value="gemini-2.5-pro">gemini-2.5-pro</option><option value="gemini-2.5-flash">gemini-2.5-flash</option><option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option><option value="gemini-live-2.5-flash-native-audio">gemini-live-audio</option></>)}
                         <option value="custom">Other (Custom...)</option>
-                      </select>
+                      </Select>
                     </div>
                     {isCustom && (
-                      <input type="text" value={localModel} onChange={e=>setLocalModel(e.target.value)}
+                      <Input type="text" value={localModel} onChange={e=>setLocalModel(e.target.value)}
                         placeholder={`Custom ${localProvider} model...`}
-                        className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm font-mono focus:border-tertiary/50 transition-colors" />
+                        className="w-full text-sm font-mono focus:border-tertiary/50 transition-colors" />
                     )}
                     <div className="flex items-center gap-3">
-                      <GlowButton type="button" onClick={handleSaveModel} compact variant="secondary"
+                      <Button type="button" onClick={handleSaveModel} size="sm" variant="secondary"
                         disabled={isSavingModel||!localModel.trim()||(localProvider===settings.activeProvider&&localModel===settings.activeModel)}
                         className="text-[11px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">
                         {isSavingModel?'Saving...':savedModel?'Saved!':'Save Selection'}
-                      </GlowButton>
+                      </Button>
                       {savedModel&&<span className="text-tertiary text-[11px] font-medium uppercase tracking-widest">Updated</span>}
                     </div>
                   </div>
@@ -284,35 +287,35 @@ export function Settings() {
                 </div>
                 <Toggle label="Fallback Provider" desc="Switch to another provider if the primary fails." checked={settings.fallbackEnabled} onChange={settings.setFallbackEnabled} />
               </div>
-            </div>
+            </Card>
 
 
             {/* Pinned Tasks */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-primary mb-5">
                 <span className="material-symbols-outlined">push_pin</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Pinned Tasks</h2>
               </div>
               <div className="space-y-3">
                 <p className="text-xs text-neutral-500">Pinned tasks repeat every week on your selected day/time until disabled or deleted.</p>
-                <input type="text" placeholder="Task title" value={pinnedDraft.title} onChange={e=>setPinnedDraft(p=>({...p,title:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm" />
-                <textarea rows={2} placeholder="Description (optional)" value={pinnedDraft.description} onChange={e=>setPinnedDraft(p=>({...p,description:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm resize-none" />
+                <Input type="text" placeholder="Task title" value={pinnedDraft.title} onChange={e=>setPinnedDraft(p=>({...p,title:e.target.value}))} className="text-sm" />
+                <Textarea rows={2} placeholder="Description (optional)" value={pinnedDraft.description} onChange={e=>setPinnedDraft(p=>({...p,description:e.target.value}))} className="text-sm resize-none" />
                 <div className="grid grid-cols-2 gap-2">
-                  <select value={pinnedDraft.priority} onChange={e=>setPinnedDraft(p=>({...p,priority:e.target.value as Priority}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm">
+                  <Select value={pinnedDraft.priority} onChange={e=>setPinnedDraft(p=>({...p,priority:e.target.value as Priority}))} className="text-sm">
                     <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
-                  </select>
-                  <select value={pinnedDraft.dayOfWeek} onChange={e=>setPinnedDraft(p=>({...p,dayOfWeek:e.target.value as DayOfWeek}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm">
+                  </Select>
+                  <Select value={pinnedDraft.dayOfWeek} onChange={e=>setPinnedDraft(p=>({...p,dayOfWeek:e.target.value as DayOfWeek}))} className="text-sm">
                     {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map(d=><option key={d} value={d}>{d}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="time" value={pinnedDraft.startTime} onChange={e=>setPinnedDraft(p=>({...p,startTime:e.target.value}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]" />
-                  <input type="time" value={pinnedDraft.endTime} onChange={e=>setPinnedDraft(p=>({...p,endTime:e.target.value}))} className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-white/10 text-sm [color-scheme:dark]" />
+                  <Input type="time" value={pinnedDraft.startTime} onChange={e=>setPinnedDraft(p=>({...p,startTime:e.target.value}))} className="text-sm" />
+                  <Input type="time" value={pinnedDraft.endTime} onChange={e=>setPinnedDraft(p=>({...p,endTime:e.target.value}))} className="text-sm" />
                 </div>
-                <input type="text" placeholder="Tags (comma separated)" value={pinnedDraft.tags} onChange={e=>setPinnedDraft(p=>({...p,tags:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm" />
-                <input type="date" value={pinnedDraft.untilDate} onChange={e=>setPinnedDraft(p=>({...p,untilDate:e.target.value}))} className="w-full bg-surface-container-lowest px-4 py-2.5 rounded-lg border border-white/10 outline-none text-sm [color-scheme:dark]" />
+                <Input type="text" placeholder="Tags (comma separated)" value={pinnedDraft.tags} onChange={e=>setPinnedDraft(p=>({...p,tags:e.target.value}))} className="text-sm" />
+                <Input type="date" value={pinnedDraft.untilDate} onChange={e=>setPinnedDraft(p=>({...p,untilDate:e.target.value}))} className="text-sm" />
                 <p className="text-[11px] text-neutral-500">Leave date empty to repeat indefinitely.</p>
-                <GlowButton type="button" onClick={handleCreatePinnedTask} compact variant="secondary" className="text-[11px] font-bold uppercase tracking-widest">Create Pinned Task</GlowButton>
+                <Button type="button" onClick={handleCreatePinnedTask} size="sm" variant="secondary" className="text-[11px] font-bold uppercase tracking-widest">Create Pinned Task</Button>
                 <div className="space-y-2 pt-2 border-t border-white/10 max-h-64 overflow-y-auto pr-1">
                   {pinnedStore.items.length===0&&<p className="text-xs text-neutral-500">No pinned tasks yet.</p>}
                   {pinnedStore.items.map(item=>(
@@ -331,7 +334,7 @@ export function Settings() {
                   ))}
                 </div>
               </div>
-            </div>
+            </Card>
 
           </div>{/* /col1 */}
 
@@ -340,7 +343,7 @@ export function Settings() {
           <div className="space-y-6">
 
             {/* Work Schedule */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-primary mb-5">
                 <span className="material-symbols-outlined">calendar_month</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Work Schedule</h2>
@@ -349,18 +352,16 @@ export function Settings() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Timezone</label>
-                    <select value={settings.timezone} onChange={e=>settings.setTimezone(e.target.value)}
-                      className="w-full bg-surface-container-lowest px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm">
+                    <Select value={settings.timezone} onChange={e=>settings.setTimezone(e.target.value)} className="text-sm">
                       <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>System</option>
                       {TIMEZONE_OPTIONS.map(tz=><option key={tz} value={tz}>{tz}</option>)}
-                    </select>
+                    </Select>
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Week Starts</label>
-                    <select value={settings.weekStartDay} onChange={e=>settings.setWeekStartDay(e.target.value as WeekStartDay)}
-                      className="w-full bg-surface-container-lowest px-3 py-2.5 rounded-xl border border-white/10 outline-none text-sm">
+                    <Select value={settings.weekStartDay} onChange={e=>settings.setWeekStartDay(e.target.value as WeekStartDay)} className="text-sm">
                       {WEEK_START_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    </Select>
                   </div>
                 </div>
                 <div>
@@ -368,34 +369,50 @@ export function Settings() {
                   <div className="flex flex-wrap gap-2">
                     {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(day=>{
                       const isRest=(settings.restDays||[]).includes(day)
-                      return(<GlowButton key={day} type="button" compact
-                        onClick={()=>{const c=settings.restDays||[];settings.setRestDays(isRest?c.filter(d=>d!==day):[...c,day])}}
-                        variant={isRest?'secondary':'tertiary'}
-                        className={`uppercase tracking-wider text-[11px] font-bold ${isRest?'text-white':'text-neutral-400'}`}>
-                        {day.slice(0,3)}</GlowButton>)
+                      return(
+                        <Button
+                          key={day}
+                          type="button"
+                          size="sm"
+                          variant={isRest ? 'secondary' : 'ghost'}
+                          active={isRest}
+                          onClick={()=>{const c=settings.restDays||[];settings.setRestDays(isRest?c.filter(d=>d!==day):[...c,day])}}
+                          className={`uppercase tracking-wider text-[11px] font-bold ${isRest?'text-white':'text-neutral-400'}`}
+                        >
+                          {day.slice(0,3)}
+                        </Button>
+                      )
                     })}
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Appearance */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-tertiary mb-5">
                 <span className="material-symbols-outlined">palette</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Appearance</h2>
               </div>
               <div className="flex gap-3">
                 {['dark','light','system'].map(t=>(
-                  <GlowButton key={t} type="button" compact onClick={()=>settings.setTheme(t as any)}
-                    variant={settings.theme===t?'secondary':'tertiary'}
-                    className={`flex-1 text-[12px] font-bold uppercase tracking-wider ${settings.theme===t?'':'opacity-75 hover:opacity-100'}`}>{t}</GlowButton>
+                  <Button
+                    key={t}
+                    type="button"
+                    size="sm"
+                    variant={settings.theme===t ? 'secondary' : 'ghost'}
+                    active={settings.theme===t}
+                    onClick={()=>settings.setTheme(t as any)}
+                    className={`flex-1 text-[12px] font-bold uppercase tracking-wider ${settings.theme===t?'':'opacity-75 hover:opacity-100'}`}
+                  >
+                    {t}
+                  </Button>
                 ))}
               </div>
-            </div>
+            </Card>
 
             {/* Notifications */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-neutral-400 mb-5">
                 <span className="material-symbols-outlined">notifications</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Notifications</h2>
@@ -405,7 +422,7 @@ export function Settings() {
                 <Toggle label="Weekly Summary" desc="Receive a report of your week's performance." checked={settings.weeklySummaries} onChange={settings.setWeeklySummaries} />
                 <Toggle label="Auto-download Report" desc="Downloads last completed week's PDF once after rollover." checked={settings.autoDownloadCompletedWeekReport} onChange={settings.setAutoDownloadCompletedWeekReport} />
               </div>
-            </div>
+            </Card>
 
           </div>{/* /col2 */}
 
@@ -414,7 +431,7 @@ export function Settings() {
           <div className="space-y-6">
 
             {/* Report Settings */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-tertiary mb-5">
                 <span className="material-symbols-outlined">picture_as_pdf</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Report Settings</h2>
@@ -425,45 +442,53 @@ export function Settings() {
                   <div className="flex flex-wrap gap-2">
                     {['saturday','sunday','monday','tuesday','wednesday','thursday','friday'].map(day=>{
                       const included=(settings.reportIncludedDays??[]).includes(day)
-                      return(<GlowButton key={day} type="button" compact
-                        onClick={()=>{const c=settings.reportIncludedDays??[];settings.setReportIncludedDays(included?c.filter(d=>d!==day):[...c,day])}}
-                        variant={included?'secondary':'tertiary'}
-                        className={`uppercase tracking-wider text-[11px] font-bold ${included?'text-white':'text-neutral-500'}`}>
-                        {day.slice(0,3)}</GlowButton>)
+                      return(
+                        <Button
+                          key={day}
+                          type="button"
+                          size="sm"
+                          variant={included ? 'secondary' : 'ghost'}
+                          active={included}
+                          onClick={()=>{const c=settings.reportIncludedDays??[];settings.setReportIncludedDays(included?c.filter(d=>d!==day):[...c,day])}}
+                          className={`uppercase tracking-wider text-[11px] font-bold ${included?'text-white':'text-neutral-500'}`}
+                        >
+                          {day.slice(0,3)}
+                        </Button>
+                      )
                     })}
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-2">Disabled days won't appear in the exported PDF.</p>
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Closing Page Quote</label>
-                  <textarea rows={3}
+                  <Textarea rows={3}
                     placeholder="e.g. The secret of getting ahead is getting started. — Mark Twain"
                     value={settings.reportClosingQuote??''}
                     onChange={e=>settings.setReportClosingQuote(e.target.value)}
-                    className="w-full bg-surface-container-lowest px-4 py-3 rounded-xl border border-white/10 outline-none text-sm text-on-surface resize-none focus:border-tertiary/50 transition-colors" />
+                    className="text-sm text-on-surface resize-none focus:border-tertiary/50 transition-colors" />
                   <p className="text-[11px] text-neutral-500 mt-1">Use " — Author" at the end to add an attribution.</p>
                 </div>
                 <div className="space-y-2 pt-2 border-t border-white/10">
-                  <GlowButton type="button" onClick={()=>void openReportWindow()} disabled={isExporting} compact variant="secondary" className="w-full text-sm font-bold disabled:opacity-50">
+                  <Button type="button" onClick={()=>void openReportWindow()} disabled={isExporting} size="sm" variant="secondary" className="w-full text-sm font-bold disabled:opacity-50">
                     <span className="material-symbols-outlined text-[18px]">{isExporting?'sync':'download'}</span>
                     {isExporting?'Generating...':'Export This Week'}
-                  </GlowButton>
-                  <GlowButton type="button" onClick={()=>void handleDownloadCompletedWeek()} disabled={isExporting} compact variant="tertiary" className="w-full text-sm font-bold disabled:opacity-50">
+                  </Button>
+                  <Button type="button" onClick={()=>void handleDownloadCompletedWeek()} disabled={isExporting} size="sm" variant="ghost" className="w-full text-sm font-bold disabled:opacity-50 border border-white/10 hover:border-white/20">
                     <span className="material-symbols-outlined text-[18px]">history</span>
                     Export Previous Week
-                  </GlowButton>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Privacy & Data */}
-            <div className="rounded-2xl border border-white/10 bg-surface-container-low/40 p-5 md:p-6">
+            <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-error mb-5">
                 <span className="material-symbols-outlined">security</span>
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Privacy &amp; Data</h2>
               </div>
               <Toggle label="Analytics Tracking" desc="Share anonymous usage data to help us improve." checked={settings.analyticsEnabled} onChange={settings.setAnalyticsEnabled} />
-            </div>
+            </Card>
 
           </div>{/* /col3 */}
 
@@ -490,26 +515,26 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider, la
     <div>
       <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">{label} API Key</label>
       <div className="flex bg-surface-container-low rounded-xl border border-white/10 overflow-hidden focus-within:border-primary/50 transition-colors">
-        <input
+        <Input
           type={isVis ? 'text' : 'password'}
           value={localVal}
           onChange={e => setLocalVal(e.target.value)}
           placeholder="sk-..."
-          className="flex-1 bg-transparent px-4 py-3 outline-none text-sm text-on-surface font-mono"
+          className="flex-1 bg-transparent border-0 px-4 py-3 outline-none text-sm text-on-surface font-mono"
         />
         <button onClick={() => setIsVis(!isVis)} className="px-4 text-neutral-500 hover:text-white border-l border-white/5">
           <span className="material-symbols-outlined text-[18px]">{isVis ? 'visibility_off' : 'visibility'}</span>
         </button>
-        <GlowButton
+        <Button
           type="button"
           onClick={handleSave}
           disabled={isSaving || localVal === (settings.aiKeys[provider] || '')}
-          compact
+          size="sm"
           variant="secondary"
-          className="font-bold text-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-none rounded-r-xl font-bold text-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? 'SAVING...' : saved ? 'SAVED' : 'SAVE'}
-        </GlowButton>
+        </Button>
       </div>
       {saved && <p className="text-tertiary text-[11px] mt-1 font-medium">API key saved successfully</p>}
     </div>

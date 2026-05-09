@@ -2,22 +2,27 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { DayCard } from '../components/DayCard'
 import { useWeekStore } from '../store/useWeekStore'
 import { useAiApi } from '../hooks/useApi'
-import { useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
-import { GlowButton } from '../components/effects/GlowButton'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
+import { Section } from '../components/ui/Section'
+import { Skeleton } from '../components/ui/Skeleton'
 import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
-import RotatingText from '../components/effects/RotatingText'
+
+const loadRotatingText = () => import('../components/effects/RotatingText')
+const RotatingText = lazy(loadRotatingText)
 
 function LoadingCard() {
-  return (
-    <div className="rounded-xl bg-surface-container-low border border-white/5 h-32 animate-pulse" />
-  )
+  return <Skeleton className="h-32 border border-outline-variant/10" />
 }
 
 export function Dashboard() {
-  const { currentWeek, isLoadingWeek, deleteWeekData } = useWeekStore()
+  const { currentWeek, weekSummary, isLoadingTasks, isLoadingWeek, deleteWeekData } = useWeekStore()
   const { restDays } = useSettingsStore()
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
@@ -26,6 +31,33 @@ export function Dashboard() {
   const [isEditingChallenge, setIsEditingChallenge] = useState(false)
   const [manualChallenge, setManualChallenge] = useState('')
   const [aiError, setAiError] = useState<string | null>(null)
+  const [isMotionReady, setIsMotionReady] = useState(false)
+
+  useEffect(() => {
+    let idleId: number | null = null
+    const warm = () => {
+      void loadRotatingText()
+      setIsMotionReady(true)
+    }
+    if (window.requestIdleCallback) {
+      idleId = window.requestIdleCallback(warm, { timeout: 1500 }) as unknown as number
+    } else {
+      idleId = window.setTimeout(warm, 800)
+    }
+    return () => {
+      if (idleId === null) return
+      if (window.cancelIdleCallback) {
+        window.cancelIdleCallback(idleId)
+      } else {
+        window.clearTimeout(idleId)
+      }
+    }
+  }, [])
+
+  const summary = weekSummary ?? currentWeek
+  const hasSummary = !!summary
+  const tasksReady = !!currentWeek && !isLoadingTasks
+  const challengeTitle = currentWeek?.challengeTitle ?? summary?.challengeTitle
 
   const generateChallenge = async () => {
     if (!currentWeek || isGeneratingChallenge) return
@@ -66,7 +98,7 @@ export function Dashboard() {
     }
   }
 
-  const deepWorkData = currentWeek ? currentWeek.days.map(d => {
+  const deepWorkData = tasksReady ? currentWeek.days.map(d => {
     let completedCount = 0
     if (d.highTask?.status === 'done') completedCount++
     completedCount += d.mediumTasks.filter(t => t.status === 'done').length
@@ -79,11 +111,11 @@ export function Dashboard() {
     }
   }) : []
 
-  if (isLoadingWeek || !currentWeek) {
+  if (!hasSummary && isLoadingWeek) {
     return (
       <AppLayout>
         <div className="max-w-4xl mx-auto p-8 space-y-8">
-          <div className="h-20 bg-surface-container-low rounded-xl animate-pulse" />
+          <Skeleton className="h-20" />
           <LoadingCard />
           <LoadingCard />
           <LoadingCard />
@@ -113,20 +145,53 @@ export function Dashboard() {
         {/* Hero Stats */}
         <section className="flex justify-between items-end gap-8">
           <div className="flex-1">
-            <h2 className="text-4xl font-extrabold tracking-tight mb-2">{currentWeek.title}</h2>
-            <p className="text-on-surface-variant max-w-lg">
-              {currentWeek.dateRange}. Week {currentWeek.weekNumber} status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
-            </p>
+            {hasSummary ? (
+              <>
+                <h2 className="text-4xl font-extrabold tracking-tight mb-2">{summary.title}</h2>
+                <p className="text-on-surface-variant max-w-lg">
+                  {summary.dateRange}. Week {summary.weekNumber} status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
+                </p>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-2/3" />
+                <Skeleton className="h-5 w-1/2" />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6 shrink-0">
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Week Score</p>
-              <p className="text-3xl font-mono font-bold text-tertiary">{currentWeek.score}/100</p>
+              {hasSummary ? (
+                <motion.p
+                  key={summary.score}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 260 }}
+                  className="text-3xl font-mono font-bold text-tertiary"
+                >
+                  {summary.score}/100
+                </motion.p>
+              ) : (
+                <Skeleton className="h-8 w-16" />
+              )}
             </div>
             <div className="w-px h-10 bg-surface-variant" />
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Completed</p>
-              <p className="text-3xl font-mono font-bold text-primary">{currentWeek.totalCompleted}/{currentWeek.totalPlanned}</p>
+              {tasksReady ? (
+                <motion.p
+                  key={`${currentWeek.totalCompleted}-${currentWeek.totalPlanned}`}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 260 }}
+                  className="text-3xl font-mono font-bold text-primary"
+                >
+                  {currentWeek.totalCompleted}/{currentWeek.totalPlanned}
+                </motion.p>
+              ) : (
+                <Skeleton className="h-8 w-20" />
+              )}
             </div>
             <div className="w-px h-10 bg-surface-variant" />
             <button 
@@ -135,7 +200,8 @@ export function Dashboard() {
                   deleteWeekData()
                 }
               }}
-              className="p-3 text-on-surface-variant hover:text-error transition-colors rounded-xl hover:bg-error/5 group"
+              disabled={!tasksReady}
+              className="p-3 text-on-surface-variant hover:text-error transition-colors rounded-xl hover:bg-error/5 group disabled:opacity-40 disabled:cursor-not-allowed"
               title="Clear Entire Week Data"
             >
               <span className="material-symbols-outlined text-2xl group-active:scale-95 transition-transform">delete_forever</span>
@@ -143,11 +209,19 @@ export function Dashboard() {
           </div>
         </section>
 
+        {!tasksReady ? (
+          <div className="space-y-6">
+            <LoadingCard />
+            <LoadingCard />
+            <LoadingCard />
+          </div>
+        ) : (
+          <>
+
         {/* Weekly Challenge - Unified */}
-        {currentWeek.challengeTitle && !isEditingChallenge ? (
+        {challengeTitle && !isEditingChallenge ? (
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <section>
-            <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 relative overflow-hidden group space-y-6">
+          <Section variant="glass" className="border border-primary/20 bg-primary/5 relative overflow-hidden space-y-6">
               {/* Header Section */}
               <div className="relative z-10 flex flex-col gap-6">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -161,27 +235,33 @@ export function Dashboard() {
                       Fri -&gt; Thu
                     </span>
                     <button 
-                      onClick={() => { setManualChallenge(currentWeek.challengeTitle || ''); setIsEditingChallenge(true); }}
+                      onClick={() => { setManualChallenge(challengeTitle || ''); setIsEditingChallenge(true); }}
                       className="ml-2 text-primary hover:text-white transition-colors flex items-center justify-center w-5 h-5 rounded-full hover:bg-white/10"
                       title="Edit Challenge"
                     >
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                     </button>
                   </div>
-                  <RotatingText
-                    texts={[currentWeek.challengeTitle]}
-                    auto={false}
-                    splitBy="characters"
-                    staggerFrom="last"
-                    staggerDuration={0.012}
-                    initial={{ y: '100%', opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: '-120%', opacity: 0 }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 380 }}
-                    mainClassName="text-[2rem] font-black tracking-tight"
-                    splitLevelClassName="overflow-hidden pb-1"
-                    elementLevelClassName="inline-block text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
-                  />
+                  {isMotionReady ? (
+                    <Suspense fallback={<h3 className="text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>}>
+                      <RotatingText
+                        texts={[challengeTitle]}
+                        auto={false}
+                        splitBy="characters"
+                        staggerFrom="last"
+                        staggerDuration={0.012}
+                        initial={{ y: '100%', opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: '-120%', opacity: 0 }}
+                        transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+                        mainClassName="text-[2rem] font-black tracking-tight"
+                        splitLevelClassName="overflow-hidden pb-1"
+                        elementLevelClassName="inline-block text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
+                      />
+                    </Suspense>
+                  ) : (
+                    <h3 className="text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>
+                  )}
                 </div>
               </div>
 
@@ -190,13 +270,11 @@ export function Dashboard() {
                 <WeeklyChallengeCircles />
               </div>
 
-            </div>
-          </section>
+          </Section>
           </BorderGlow>
         ) : (
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <section>
-            <div className="bg-surface-container-low rounded-xl border border-dashed border-white/20 p-6 flex flex-col gap-5">
+          <Section variant="glass" className="border border-dashed border-white/20 flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-2xl text-primary">psychology</span>
                 <div>
@@ -205,12 +283,12 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="flex flex-col gap-3">
-                <input
+                <Input
                   type="text"
                   value={manualChallenge}
                   onChange={e => setManualChallenge(e.target.value)}
                   placeholder="E.g., Clear the backlog or Focus on Priority Project X..."
-                  className="bg-surface-container-highest border border-white/10 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary/50 focus:outline-none w-full"
+                  className="text-sm"
                   onKeyDown={e => {
                     if (e.key === 'Enter' && manualChallenge.trim()) {
                       useWeekStore.getState().updateChallenge(manualChallenge.trim(), '')
@@ -219,7 +297,7 @@ export function Dashboard() {
                   }}
                 />
                 <div className="flex flex-wrap gap-3 items-center">
-                  <button 
+                  <Button
                     onClick={() => {
                       if (manualChallenge.trim()) {
                         useWeekStore.getState().updateChallenge(manualChallenge.trim(), '')
@@ -227,55 +305,67 @@ export function Dashboard() {
                       }
                     }}
                     disabled={!manualChallenge.trim()}
-                    className="bg-surface-container-highest hover:bg-surface-variant text-on-surface font-bold px-6 py-2 rounded-lg transition-colors text-sm disabled:opacity-50"
+                    variant="secondary"
+                    size="sm"
+                    className="text-sm font-semibold disabled:opacity-50"
                   >
                     Save Manual Challenge
-                  </button>
+                  </Button>
                   <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">OR</span>
-                  <button 
+                  <Button
                     onClick={async () => {
                       await generateChallenge()
                       setIsEditingChallenge(false)
                     }} 
                     disabled={isGeneratingChallenge}
-                    className="bg-primary/10 text-primary font-bold px-6 py-2 rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                    variant="primary"
+                    size="sm"
+                    className="text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined text-sm">auto_awesome</span>
                     {isGeneratingChallenge ? 'Generating...' : 'Auto-Generate via AI'}
-                  </button>
+                  </Button>
                   {isEditingChallenge && currentWeek.challengeTitle && (
-                    <button 
+                    <Button
                       onClick={() => setIsEditingChallenge(false)} 
-                      className="ml-auto text-neutral-500 hover:text-white text-sm"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto text-sm"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
-            </div>
-          </section>
+          </Section>
           </BorderGlow>
         )}
 
         {/* Day Cards */}
         <section className="space-y-6">
-          {currentWeek.days.map((dayData) => (
-            <BorderGlow key={dayData.day} edgeSensitivity={28} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={36} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-              <DayCard 
-                day={{
-                  ...dayData, 
-                  isRestDay: (restDays || []).includes(dayData.day)
-                }} 
-              />
-            </BorderGlow>
+          {currentWeek.days.map((dayData, i) => (
+            <motion.div
+              key={dayData.day}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.04 + i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              <BorderGlow edgeSensitivity={28} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={36} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+                <DayCard
+                  day={{
+                    ...dayData,
+                    isRestDay: (restDays || []).includes(dayData.day),
+                  }}
+                />
+              </BorderGlow>
+            </motion.div>
           ))}
         </section>
 
         {/* Bottom Stats */}
         <section className="grid grid-cols-3 gap-8 pb-12">
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-2">
-          <div className="col-span-2 bg-surface-container-low rounded-xl p-8 border border-white/5">
+          <Card variant="glass" className="col-span-2 p-8">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-xl font-bold">Deep Work Distribution</h3>
               <div className="flex gap-4">
@@ -291,29 +381,31 @@ export function Dashboard() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
           </BorderGlow>
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <div className="bg-tertiary-container text-on-tertiary-container rounded-xl p-8 relative overflow-hidden flex flex-col">
+          <Card variant="glass" className="bg-tertiary-container text-on-tertiary-container p-8 relative overflow-hidden flex flex-col">
             <span className="material-symbols-outlined absolute top-[-20px] right-[-20px] text-9xl opacity-10 rotate-12">bolt</span>
             <h3 className="text-xl font-bold mb-4">Focus Mode</h3>
             <p className="text-sm opacity-90 mb-8 leading-relaxed">
               {isInsightLoading ? 'Analyzing week data...' : (insight || "You're on track. Batch your remaining tasks to clear your schedule.")}
             </p>
             <div className="mt-auto">
-              <GlowButton
+              <Button
                 type="button"
                 onClick={fetchInsight}
                 disabled={isInsightLoading}
                 variant="secondary"
-                className="w-full text-tertiary-container py-3 text-sm disabled:opacity-50"
+                className="w-full text-tertiary-container border-tertiary/30 bg-tertiary/15 hover:bg-tertiary/25 py-3 text-sm disabled:opacity-50"
               >
                 {isInsightLoading ? 'Generating...' : 'Analyze My Week'}
-              </GlowButton>
+              </Button>
             </div>
-          </div>
+          </Card>
           </BorderGlow>
         </section>
+        </>
+        )}
       </div>
     </AppLayout>
   )
