@@ -1,1 +1,0 @@
-import{j as s}from"./index-D7O1wFWK.js";import{c as n}from"./Button-It-lg58L.js";function u({className:o,shape:e="rect",...r}){const l=e==="circle"||e==="pill"?"rounded-full":"rounded-xl";return s.jsx("div",{...r,className:n("skeleton",l,o)})}export{u as S};

@@ -65,7 +65,7 @@ export function TopNav() {
       initial={false}
       animate={{ left: offsetLeft }}
       transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-      className="fixed top-0 right-0 h-14 z-40 bg-background/70 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 border-b border-outline-variant/15"
+      className="fixed top-0 right-0 h-14 z-40 bg-background/60 backdrop-blur-2xl backdrop-saturate-150 flex items-center justify-between px-4 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
     >
       {/* Left: hamburger + page title */}
       <div className="flex items-center gap-3 min-w-0">
@@ -86,7 +86,7 @@ export function TopNav() {
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
-            className="text-sm font-bold text-on-surface truncate"
+            className="text-sm font-extrabold text-on-surface truncate tracking-tight"
           >
             {pageTitle}
           </motion.h1>
@@ -144,7 +144,7 @@ export function TopNav() {
         <button
           onPointerDown={onAiDown}
           onClick={toggleRightSidebar}
-          className="ripple-surface relative w-9 h-9 rounded-xl flex items-center justify-center text-primary hover:bg-primary/10 focus-ring transition-colors"
+          className="ripple-surface relative w-9 h-9 rounded-xl flex items-center justify-center text-primary hover:bg-primary/12 hover:shadow-[0_0_18px_-2px_rgb(167_139_250_/_0.45)] focus-ring transition-all"
           title="AI Assistant"
           aria-label="Toggle AI Assistant"
         >
@@ -154,7 +154,7 @@ export function TopNav() {
           >
             auto_awesome
           </span>
-          <span className="absolute inset-0 rounded-xl animate-pulse-glow pointer-events-none opacity-40" />
+          <span className="absolute inset-0 rounded-xl animate-pulse-glow pointer-events-none opacity-50" />
           <RippleContainer ripples={aiRipples} />
         </button>
       </div>

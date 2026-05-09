@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/Button'
+import { Select, Textarea } from './ui/Input'
 
 interface FeedbackModalProps {
   isOpen: boolean
@@ -12,8 +14,6 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
-
-  if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,75 +45,96 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-[#1C1B1B] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#E5E2E1] flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">lightbulb</span>
-              Feedback & Support
-            </h2>
-            <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors">
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </div>
-
-          {success ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-3xl">check</span>
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">Thank you!</h3>
-              <p className="text-neutral-400 text-sm">Your feedback has been received and will be reviewed shortly.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-neutral-400 mb-1.5 uppercase tracking-wider">Type</label>
-                <div className="relative">
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value as any)}
-                    className="w-full bg-[#131313] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors appearance-none"
-                  >
-                    <option value="suggestion">💡 Suggestion</option>
-                    <option value="bug">🐞 Report a Bug</option>
-                    <option value="question">❓ Question</option>
-                    <option value="other">📝 Other</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">expand_more</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-neutral-400 mb-1.5 uppercase tracking-wider">Message</label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="How can we improve WeeklyOS?"
-                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors resize-none h-32"
-                  required
-                />
-              </div>
-
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || !message.trim()}
-                  className="w-full flex items-center justify-center gap-2 py-3"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="feedback-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          onClick={onClose}
+        >
+          <motion.div
+            key="feedback-card"
+            initial={{ opacity: 0, scale: 0.94, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 14 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md glass-panel rounded-2xl overflow-hidden"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">lightbulb</span>
+                  Feedback &amp; Support
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 transition-colors focus-ring"
+                  aria-label="Close"
                 >
-                  {isSubmitting ? (
-                    <span className="material-symbols-outlined animate-spin text-sm">sync</span>
-                  ) : (
-                    <span className="material-symbols-outlined text-sm">send</span>
-                  )}
-                  {isSubmitting ? 'Sending...' : 'Send Feedback'}
-                </Button>
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
               </div>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
+
+              {success ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-tertiary/15 text-tertiary flex items-center justify-center animate-bounce-in">
+                    <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-on-surface mb-2">Thank you!</h3>
+                  <p className="text-on-surface-variant text-sm">Your feedback has been received and will be reviewed shortly.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Type</label>
+                    <div className="relative">
+                      <Select
+                        value={type}
+                        onChange={(e) => setType(e.target.value as typeof type)}
+                      >
+                        <option value="suggestion">💡 Suggestion</option>
+                        <option value="bug">🐞 Report a Bug</option>
+                        <option value="question">❓ Question</option>
+                        <option value="other">📝 Other</option>
+                      </Select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Message</label>
+                    <Textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="How can we improve WeeklyOS?"
+                      className="resize-none h-32"
+                      required
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || !message.trim()}
+                      loading={isSubmitting}
+                      size="lg"
+                      className="w-full"
+                      leftIcon={!isSubmitting ? <span className="material-symbols-outlined text-sm">send</span> : undefined}
+                    >
+                      {isSubmitting ? 'Sending…' : 'Send Feedback'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

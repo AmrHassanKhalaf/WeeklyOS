@@ -1,6 +1,7 @@
 import type { DayPlan, DayOfWeek } from '../data/mockData'
 import { useWeekStore } from '../store/useWeekStore'
 import { useState, useEffect } from 'react'
+import { cn } from '../lib/cn'
 
 interface DayCardProps {
   day: DayPlan
@@ -10,7 +11,7 @@ interface DayCardProps {
 export function DayCard({ day, isCompact = false }: DayCardProps) {
   const { updateDailyNote, deleteDayData } = useWeekStore()
   const [note, setNote] = useState(day.dailyNote || '')
-  
+
   useEffect(() => {
     setNote(day.dailyNote || '')
   }, [day.dailyNote])
@@ -27,11 +28,16 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
     }
   }
 
-  const progressColor = day.progress === 100 ? 'bg-tertiary' : day.isToday ? 'obsidian-gradient' : 'bg-primary'
+  const progressColor =
+    day.progress === 100
+      ? 'bg-tertiary shadow-[0_0_12px_rgb(34_211_238_/_0.5)]'
+      : day.isToday
+        ? 'obsidian-gradient'
+        : 'bg-primary/80'
 
   if (isCompact) {
     return (
-      <div className="bg-surface-container-low rounded-xl border border-white/5 p-6 opacity-80 hover:opacity-100 transition-opacity flex gap-6">
+      <div className="bg-surface-container-low/70 backdrop-blur-md rounded-xl border border-outline-variant/20 p-6 opacity-80 hover:opacity-100 transition-opacity flex gap-6">
         <div className="text-center shrink-0">
           <h3 className="font-bold text-xl">{day.shortName}</h3>
           <p className="text-[10px] text-on-surface-variant">{day.date}</p>
@@ -55,59 +61,89 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
 
   return (
     <div
-      className={`rounded-xl overflow-hidden flex flex-col md:flex-row transition-all duration-300 ${
+      className={cn(
+        'relative rounded-2xl overflow-hidden flex flex-col md:flex-row transition-all duration-300',
         isToday
-          ? 'bg-surface-container-high ring-1 ring-primary/30 shadow-2xl shadow-primary/5'
-          : 'bg-surface-container-low border border-white/5 hover:border-white/10'
-      }`}
+          ? 'bg-surface-container/85 backdrop-blur-md ring-1 ring-primary/35 shadow-[0_24px_60px_-22px_rgb(124_58_237_/_0.55)]'
+          : 'bg-surface-container-low/70 backdrop-blur-md border border-outline-variant/20 hover:border-primary/25 hover:shadow-[0_24px_50px_-22px_rgb(124_58_237_/_0.32)]',
+      )}
     >
+      {/* Today shimmer accent at the top edge */}
+      {isToday && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          style={{
+            background:
+              'linear-gradient(90deg, transparent, rgb(167 139 250 / 0.65), rgb(34 211 238 / 0.55), transparent)',
+          }}
+        />
+      )}
+
       {/* Day column */}
       <div
-        className={`w-full md:w-32 p-6 flex md:flex-col justify-between items-center border-b md:border-b-0 md:border-r border-white/5 shrink-0 relative ${
-          isToday ? 'bg-primary/5' : 'bg-surface-container'
-        }`}
+        className={cn(
+          'w-full md:w-32 p-6 flex md:flex-col justify-between items-center md:border-r border-b md:border-b-0 border-outline-variant/15 shrink-0 relative',
+          isToday ? 'bg-primary/8' : 'bg-surface-container/40',
+        )}
       >
         {isToday && (
-          <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-primary/20 text-[8px] font-bold text-primary uppercase">
+          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-primary/20 border border-primary/35 text-[8px] font-extrabold text-primary uppercase tracking-widest">
             Current
           </div>
         )}
         <div className="flex flex-col items-center">
-          <h3 className={`font-bold text-2xl ${isToday ? 'text-primary' : ''}`}>{day.shortName}</h3>
+          <h3 className={cn('font-extrabold text-2xl tracking-tight', isToday && 'gradient-text')}>
+            {day.shortName}
+          </h3>
           <p className="text-xs text-on-surface-variant">{day.date}</p>
         </div>
-        
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-          day.progress === 100 ? 'bg-tertiary/10' : 'bg-primary/10'
-        }`}>
+
+        <div
+          className={cn(
+            'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+            day.progress === 100
+              ? 'bg-tertiary/15 ring-1 ring-tertiary/40 shadow-[0_0_18px_-2px_rgb(34_211_238_/_0.5)]'
+              : 'bg-primary/10 ring-1 ring-primary/25',
+          )}
+        >
           <span
-            className={`material-symbols-outlined text-sm ${day.progress === 100 ? 'text-tertiary' : 'text-primary'}`}
+            className={cn(
+              'material-symbols-outlined text-base',
+              day.progress === 100 ? 'text-tertiary' : 'text-primary',
+            )}
             style={day.progress === 100 ? { fontVariationSettings: "'FILL' 1" } : {}}
           >
             {day.progress === 100 ? 'check_circle' : 'pending'}
           </span>
         </div>
 
-        <button 
+        <button
           onClick={handleDeleteDay}
-          className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/5 group"
+          className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-error/10 group focus-ring"
           title="Clear Day Data"
+          aria-label={`Clear ${day.day} data`}
         >
-          <span className="material-symbols-outlined text-sm">delete_sweep</span>
+          <span className="material-symbols-outlined text-base group-active:scale-90 transition-transform">delete_sweep</span>
         </button>
       </div>
 
-      {/* Content Area */}
+      {/* Content */}
       <div className="flex-1 p-6 flex flex-col">
         {/* Progress bar */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex-1 max-w-xs space-y-2">
-            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+            <div className="flex justify-between text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant">
               <span>Day Progress</span>
-              <span>{day.progress}%</span>
+              <span className={cn(day.progress === 100 ? 'text-tertiary' : 'text-on-surface')}>
+                {day.progress}%
+              </span>
             </div>
             <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
-              <div className={`h-full ${progressColor}`} style={{ width: `${day.progress}%` }} />
+              <div
+                className={cn('h-full rounded-full transition-all duration-500 ease-out', progressColor)}
+                style={{ width: `${day.progress}%` }}
+              />
             </div>
           </div>
         </div>
@@ -116,9 +152,12 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
           {/* Strategic */}
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-primary mb-3 font-black">Strategic</p>
+            <p className="text-[10px] uppercase tracking-widest text-primary mb-3 font-black flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_rgb(167_139_250_/_0.8)]" />
+              Strategic
+            </p>
             {day.highTask ? (
-              <p className={`text-sm leading-relaxed text-on-surface ${isToday ? 'font-semibold' : ''}`}>
+              <p className={cn('text-sm leading-relaxed text-on-surface', isToday && 'font-semibold')}>
                 {day.highTask.title}
               </p>
             ) : (
@@ -128,12 +167,21 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
 
           {/* Medium */}
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">Medium</p>
+            <p className="text-[10px] uppercase tracking-widest text-secondary mb-3 font-black flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+              Medium
+            </p>
             {day.mediumTasks.length > 0 ? (
-              <ul className="text-xs space-y-2 text-on-surface/80">
+              <ul className="text-xs space-y-2 text-on-surface/85">
                 {day.mediumTasks.map(t => (
-                  <li key={t.id} className={`flex items-center gap-2 ${t.status === 'done' ? 'line-through opacity-40' : ''}`}>
-                    <div className="w-1 h-1 rounded-full bg-secondary shrink-0" />
+                  <li
+                    key={t.id}
+                    className={cn(
+                      'flex items-center gap-2',
+                      t.status === 'done' && 'line-through opacity-40',
+                    )}
+                  >
+                    <div className="w-1 h-1 rounded-full bg-secondary/70 shrink-0" />
                     {t.title}
                   </li>
                 ))}
@@ -145,14 +193,23 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
 
           {/* Small Tasks */}
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 font-black">
+            <p className="text-[10px] uppercase tracking-widest text-tertiary mb-3 font-black flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
               Tasks {day.smallTasks.length > 0 ? `(${day.smallTasks.length})` : ''}
             </p>
             {day.smallTasks.length > 0 ? (
               <ul className="text-xs space-y-2.5 text-on-surface">
                 {day.smallTasks.map(t => (
-                  <li key={t.id} className={`flex items-center gap-2 font-medium ${t.status === 'done' ? '' : 'opacity-60'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${t.status === 'done' ? 'bg-tertiary' : 'bg-surface-variant'}`} />
+                  <li
+                    key={t.id}
+                    className={cn('flex items-center gap-2 font-medium', t.status === 'pending' && 'opacity-60')}
+                  >
+                    <div
+                      className={cn(
+                        'w-1.5 h-1.5 rounded-full shrink-0',
+                        t.status === 'done' ? 'bg-tertiary shadow-[0_0_6px_rgb(34_211_238_/_0.6)]' : 'bg-surface-variant',
+                      )}
+                    />
                     {t.title}
                   </li>
                 ))}
@@ -163,9 +220,9 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
           </div>
         </div>
 
-        {/* Daily Note Area */}
-        <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
-          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">
+        {/* Daily Note */}
+        <div className="mt-8 pt-6 border-t border-outline-variant/15 space-y-3">
+          <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant/70">
             <span className="flex items-center gap-2">
               <span className="material-symbols-outlined text-xs">edit_note</span>
               Daily Reflections / Constraints
@@ -176,7 +233,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             onChange={e => setNote(e.target.value)}
             onBlur={handleNoteBlur}
             placeholder="What did you learn today? Any blockers?"
-            className="w-full bg-surface-container-highest/30 border border-white/5 rounded-xl p-4 text-xs text-on-surface-variant outline-none focus:border-primary/30 transition-all resize-none min-h-[80px]"
+            className="input-base resize-none min-h-[80px] text-xs"
           />
         </div>
       </div>

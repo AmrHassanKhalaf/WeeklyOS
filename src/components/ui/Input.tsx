@@ -2,24 +2,47 @@ import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes 
 import { forwardRef } from 'react'
 import { cn } from '../../lib/cn'
 
-export type InputProps = InputHTMLAttributes<HTMLInputElement>
-export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>
-export type SelectProps = SelectHTMLAttributes<HTMLSelectElement>
+type WithInvalid = { invalid?: boolean }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(({ className, ...props }, ref) => (
-  <input ref={ref} className={cn('input-base', className)} {...props} />
-))
+export type InputProps = InputHTMLAttributes<HTMLInputElement> & WithInvalid
+export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & WithInvalid
+export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & WithInvalid
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, invalid, ...props }, ref) => (
+    <input
+      ref={ref}
+      {...props}
+      aria-invalid={invalid || props['aria-invalid']}
+      className={cn('input-base', invalid && 'animate-shake', className)}
+    />
+  ),
+)
 
 Input.displayName = 'Input'
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
-  <textarea ref={ref} className={cn('input-base', className)} {...props} />
-))
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, invalid, ...props }, ref) => (
+    <textarea
+      ref={ref}
+      {...props}
+      aria-invalid={invalid || props['aria-invalid']}
+      className={cn('input-base', invalid && 'animate-shake', className)}
+    />
+  ),
+)
 
 Textarea.displayName = 'Textarea'
 
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(({ className, ...props }, ref) => (
-  <select ref={ref} className={cn('input-base appearance-none pr-10', className)} {...props} />
-))
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  ({ className, invalid, ...props }, ref) => (
+    <select
+      ref={ref}
+      {...props}
+      aria-invalid={invalid || props['aria-invalid']}
+      className={cn('input-base appearance-none pr-10', invalid && 'animate-shake', className)}
+    />
+  ),
+)
 
 Select.displayName = 'Select'
