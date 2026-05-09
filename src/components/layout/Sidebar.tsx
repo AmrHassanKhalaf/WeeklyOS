@@ -48,8 +48,8 @@ function NavItem({
           'ripple-surface group relative flex items-center rounded-xl transition-all duration-200 focus-ring',
           collapsed ? 'justify-center px-0 py-3 mx-auto w-12 h-12' : 'gap-3 px-3 py-2.5',
           isActive
-            ? 'text-on-surface bg-primary/12 shadow-[inset_0_0_0_1px_rgb(var(--color-primary)/0.18)]'
-            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/70',
+            ? 'text-on-surface bg-primary/15 shadow-[inset_0_0_0_1px_rgb(var(--color-primary)/0.28),0_8px_24px_-12px_rgb(124_58_237_/_0.45)]'
+            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60',
         )
       }
       title={collapsed ? label : undefined}
@@ -133,8 +133,9 @@ export function Sidebar() {
         }}
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
         className={cn(
-          'fixed left-0 top-0 h-screen z-50 flex flex-col border-r border-outline-variant/20',
-          'bg-surface-container-lowest/95 backdrop-blur-xl shadow-xl shadow-black/30',
+          'fixed left-0 top-0 h-screen z-50 flex flex-col border-r border-outline-variant/15',
+          'bg-surface-container-lowest/85 backdrop-blur-2xl backdrop-saturate-150',
+          'shadow-[0_30px_80px_-30px_rgba(0,0,0,0.5),inset_-1px_0_0_rgb(255_255_255_/_0.04)]',
           width,
         )}
         aria-hidden={isHidden}
@@ -147,7 +148,7 @@ export function Sidebar() {
               isRail ? 'justify-center' : 'gap-3 px-2',
             )}
           >
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center obsidian-gradient shrink-0 glow-primary animate-float-soft">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center obsidian-gradient shrink-0 shadow-[0_10px_28px_-8px_rgb(124_58_237_/_0.6)] animate-float-soft">
               <span className="material-symbols-outlined text-white text-lg">
                 auto_awesome
               </span>
@@ -161,7 +162,7 @@ export function Sidebar() {
                   transition={{ duration: 0.2 }}
                   className="min-w-0"
                 >
-                  <h1 className="text-lg font-extrabold tracking-tight text-on-surface leading-none">
+                  <h1 className="text-lg font-extrabold tracking-tight gradient-text leading-none">
                     WeeklyOS
                   </h1>
                   <p className="text-[9px] text-on-surface-variant uppercase tracking-[0.22em] mt-0.5">
@@ -194,27 +195,32 @@ export function Sidebar() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-4 mb-2 rounded-xl border border-outline-variant/30 bg-surface-container-low/70 px-3 py-3"
+                className="mt-4 mb-2 rounded-2xl border border-outline-variant/25 bg-surface-container-low/60 backdrop-blur-md px-3.5 py-3 relative overflow-hidden"
               >
-                <p className="text-[9px] uppercase tracking-[0.2em] text-on-surface-variant mb-2 font-bold">
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-50"
+                  style={{ background: 'radial-gradient(circle, rgb(167 139 250 / 0.18), transparent 70%)' }}
+                />
+                <p className="text-[9px] uppercase tracking-[0.22em] text-on-surface-variant mb-2 font-bold relative">
                   This Week
                 </p>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs relative">
                   <div>
-                    <p className="text-on-surface-variant">Score</p>
-                    <p className="font-mono font-bold text-tertiary text-base">{score}</p>
+                    <p className="text-on-surface-variant text-[10px]">Score</p>
+                    <p className="font-mono font-extrabold text-tertiary text-base">{score}</p>
                   </div>
                   <div>
-                    <p className="text-on-surface-variant">Tasks</p>
-                    <p className="font-mono font-bold text-primary text-base">
+                    <p className="text-on-surface-variant text-[10px]">Tasks</p>
+                    <p className="font-mono font-extrabold text-primary text-base">
                       {completed}
                       <span className="text-on-surface-variant">/{planned}</span>
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 h-1 w-full rounded-full bg-surface-container-high overflow-hidden">
+                <div className="mt-2.5 h-1 w-full rounded-full bg-surface-container-high overflow-hidden relative">
                   <motion.div
-                    className="h-full bg-primary"
+                    className="h-full obsidian-gradient"
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, score)}%` }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -247,7 +253,7 @@ export function Sidebar() {
                   closeSidebarsOnMobile()
                 }}
                 title="New Plan"
-                className="ripple-surface w-12 h-12 mx-auto rounded-xl flex items-center justify-center obsidian-gradient text-white shadow-md focus-ring"
+                className="ripple-surface w-12 h-12 mx-auto rounded-xl flex items-center justify-center obsidian-gradient text-white shadow-[0_10px_28px_-8px_rgb(124_58_237_/_0.55)] focus-ring transition-transform hover:scale-105 active:scale-95"
               >
                 <span className="material-symbols-outlined text-lg">add</span>
               </button>
@@ -274,12 +280,12 @@ export function Sidebar() {
             {/* User card */}
             <div
               className={cn(
-                'rounded-xl bg-surface-container-low/70 border border-outline-variant/30 transition-all',
+                'rounded-2xl bg-surface-container-low/60 border border-outline-variant/25 backdrop-blur-md transition-all',
                 isRail ? 'p-1 flex flex-col items-center gap-2' : 'p-2.5 flex items-center gap-3',
               )}
             >
               <div className="relative shrink-0">
-                <div className="w-9 h-9 rounded-full obsidian-gradient flex items-center justify-center text-white text-xs font-extrabold">
+                <div className="w-9 h-9 rounded-full obsidian-gradient flex items-center justify-center text-white text-xs font-extrabold shadow-[0_8px_20px_-6px_rgb(124_58_237_/_0.5)]">
                   {initial}
                 </div>
                 <StatusDot className="absolute -bottom-0.5 -right-0.5" size={10} />

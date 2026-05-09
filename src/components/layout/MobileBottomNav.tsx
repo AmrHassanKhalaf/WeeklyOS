@@ -39,7 +39,7 @@ function Tab({
           {isActive && (
             <motion.span
               layoutId="bottom-nav-indicator"
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full bg-primary"
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full obsidian-gradient shadow-[0_0_12px_rgb(167_139_250_/_0.7)]"
               transition={{ type: 'spring', damping: 30, stiffness: 380 }}
             />
           )}
@@ -111,8 +111,13 @@ export function MobileBottomNav() {
       aria-label="Primary"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
-      <div className="mx-3 mb-3 rounded-2xl border border-outline-variant/30 bg-surface-container/90 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
-        <div className="flex items-center">
+      <div className="mx-3 mb-3 rounded-2xl border border-outline-variant/25 bg-surface-container/85 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_28px_60px_-18px_rgba(0,0,0,0.55),inset_0_1px_0_rgb(255_255_255_/_0.08)] relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 -top-px h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgb(167 139 250 / 0.4), transparent)' }}
+        />
+        <div className="flex items-center relative">
           {TABS.map((t) => (
             <Tab
               key={t.to}

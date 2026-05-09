@@ -54,8 +54,8 @@ export function FloatingActionButton({
       style={{ bottom: 'calc(5.25rem + var(--safe-bottom))' }}
       className={cn(
         'ripple-surface fixed z-40 lg:bottom-8 h-14 w-14 rounded-full flex items-center justify-center',
-        'text-on-primary bg-primary shadow-[0_12px_30px_rgba(47,92,255,0.45)]',
-        'ring-1 ring-white/10 focus-ring',
+        'text-white obsidian-gradient shadow-[0_14px_36px_-8px_rgba(124,58,237,0.6)]',
+        'ring-1 ring-white/15 focus-ring',
         positional,
         className,
       )}

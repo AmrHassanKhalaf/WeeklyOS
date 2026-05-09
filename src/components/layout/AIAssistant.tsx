@@ -117,28 +117,29 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
 
   return (
     <>
-      <aside className={`fixed right-0 top-0 h-screen w-80 z-50 bg-[#1C1B1B] border-l border-white/5 shadow-2xl shadow-[#2F5CFF]/5 flex flex-col font-['Inter'] transition-transform duration-300 ${
+      <aside className={`fixed right-0 top-0 h-screen w-80 z-50 bg-surface-container-low/85 backdrop-blur-2xl backdrop-saturate-150 border-l border-outline-variant/15 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] flex flex-col font-['Inter'] transition-transform duration-300 ${
         isActuallyOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
       {/* Header */}
-      <div className="p-6 pt-20 border-b border-white/5">
+      <div className="p-6 pt-20 border-b border-outline-variant/15">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <h2 className="text-sm font-semibold text-[#4EDEA3]">AI Assistant</h2>
-            <p className="text-[10px] text-neutral-500 uppercase tracking-widest">Productivity Analyst</p>
+            <h2 className="text-sm font-bold text-tertiary">AI Assistant</h2>
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest">Productivity Analyst</p>
           </div>
-          <div className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgb(34_211_238_/_0.7)] animate-pulse" />
         </div>
       </div>
 
       {/* Tabs */}
-      <nav className="flex gap-4 border-b border-white/5 px-6 pb-3 pt-4">
+      <nav className="flex gap-4 border-b border-outline-variant/15 px-6 pb-3 pt-4">
         {(['insights', 'stats', 'activity', 'chat'] as Tab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`capitalize text-sm font-medium transition-colors ${
-              activeTab === tab ? 'text-[#4EDEA3] font-bold' : 'text-neutral-500 hover:text-white'
+            data-active={activeTab === tab ? 'true' : undefined}
+            className={`capitalize text-sm font-medium transition-colors underline-grow ${
+              activeTab === tab ? 'text-tertiary font-bold' : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
             {tab === 'insights' ? 'Insights' : tab === 'chat' ? 'Chat' : tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -287,10 +288,10 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
                 <div key={i} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start max-w-[95%]'}`}>
                   <div className={`p-4 rounded-2xl shadow-sm ${
                     msg.role === 'ai'
-                      ? 'bg-surface-container-highest border border-white/5 rounded-tl-[4px] w-full'
+                      ? 'bg-surface-container-highest border border-outline-variant/20 rounded-tl-[4px] w-full'
                       : msg.role === 'system'
                       ? 'bg-error-container/10 text-error border border-error/20 rounded-tl-[4px]'
-                      : 'bg-[#2F5CFF] text-white rounded-tr-[4px] px-5 py-3'
+                      : 'obsidian-gradient text-white rounded-tr-[4px] px-5 py-3 shadow-[0_10px_24px_-6px_rgb(124_58_237_/_0.45)]'
                   }`}>
                     {msg.role === 'ai' || msg.role === 'system' ? (
                       <FormattedMessage text={msg.text} />
@@ -299,7 +300,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
                     )}
                     {msg.provider && (
                       <div className="w-full mt-3 pt-2 border-t border-white/5 flex justify-end">
-                        <span className="text-[9px] font-medium uppercase tracking-widest text-[#4EDEA3]/50">
+                        <span className="text-[9px] font-medium uppercase tracking-widest text-tertiary/60">
                           {msg.provider}
                         </span>
                       </div>
@@ -310,7 +311,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               {isAiTyping && (
                 <div className="flex flex-col gap-2 max-w-[90%] items-start">
                   <div className="p-4 bg-surface-container-high border border-white/5 rounded-2xl rounded-tl-[4px] text-sm text-neutral-400 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-sm text-[#4EDEA3] animate-pulse">smart_toy</span>
+                    <span className="material-symbols-outlined text-sm text-tertiary animate-pulse">smart_toy</span>
                     <span className="animate-pulse">Processing context...</span>
                   </div>
                 </div>
@@ -321,7 +322,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
       )}
 
       {/* Chat input */}
-      <div className="p-4 border-t border-white/5 bg-surface-container-low space-y-3">
+      <div className="p-4 border-t border-outline-variant/15 bg-surface-container-low/40 space-y-3">
         {variant === 'evaluation' && (
           <div className="flex flex-wrap gap-2">
             {quickActions.map(a => (
@@ -345,7 +346,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             onChange={e => setChatInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
             placeholder={variant === 'evaluation' ? 'Ask AI Assistant...' : 'Ask AI anything...'}
-            className={`w-full bg-surface-container-highest border border-white/5 rounded-xl py-2.5 text-xs focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors outline-none placeholder:text-neutral-600 text-on-surface ${
+            className={`input-base text-xs py-2.5 ${
               variant === 'default' ? 'pl-9 pr-10' : 'pl-4 pr-16'
             }`}
           />
@@ -363,7 +364,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
       {/* Edge Toggle Button */}
       <button
         onClick={toggleRightSidebar}
-        className={`fixed top-1/2 -translate-y-1/2 z-50 w-6 h-6 bg-[#1C1B1B] border border-white/10 rounded-full flex items-center justify-center text-[#A1A1A1] hover:text-white hover:border-white/30 transition-all duration-300 hidden lg:flex shadow-md ${
+        className={`fixed top-1/2 -translate-y-1/2 z-50 w-6 h-6 bg-surface-container/90 backdrop-blur border border-outline-variant/35 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:border-primary/45 transition-all duration-300 hidden lg:flex shadow-md ${
           isActuallyOpen ? 'right-[calc(20rem-12px)]' : 'right-0 rounded-r-none border-r-0'
         } ${isFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       >

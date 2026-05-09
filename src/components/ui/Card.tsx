@@ -5,13 +5,34 @@ type CardVariant = 'solid' | 'glass'
 
 export type CardProps = HTMLAttributes<HTMLDivElement> & {
   variant?: CardVariant
+  /** Adds hover lift + violet edge glow + cursor pointer */
+  interactive?: boolean
+  /** Visually mark the card as selected / toggled-on */
+  active?: boolean
+  /** Visually mark the card as disabled (locked, no pointer events) */
+  disabled?: boolean
 }
 
-export function Card({ variant = 'glass', className, ...props }: CardProps) {
+export function Card({
+  variant = 'glass',
+  interactive,
+  active,
+  disabled,
+  className,
+  ...props
+}: CardProps) {
   return (
     <div
       {...props}
-      className={cn('ui-card', variant === 'glass' ? 'ui-card--glass' : 'ui-card--solid', className)}
+      data-active={active ? 'true' : undefined}
+      data-disabled={disabled ? 'true' : undefined}
+      aria-disabled={disabled || undefined}
+      className={cn(
+        'ui-card',
+        variant === 'glass' ? 'ui-card--glass' : 'ui-card--solid',
+        interactive && 'ui-card--interactive',
+        className,
+      )}
     />
   )
 }

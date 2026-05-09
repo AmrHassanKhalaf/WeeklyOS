@@ -258,7 +258,7 @@ Make sure:
                 key={dayData.day}
                 edgeSensitivity={30}
                 glowColor="40 80 80"
-                backgroundColor="#0d0d0d"
+                backgroundColor="transparent"
                 borderRadius={18}
                 glowRadius={40}
                 glowIntensity={1}

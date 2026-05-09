@@ -17,15 +17,15 @@ const HabitTracker = lazy(() => import('./pages/HabitTracker').then(m => ({ defa
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4 animate-fade-up">
-        <div className="relative w-12 h-12">
-          <div className="absolute inset-0 rounded-xl obsidian-gradient animate-float-soft glow-primary flex items-center justify-center">
-            <span className="material-symbols-outlined text-white text-xl">auto_awesome</span>
+    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+      <div className="flex flex-col items-center gap-5 animate-fade-up relative z-10">
+        <div className="relative w-14 h-14">
+          <div className="absolute inset-0 rounded-2xl obsidian-gradient animate-float-soft shadow-[0_18px_40px_-8px_rgb(124_58_237_/_0.65)] flex items-center justify-center">
+            <span className="material-symbols-outlined text-white text-2xl">auto_awesome</span>
           </div>
-          <div className="absolute -inset-1.5 rounded-2xl border-2 border-primary/30 border-t-transparent animate-spin" />
+          <div className="absolute -inset-2 rounded-2xl border-2 border-primary/35 border-t-transparent animate-spin" />
         </div>
-        <p className="text-on-surface-variant text-[11px] uppercase tracking-[0.3em] font-semibold">
+        <p className="text-on-surface-variant text-[11px] uppercase tracking-[0.32em] font-bold">
           Loading WeeklyOS…
         </p>
       </div>

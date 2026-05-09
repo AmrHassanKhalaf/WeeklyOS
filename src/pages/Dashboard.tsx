@@ -13,6 +13,7 @@ import { Card } from '../components/ui/Card'
 import { Section } from '../components/ui/Section'
 import { Skeleton } from '../components/ui/Skeleton'
 import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
+import { cn } from '../lib/cn'
 
 const loadRotatingText = () => import('../components/effects/RotatingText')
 const RotatingText = lazy(loadRotatingText)
@@ -147,9 +148,13 @@ export function Dashboard() {
           <div className="flex-1">
             {hasSummary ? (
               <>
-                <h2 className="text-4xl font-extrabold tracking-tight mb-2">{summary.title}</h2>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-primary/80 font-extrabold mb-2 flex items-center gap-2">
+                  <span className="inline-block w-6 h-px bg-primary/60" />
+                  Week {summary.weekNumber}
+                </p>
+                <h2 className="text-4xl font-extrabold tracking-tight mb-2 gradient-text">{summary.title}</h2>
                 <p className="text-on-surface-variant max-w-lg">
-                  {summary.dateRange}. Week {summary.weekNumber} status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
+                  {summary.dateRange}. Status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
                 </p>
               </>
             ) : (
@@ -220,7 +225,7 @@ export function Dashboard() {
 
         {/* Weekly Challenge - Unified */}
         {challengeTitle && !isEditingChallenge ? (
-          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <Section variant="glass" className="border border-primary/20 bg-primary/5 relative overflow-hidden space-y-6">
               {/* Header Section */}
               <div className="relative z-10 flex flex-col gap-6">
@@ -273,7 +278,7 @@ export function Dashboard() {
           </Section>
           </BorderGlow>
         ) : (
-          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <Section variant="glass" className="border border-dashed border-white/20 flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-2xl text-primary">psychology</span>
@@ -350,7 +355,7 @@ export function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: 0.04 + i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
-              <BorderGlow edgeSensitivity={28} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={36} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+              <BorderGlow edgeSensitivity={28} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={36} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
                 <DayCard
                   day={{
                     ...dayData,
@@ -364,43 +369,69 @@ export function Dashboard() {
 
         {/* Bottom Stats */}
         <section className="grid grid-cols-3 gap-8 pb-12">
-          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-2">
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-2">
           <Card variant="glass" className="col-span-2 p-8">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xl font-bold">Deep Work Distribution</h3>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-on-surface-variant font-extrabold mb-1">Deep Work</p>
+                <h3 className="text-xl font-bold">Distribution</h3>
+              </div>
               <div className="flex gap-4">
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-primary" /><span className="text-xs text-on-surface-variant">Focus</span></div>
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-tertiary" /><span className="text-xs text-on-surface-variant">Admin</span></div>
+                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_rgb(167_139_250_/_0.7)]" /><span className="text-xs text-on-surface-variant">Focus</span></div>
+                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_6px_rgb(34_211_238_/_0.7)]" /><span className="text-xs text-on-surface-variant">Admin</span></div>
               </div>
             </div>
             <div className="h-48 flex items-end justify-between gap-4 px-4">
               {deepWorkData.map((d, i) => (
-                <div key={i} className="flex-1 space-y-2 group">
-                  <div className="w-full bg-primary/30 rounded-sm" style={{ height: d.height }} />
-                  <p className={`text-center text-[10px] font-bold ${d.isToday ? 'text-primary' : 'text-on-surface-variant'}`}>{d.day}</p>
-                </div>
+                <motion.div
+                  key={i}
+                  initial={{ scaleY: 0, opacity: 0 }}
+                  animate={{ scaleY: 1, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  style={{ originY: 1 }}
+                  className="flex-1 flex flex-col items-stretch gap-2 group"
+                >
+                  <div
+                    className={cn(
+                      'w-full rounded-md transition-all duration-300',
+                      d.isToday
+                        ? 'obsidian-gradient shadow-[0_8px_18px_-6px_rgb(124_58_237_/_0.65)]'
+                        : 'bg-primary/30 group-hover:bg-primary/45',
+                    )}
+                    style={{ height: d.height }}
+                  />
+                  <p className={cn('text-center text-[10px] font-extrabold tracking-wider', d.isToday ? 'text-primary' : 'text-on-surface-variant')}>
+                    {d.day}
+                  </p>
+                </motion.div>
               ))}
             </div>
           </Card>
           </BorderGlow>
-          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="#0d0d0d" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <Card variant="glass" className="bg-tertiary-container text-on-tertiary-container p-8 relative overflow-hidden flex flex-col">
-            <span className="material-symbols-outlined absolute top-[-20px] right-[-20px] text-9xl opacity-10 rotate-12">bolt</span>
-            <h3 className="text-xl font-bold mb-4">Focus Mode</h3>
-            <p className="text-sm opacity-90 mb-8 leading-relaxed">
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
+          <Card variant="glass" className="p-8 relative overflow-hidden flex flex-col">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full"
+              style={{ background: 'radial-gradient(circle, rgb(34 211 238 / 0.22), transparent 65%)' }}
+            />
+            <span className="material-symbols-outlined absolute top-[-20px] right-[-12px] text-9xl text-tertiary opacity-10 rotate-12 pointer-events-none">bolt</span>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-tertiary font-extrabold mb-2">Focus Mode</p>
+            <h3 className="text-xl font-bold mb-4 text-on-surface">AI Insight</h3>
+            <p className="text-sm text-on-surface-variant mb-8 leading-relaxed flex-1">
               {isInsightLoading ? 'Analyzing week data...' : (insight || "You're on track. Batch your remaining tasks to clear your schedule.")}
             </p>
-            <div className="mt-auto">
-              <Button
-                type="button"
-                onClick={fetchInsight}
-                disabled={isInsightLoading}
-                variant="secondary"
-                className="w-full text-tertiary-container border-tertiary/30 bg-tertiary/15 hover:bg-tertiary/25 py-3 text-sm disabled:opacity-50"
-              >
-                {isInsightLoading ? 'Generating...' : 'Analyze My Week'}
-              </Button>
-            </div>
+            <Button
+              type="button"
+              onClick={fetchInsight}
+              disabled={isInsightLoading}
+              loading={isInsightLoading}
+              variant="tertiary"
+              className="w-full"
+              leftIcon={!isInsightLoading ? <span className="material-symbols-outlined text-sm">analytics</span> : undefined}
+            >
+              {isInsightLoading ? 'Generating…' : 'Analyze My Week'}
+            </Button>
           </Card>
           </BorderGlow>
         </section>

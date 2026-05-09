@@ -32,10 +32,10 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children
 
     return (
-      <div className="min-h-screen bg-[#131313] flex items-center justify-center p-8">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center mx-auto">
-            <span className="material-symbols-outlined text-3xl text-error">error</span>
+      <div className="min-h-screen bg-background flex items-center justify-center p-8">
+        <div className="max-w-md w-full text-center space-y-6 glass-panel rounded-3xl p-8 animate-scale-in">
+          <div className="w-16 h-16 rounded-2xl bg-error/15 ring-1 ring-error/35 flex items-center justify-center mx-auto shadow-[0_12px_32px_-8px_rgb(251_113_133_/_0.4)]">
+            <span className="material-symbols-outlined text-3xl text-error" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-on-surface">Something went wrong</h1>
@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
           </div>
           {this.state.error && (
-            <details className="text-left bg-surface-container-low rounded-lg p-4 border border-white/5">
+            <details className="text-left bg-surface-container-low/70 backdrop-blur rounded-xl p-4 border border-outline-variant/30">
               <summary className="text-xs uppercase tracking-widest text-on-surface-variant cursor-pointer select-none">
                 Error details
               </summary>
@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
           )}
           <button
             onClick={this.handleReset}
-            className="w-full bg-primary text-background font-bold py-3 rounded-xl hover:opacity-90 transition-opacity"
+            className="btn btn-primary btn-lg w-full"
           >
             Reload App
           </button>
