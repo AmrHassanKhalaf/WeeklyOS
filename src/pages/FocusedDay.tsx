@@ -189,7 +189,7 @@ export function FocusedDay() {
     focusSessions,
     saveFocusSession
   } = useWeekStore()
-  const { isFocusMode, focusLevel, setFocusMode } = useLayoutStore()
+  const { isFocusMode, focusLevel, setFocusMode, toggleFocusMode } = useLayoutStore()
   const [showFocusMenu, setShowFocusMenu] = useState(false)
 
   const workerRef = useRef<Worker | null>(null)
