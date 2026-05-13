@@ -5,6 +5,7 @@ import type { Json } from '../lib/database.types'
 import { useSettingsStore } from './useSettingsStore'
 import type { WeekStartDay } from './useSettingsStore'
 import { formatDaySerial, getAdjacentWeek, getWeekInfoForDate, getWeekStartDaySerial, getWeeksInYear } from './weekDateUtils'
+import { debounce } from './utils/debounce'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -435,6 +436,22 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
 
 let _realtimeChannel: RealtimeChannel | null = null
 let _pinnedFeatureAvailable: boolean | null = null
+
+// Issue 3: Track in-flight mutation IDs per task to cancel stale responses.
+// Key = taskId, Value = latest mutation ID string.
+const _pendingTaskMutations = new Map<string, string>()
+
+// Issue 3: Debounced version of daily-note DB sync (300ms) to handle rapid keystroke updates.
+const _debouncedNoteSync = debounce(
+  async (weekId: string, notes: Record<string, string>) => {
+    const { error } = await supabase
+      .from('weeks')
+      .update({ daily_notes: notes })
+      .eq('id', weekId)
+    if (error) console.error('[updateDailyNote] Debounced sync failed:', error)
+  },
+  300
+)
 
 export const useWeekStore = create<WeekStore>((set, get) => {
   const syncToDb = async () => {
@@ -1068,6 +1085,11 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       if ('estimatedTime' in updates) payload.estimated_duration = updates.estimatedTime === undefined ? null : updates.estimatedTime
       if ('tags' in updates) payload.tags = updates.tags === undefined ? null : updates.tags
 
+      // Issue 3: Assign a unique mutation ID — if a newer mutation for the same task
+      // arrives before this one resolves, we discard the stale response.
+      const mutationId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+      _pendingTaskMutations.set(taskId, mutationId)
+
       // Optimistic update with rollback
       const snapshot = get().currentWeek
       const localUpdates = { ...updates }
@@ -1091,11 +1113,14 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         }
       })
 
-      console.log('[updateTask] Sending payload to Supabase:', JSON.stringify(payload))
       const { data, error } = await supabase.from('tasks').update(payload).eq('id', taskId).select()
-      console.log('[updateTask] Supabase response → data:', data, '| error:', error)
+
+      // Issue 3: Discard result if a newer mutation has already taken over.
+      if (_pendingTaskMutations.get(taskId) !== mutationId) return
+      _pendingTaskMutations.delete(taskId)
+
       if (error) {
-        console.error('[updateTask] DB write failed, reverting. Code:', error.code, '| Message:', error.message, '| Details:', error.details)
+        console.error('[updateTask] DB write failed, reverting. Code:', error.code, '| Message:', error.message)
         set({ currentWeek: snapshot })
       }
     },
@@ -1212,6 +1237,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       
       const nextNotes = { ...(week.dailyNotes || {}), [day]: note }
       
+      // Optimistic UI update is immediate
       set(state => ({
         currentWeek: state.currentWeek ? {
           ...state.currentWeek,
@@ -1219,9 +1245,9 @@ export const useWeekStore = create<WeekStore>((set, get) => {
           days: state.currentWeek.days.map(d => d.day === day ? { ...d, dailyNote: note } : d)
         } : null
       }))
-      
-      const { error } = await supabase.from('weeks').update({ daily_notes: nextNotes }).eq('id', week.id)
-      if (error) console.error('[updateDailyNote]', error)
+
+      // Issue 3: DB write is debounced at 300ms to absorb rapid keystrokes.
+      _debouncedNoteSync(week.id, nextNotes)
     },
 
     toggleChallengeComplete: async () => {
