@@ -486,9 +486,11 @@ export function FocusedDay() {
                   }`}>
                     {pomodoroPhase === 'focus' ? 'Focus Session' : 'Break Time'}
                   </span>
-                  <motion.div layoutId="pomodoro-time-box" className="bg-transparent border-transparent"><motion.span layoutId="pomodoro-time-text" className="text-8xl md:text-[140px] font-mono font-black text-white tabular-nums tracking-tighter leading-none drop-shadow-[0_0_40px_rgba(255,255,255,0.15)]">
-                    {formatTime(pomodoroTime)}
-                  </span>
+                  <motion.div layoutId="pomodoro-time-box" className="bg-transparent border-transparent">
+                    <motion.span layoutId="pomodoro-time-text" className="text-8xl md:text-[140px] font-mono font-black text-white tabular-nums tracking-tighter leading-none drop-shadow-[0_0_40px_rgba(255,255,255,0.15)]">
+                      {formatTime(pomodoroTime)}
+                    </motion.span>
+                  </motion.div>
                 </div>
               </motion.div>
 
@@ -622,7 +624,7 @@ export function FocusedDay() {
                   }`}>
                     <motion.span layoutId="pomodoro-time-text" className="text-6xl md:text-7xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
                       {formatTime(pomodoroTime)}
-                    </span>
+                    </motion.span>
                   </div>
                   {sessionCount > 0 && (
                     <span className="mt-2 text-[10px] text-neutral-500 tracking-widest uppercase">
@@ -949,10 +951,18 @@ export function FocusedDay() {
               </div>
             </Button>
           </div>
-        </div>
+        </motion.div>
 
         {/* ── Right Column (Sidebar) ─────────────────────────────────────── */}
-        <div className="space-y-6 xl:sticky xl:top-8 self-start">
+        <AnimatePresence>
+          {!(isFocusMode && focusLevel === 'minimal') && (
+            <motion.div
+              initial={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
+              animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
+              exit={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-6 xl:sticky xl:top-8 self-start"
+            >
           {/* 1. FOCUS TIME TODAY */}
           <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
              <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-4">Focus Time Today</h3>
@@ -1019,9 +1029,11 @@ export function FocusedDay() {
              </div>
           </Card>
 
-        </div>
+          </motion.div>
+          )}
+        </AnimatePresence>
 
-      </div>
+      </motion.div>
     </AppLayout>
   )
 }
