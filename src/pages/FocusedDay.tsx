@@ -384,9 +384,7 @@ export function FocusedDay() {
 
   return (
     <AppLayout>
-      {/* ── Focus Mode Immersive Overlay ───────────────────────────────────────── */}
-      <AnimatePresence>
-      {/* ── Deep Focus Overlay (full immersion) ────────────────────────── */}
+      {/* ── Deep Focus Overlay (full immersion) ─────────────────────────────── */}
       <DeepFocusOverlay
         pomodoroTime={pomodoroTime}
         totalPhaseSecs={totalSecs}
