@@ -57,7 +57,7 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [isOpen, onClose, anchorRef])
+  }, [isOpen, onClose])
 
   // Keyboard shortcuts within the menu
   useEffect(() => {
