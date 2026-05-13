@@ -23,33 +23,6 @@ function CircularProgress({ progress, phase, size = 240 }: { progress: number; p
   const circumference = 2 * Math.PI * r
   const offset = circumference * (1 - progress)
   const color = phase === 'focus' ? '#8b5cf6' : '#0ea5e9'
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      
-      if (e.key.toLowerCase() === 'f') {
-        e.preventDefault()
-        if (isFocusMode) setFocusMode(false)
-        else setFocusMode(true, 'deep')
-      } else if (e.key === 'Escape') {
-        if (isFocusMode && focusLevel === 'deep') {
-          e.preventDefault()
-          setFocusMode(false)
-        }
-      } else if (e.key === ' ') {
-        if (isFocusMode && focusLevel === 'deep') {
-          e.preventDefault()
-          handleToggle()
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFocusMode, focusLevel, setFocusMode, handleToggle])
-
-  const [showEndConfirm, setShowEndConfirm] = useState(false)
-  
   return (
     <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
       <circle cx={size/2} cy={size/2} r={r+10} fill="none" stroke={color} strokeWidth={1} strokeOpacity={0.1} />
