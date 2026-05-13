@@ -131,7 +131,7 @@ function FocusRing({
 function getSessionMessage(todaySecs: number, sessionCount: number): string | null {
   const mins = Math.floor(todaySecs / 60)
   if (sessionCount >= 4) return 'Exceptional focus today 🔥'
-  if (mins >= 90) return 'You've been focused for 90 minutes'
+  if (mins >= 90) return "You've been focused for 90 minutes"
   if (mins >= 50) return 'Break recommended soon'
   if (mins >= 25) return `${mins} minutes of deep work`
   return null
