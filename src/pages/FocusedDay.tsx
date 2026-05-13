@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, CloudRain, X, RotateCcw, SlidersHorizontal, Pin, Star, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -8,6 +8,9 @@ import type { Task } from '../store/useWeekStore'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
+import { DeepFocusOverlay } from '../components/focus/DeepFocusOverlay'
+import { MinimalFocusBanner } from '../components/focus/MinimalFocusBanner'
+import { FocusModeMenu } from '../components/focus/FocusModeMenu'
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 const PRESETS = [
@@ -162,8 +165,15 @@ export function FocusedDay() {
     focusSessions,
     saveFocusSession
   } = useWeekStore()
-  const { isFocusMode, focusLevel, setFocusMode, toggleFocusMode } = useLayoutStore()
-  const [showFocusMenu, setShowFocusMenu] = useState(false)
+  const {
+    isFocusMode,
+    focusLevel,
+    setFocusMode,
+    isFocusPickerOpen,
+    openFocusPicker,
+    closeFocusPicker,
+    autoEnterFocusOnStart,
+  } = useLayoutStore()
 
   const workerRef = useRef<Worker | null>(null)
   const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -172,46 +182,31 @@ export function FocusedDay() {
   const [customBreak, setCustomBreak] = useState(String(pomodoroBreakMin))
   const [showPresets, setShowPresets] = useState(false)
   const [sessionCount, setSessionCount] = useState(0)
-  const [isIdle, setIsIdle] = useState(false)
 
-  // ── Smart UI Behavior: Idle Timer & Shortcut ───────────────────────────────────
-  useEffect(() => {
-    if (!isFocusMode) {
-      setIsIdle(false)
-      return
-    }
-    
-    let timeout: ReturnType<typeof setTimeout>
-    const handleActivity = () => {
-      setIsIdle(false)
-      clearTimeout(timeout)
-      timeout = setTimeout(() => setIsIdle(true), 3500)
-    }
-    
-    window.addEventListener('mousemove', handleActivity)
-    window.addEventListener('keydown', handleActivity)
-    window.addEventListener('click', handleActivity)
-    
-    timeout = setTimeout(() => setIsIdle(true), 3500)
-    
-    return () => {
-      window.removeEventListener('mousemove', handleActivity)
-      window.removeEventListener('keydown', handleActivity)
-      window.removeEventListener('click', handleActivity)
-      clearTimeout(timeout)
-    }
-  }, [isFocusMode])
-
+  // ── Global keyboard shortcut: F toggles focus picker ─────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key.toLowerCase() === 'f') {
-        toggleFocusMode()
+      if (e.key.toLowerCase() === 'f' && !isFocusPickerOpen) {
+        if (isFocusMode) {
+          setFocusMode(false)
+        } else {
+          openFocusPicker()
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [toggleFocusMode])
+  }, [isFocusMode, isFocusPickerOpen, setFocusMode, openFocusPicker])
+
+  // ── Auto-enter focus on session start ─────────────────────────────────────
+  const prevRunning = useRef(isPomodoroRunning)
+  useEffect(() => {
+    if (!prevRunning.current && isPomodoroRunning && autoEnterFocusOnStart && !isFocusMode) {
+      setFocusMode(true, focusLevel)
+    }
+    prevRunning.current = isPomodoroRunning
+  }, [isPomodoroRunning, autoEnterFocusOnStart, isFocusMode, focusLevel, setFocusMode])
 
   // ── Active Task Logic ───────────────────────────────────────────────────────
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
@@ -391,147 +386,68 @@ export function FocusedDay() {
     <AppLayout>
       {/* ── Focus Mode Immersive Overlay ───────────────────────────────────────── */}
       <AnimatePresence>
-        {isFocusMode && (
-          <motion.div
-            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            animate={{ opacity: 1, backdropFilter: 'blur(30px)' }}
-            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#030303] overflow-hidden font-body ${isIdle ? 'cursor-none' : ''}`}
-          >
-            {/* Ambient breathing glow */}
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.05, 1],
-                opacity: [0.3, 0.5, 0.3]
-              }}
-              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-              className={`absolute w-[800px] h-[800px] rounded-full blur-[140px] pointer-events-none ${
-                pomodoroPhase === 'focus' ? 'bg-violet-600/40' : 'bg-sky-500/40'
-              }`}
-            />
+      {/* ── Deep Focus Overlay (full immersion) ────────────────────────── */}
+      <DeepFocusOverlay
+        pomodoroTime={pomodoroTime}
+        totalPhaseSecs={totalSecs}
+        pomodoroPhase={pomodoroPhase}
+        isPomodoroRunning={isPomodoroRunning}
+        pomodoroFocusMin={pomodoroFocusMin}
+        pomodoroBreakMin={pomodoroBreakMin}
+        activeTaskTitle={
+          activeTaskId
+            ? [mainTask, ...mediumTasks, ...quickWins].find(t => t?.id === activeTaskId)?.title
+            : mainTask?.title
+        }
+        todayFocusSeconds={todayFocusSeconds}
+        sessionCount={sessionCount}
+        onToggle={handleToggle}
+        onReset={resetPomodoro}
+      />
 
-            {/* Top controls - fade out on idle */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: isIdle ? 0 : 1, y: isIdle ? -20 : 0 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute top-8 left-8 right-8 flex justify-between items-center z-10"
-            >
-              <div className="flex items-center gap-3">
-                <Zap className="text-violet-400 text-2xl" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
-                <span className="text-neutral-400 font-bold tracking-[0.2em] uppercase text-[11px]">Deep Focus</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <button className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/10 transition-colors border border-transparent hover:border-white/10">
-                  <CloudRain className="text-[20px]" strokeWidth={1.5} />
-                </button>
-                <button 
-                  onClick={toggleFocusMode}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider border border-white/10"
-                >
-                  <X className="text-[16px]" strokeWidth={1.5} />
-                  Exit <span className="opacity-50 ml-1">(F)</span>
-                </button>
-              </div>
-            </motion.div>
+      {/* ── Minimal Focus Banner (floating timer pill) ──────────────────── */}
+      <MinimalFocusBanner
+        pomodoroTime={pomodoroTime}
+        pomodoroPhase={pomodoroPhase}
+        isPomodoroRunning={isPomodoroRunning}
+        activeTaskTitle={
+          activeTaskId
+            ? [mainTask, ...mediumTasks, ...quickWins].find(t => t?.id === activeTaskId)?.title
+            : mainTask?.title
+        }
+        onToggle={handleToggle}
+        onOpenPicker={openFocusPicker}
+      />
 
-            {/* Center content */}
-            <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-4xl">
-              {/* Motivational microcopy during entry */}
-              <motion.p
-                initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-                animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10], filter: ['blur(4px)', 'blur(0px)', 'blur(0px)', 'blur(4px)'] }}
-                transition={{ duration: 5, times: [0, 0.2, 0.8, 1] }}
-                className="absolute -top-20 text-violet-300/60 font-medium tracking-[0.3em] uppercase text-xs"
-              >
-                {pomodoroPhase === 'focus' ? 'One thing. One session.' : 'Rest and recharge.'}
-              </motion.p>
+      {/* ── Focus Mode Picker Menu ────────────────────────────────────── */}
+      <FocusModeMenu
+        isOpen={isFocusPickerOpen}
+        onClose={closeFocusPicker}
+      />
 
-              {/* Main Timer */}
-              <motion.div 
-                className="relative flex items-center justify-center mb-16"
-              >
-                <CircularProgress progress={progress} phase={pomodoroPhase} size={480} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className={`text-[11px] uppercase tracking-[0.4em] font-bold mb-6 ${
-                    pomodoroPhase === 'focus' ? 'text-violet-400' : 'text-sky-400'
-                  }`}>
-                    {pomodoroPhase === 'focus' ? 'Focus Session' : 'Break Time'}
-                  </span>
-                  <motion.div layoutId="pomodoro-time-box" className="bg-transparent border-transparent">
-                    <motion.span layoutId="pomodoro-time-text" className="text-8xl md:text-[140px] font-mono font-black text-white tabular-nums tracking-tighter leading-none drop-shadow-[0_0_40px_rgba(255,255,255,0.15)]">
-                      {formatTime(pomodoroTime)}
-                    </motion.span>
-                  </motion.div>
-                </div>
-              </motion.div>
-
-              {/* Current Task */}
-              <motion.div 
-                animate={{ 
-                  opacity: isIdle ? 0.3 : 1, 
-                  scale: isIdle ? 0.98 : 1,
-                  y: isIdle ? 20 : 0
-                }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="text-center space-y-6 w-full px-8"
-              >
-                <h2 className={`text-4xl md:text-5xl font-black tracking-tight leading-tight ${activeTaskId || mainTask ? 'text-white' : 'text-neutral-500'}`}>
-                  {activeTaskId 
-                    ? [mainTask, ...mediumTasks, ...quickWins].find(t => t?.id === activeTaskId)?.title 
-                    : mainTask 
-                      ? mainTask.title 
-                      : 'No task selected'}
-                </h2>
-                
-                {/* Controls - fade out on idle */}
-                <motion.div
-                  animate={{ opacity: isIdle ? 0 : 1, y: isIdle ? 10 : 0, pointerEvents: isIdle ? 'none' : 'auto' }}
-                  transition={{ duration: 0.5 }}
-                  className="flex justify-center items-center gap-5 pt-8"
-                >
-                  <button
-                    onClick={handleToggle}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-2xl ${
-                      pomodoroPhase === 'focus' 
-                        ? 'bg-violet-600 hover:bg-violet-500 shadow-violet-600/30' 
-                        : 'bg-sky-500 hover:bg-sky-400 shadow-sky-500/30'
-                    }`}
-                  >
-                    {isPomodoroRunning ? <Pause className="w-9 h-9" strokeWidth={1.5} /> : <Play className="w-9 h-9" strokeWidth={1.5} />}
-                  </button>
-                  
-                  <button
-                    onClick={resetPomodoro}
-                    className="w-14 h-14 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-300 border border-white/10 hover:scale-105 active:scale-95"
-                    title="Reset Timer"
-                  >
-                    <RotateCcw className="text-2xl" strokeWidth={1.5} />
-                  </button>
-                </motion.div>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-            {/* Background Darkener for Minimal Focus */}
+      {/* ── Minimal Focus: subtle darkening overlay ───────────────────── */}
       <AnimatePresence>
         {isFocusMode && focusLevel === 'minimal' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: "easeInOut" }}
-            className="fixed inset-0 bg-[#050505]/60 pointer-events-none z-0"
+            transition={{ duration: 1.2, ease: 'easeInOut' }}
+            className="fixed inset-0 bg-[#050505]/50 pointer-events-none z-[1]"
           />
         )}
       </AnimatePresence>
 
-      <motion.div layout className={`max-w-[1200px] mx-auto px-4 md:px-8 py-10 pb-24 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        isFocusMode ? 'opacity-0 blur-2xl scale-[0.98] pointer-events-none absolute' : 'opacity-100 blur-0 scale-100'
-      }`}>
+      <motion.div
+        layout
+        className={`max-w-[1200px] mx-auto px-4 md:px-8 pb-24 items-start transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isFocusMode && focusLevel === 'deep'
+            ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
+            : isFocusMode && focusLevel === 'minimal'
+            ? 'pt-16 grid grid-cols-1 gap-10 opacity-100'
+            : 'py-10 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 opacity-100'
+        }`}
+      >
         
         {/* ── Left Column (Main Content) ─────────────────────────────────── */}
         <motion.div layout className="space-y-10">
@@ -651,13 +567,21 @@ export function FocusedDay() {
 
                   <Button
                     type="button"
-                    onClick={toggleFocusMode}
+                    onClick={isFocusMode ? () => setFocusMode(false) : openFocusPicker}
                     variant="ghost"
                     size="sm"
-                    className="px-4 py-2.5 rounded-xl font-bold text-sm border border-white/10 hover:border-white/20"
+                    className={`px-4 py-2.5 rounded-xl font-bold text-sm border transition-all ${
+                      isFocusMode
+                        ? 'border-violet-500/40 text-violet-300 bg-violet-500/10 hover:bg-violet-500/15'
+                        : 'border-white/10 hover:border-primary/30 hover:text-primary hover:bg-primary/5'
+                    }`}
                   >
-                    {isFocusMode ? <Eye className="w-[18px] h-[18px]" strokeWidth={1.5} /> : <EyeOff className="w-[18px] h-[18px]" strokeWidth={1.5} />}
-                    {isFocusMode ? 'Show' : 'Hide'} UI
+                    <Layers className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                    {isFocusMode
+                      ? `Exit ${focusLevel === 'deep' ? 'Deep' : 'Minimal'} Focus`
+                      : 'Focus Mode'
+                    }
+                    {!isFocusMode && <kbd className="ml-1 text-[9px] opacity-40 font-mono border border-current/30 rounded px-1">F</kbd>}
                   </Button>
                 </div>
 
