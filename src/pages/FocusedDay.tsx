@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown } from 'lucide-react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown, Pin, Star } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
