@@ -1,4 +1,5 @@
 import { useBrainDumpStore, BrainDumpItem } from '../store/useBrainDumpStore'
+import { Check, X, Plus, Edit3, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
 interface TaskCardProps {
@@ -77,10 +78,10 @@ export function TaskCard({ item }: TaskCardProps) {
           : 'border-2 border-outline-variant group-hover:border-primary'
       }`}>
         {item.selected && (
-          <span className="material-symbols-outlined text-lg font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+          <Check className="text-lg font-bold" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
         )}
         {!item.selected && (
-          <span className="material-symbols-outlined text-primary text-lg opacity-0 group-hover:opacity-100">check</span>
+          <Check className="text-primary text-lg opacity-0 group-hover:opacity-100" strokeWidth={1.5} />
         )}
       </div>
 
@@ -100,7 +101,7 @@ export function TaskCard({ item }: TaskCardProps) {
                  <span key={tag} className="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 group/tag">
                    {tag}
                    <button onClick={() => handleRemoveTag(tag)} className="text-on-surface-variant/50 hover:text-error">
-                     <span className="material-symbols-outlined text-[10px]">close</span>
+                     <X className="text-[10px]" strokeWidth={1.5} />
                    </button>
                  </span>
                ))}
@@ -114,7 +115,7 @@ export function TaskCard({ item }: TaskCardProps) {
                    className="bg-surface-container-low text-[10px] px-2 py-0.5 rounded outline-none w-24 text-on-surface placeholder:text-neutral-500"
                  />
                  <button onClick={handleAddTag} className="text-[10px] bg-primary/20 text-primary p-0.5 rounded hover:bg-primary/30">
-                   <span className="material-symbols-outlined text-[12px]">add</span>
+                   <Plus className="text-[12px]" strokeWidth={1.5} />
                  </button>
                </div>
             </div>
@@ -143,17 +144,17 @@ export function TaskCard({ item }: TaskCardProps) {
       >
         <button
           onClick={() => { setIsEditing(true); setEditValue(item.content); setEditTags(item.tags || []) }}
-          className="material-symbols-outlined text-outline hover:text-white transition-colors text-xl"
+          className="text-outline hover:text-white transition-colors p-1 rounded hover:bg-white/10"
           title="Edit"
         >
-          edit
+          <Edit3 className="w-4 h-4" strokeWidth={1.5} />
         </button>
         <button
           onClick={() => removeItem(item.id)}
-          className="material-symbols-outlined text-outline hover:text-error transition-colors text-xl"
+          className="text-outline hover:text-error transition-colors p-1 rounded hover:bg-error/10"
           title="Delete"
         >
-          delete
+          <Trash2 className="w-4 h-4" strokeWidth={1.5} />
         </button>
       </div>
     </div>

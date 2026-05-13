@@ -1,4 +1,5 @@
 import { AppLayout } from '../components/layout/AppLayout'
+import { Bot, Pin, Calendar, Palette, Bell, FileText, History, Shield, MonitorDown, Download, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import { useSettingsStore, AIProvider, WeekStartDay } from '../store/useSettingsStore'
 import { useState, useEffect } from 'react'
 import { generateWeeklyReportHTML } from '../lib/generateWeeklyReportHTML'
@@ -246,7 +247,7 @@ export function Settings() {
             {/* AI Integration */}
             <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-primary mb-5">
-                <span className="material-symbols-outlined">smart_toy</span>
+                <Bot  strokeWidth={1.5} />
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">AI Integration</h2>
               </div>
               <div className="space-y-4">
@@ -295,7 +296,7 @@ export function Settings() {
             {/* Pinned Tasks */}
             <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-primary mb-5">
-                <span className="material-symbols-outlined">push_pin</span>
+                <Pin  strokeWidth={1.5} />
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Pinned Tasks</h2>
               </div>
               <div className="space-y-3">
@@ -347,7 +348,7 @@ export function Settings() {
             {/* Work Schedule */}
             <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-primary mb-5">
-                <span className="material-symbols-outlined">calendar_month</span>
+                <Calendar  strokeWidth={1.5} />
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Work Schedule</h2>
               </div>
               <div className="space-y-4">
@@ -393,7 +394,7 @@ export function Settings() {
             {/* Appearance */}
             <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-tertiary mb-5">
-                <span className="material-symbols-outlined">palette</span>
+                <Palette  strokeWidth={1.5} />
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Appearance</h2>
               </div>
               <div className="flex gap-3">
@@ -416,7 +417,7 @@ export function Settings() {
             {/* Notifications */}
             <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-neutral-400 mb-5">
-                <span className="material-symbols-outlined">notifications</span>
+                <Bell  strokeWidth={1.5} />
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Notifications</h2>
               </div>
               <div className="space-y-3">
@@ -435,7 +436,7 @@ export function Settings() {
             {/* Report Settings */}
             <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-tertiary mb-5">
-                <span className="material-symbols-outlined">picture_as_pdf</span>
+                <FileText  strokeWidth={1.5} />
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Report Settings</h2>
               </div>
               <div className="space-y-5">
@@ -472,11 +473,11 @@ export function Settings() {
                 </div>
                 <div className="space-y-2 pt-2 border-t border-white/10">
                   <Button type="button" onClick={()=>void openReportWindow()} disabled={isExporting} size="sm" variant="secondary" className="w-full text-sm font-bold disabled:opacity-50">
-                    <span className="material-symbols-outlined text-[18px]">{isExporting?'sync':'download'}</span>
+                    {isExporting ? <RefreshCw className="w-[18px] h-[18px] animate-spin" strokeWidth={1.5} /> : <Download className="w-[18px] h-[18px]" strokeWidth={1.5} />}
                     {isExporting?'Generating...':'Export This Week'}
                   </Button>
                   <Button type="button" onClick={()=>void handleDownloadCompletedWeek()} disabled={isExporting} size="sm" variant="ghost" className="w-full text-sm font-bold disabled:opacity-50 border border-white/10 hover:border-white/20">
-                    <span className="material-symbols-outlined text-[18px]">history</span>
+                    <History className="text-[18px]" strokeWidth={1.5} />
                     Export Previous Week
                   </Button>
                 </div>
@@ -486,7 +487,7 @@ export function Settings() {
             {/* Privacy & Data */}
             <Card variant="glass" className="rounded-2xl p-5 md:p-6">
               <div className="flex items-center gap-3 text-error mb-5">
-                <span className="material-symbols-outlined">security</span>
+                <Shield  strokeWidth={1.5} />
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Privacy &amp; Data</h2>
               </div>
               <Toggle label="Analytics Tracking" desc="Share anonymous usage data to help us improve." checked={settings.analyticsEnabled} onChange={settings.setAnalyticsEnabled} />
@@ -496,7 +497,7 @@ export function Settings() {
             {!isInstalled && (
               <Card variant="glass" className="rounded-2xl p-5 md:p-6">
                 <div className="flex items-center gap-3 text-tertiary mb-4">
-                  <span className="material-symbols-outlined">install_desktop</span>
+                  <MonitorDown  strokeWidth={1.5} />
                   <h2 className="text-[13px] font-bold uppercase tracking-widest">Install App</h2>
                 </div>
                 <p className="text-xs text-neutral-400 mb-4 leading-relaxed">
@@ -509,7 +510,7 @@ export function Settings() {
                     size="sm"
                     onClick={() => void install()}
                     className="w-full text-[12px] font-bold uppercase tracking-widest"
-                    leftIcon={<span className="material-symbols-outlined text-[16px]">download</span>}
+                    leftIcon={<Download className="text-[16px]" strokeWidth={1.5} />}
                   >
                     Install WeeklyOS
                   </Button>
@@ -554,7 +555,7 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider, la
           className="flex-1 bg-transparent border-0 px-4 py-3 outline-none text-sm text-on-surface font-mono"
         />
         <button onClick={() => setIsVis(!isVis)} className="px-4 text-neutral-500 hover:text-white border-l border-white/5">
-          <span className="material-symbols-outlined text-[18px]">{isVis ? 'visibility_off' : 'visibility'}</span>
+          {isVis ? <EyeOff className="w-[18px] h-[18px]" strokeWidth={1.5} /> : <Eye className="w-[18px] h-[18px]" strokeWidth={1.5} />}
         </button>
         <Button
           type="button"

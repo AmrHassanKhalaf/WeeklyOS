@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Bot, Zap, CheckCircle2, Sparkles, AlertTriangle, Send, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAiApi } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
@@ -169,7 +170,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             <div className="flex flex-col gap-2 max-w-[90%]">
               <div className="p-3 bg-surface-container-high rounded-2xl rounded-tl-none text-sm text-neutral-400">
                 <span className="animate-pulse flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">smart_toy</span>
+                  <Bot className="text-sm" strokeWidth={1.5} />
                   Thinking...
                 </span>
               </div>
@@ -178,7 +179,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
           {/* Burnout alert */}
           <div className="bg-error-container/20 border border-error/20 p-4 rounded-xl">
             <div className="flex items-center gap-2 text-error mb-2">
-              <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+              <AlertTriangle className="w-5 h-5" strokeWidth={1.5} />
               <span className="text-xs font-bold uppercase tracking-wider">Burnout Risk Detected</span>
             </div>
             <p className="text-xs text-on-error-container leading-relaxed">Wednesday metrics indicate a high cognitive load failure. Continuing at this pace may lead to a productivity crash.</p>
@@ -197,7 +198,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
             <>
               <div className="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-tertiary/40">
                 <div className="flex items-center gap-2 text-tertiary">
-                  <span className="material-symbols-outlined text-sm">bolt</span>
+                  <Zap className="text-sm" strokeWidth={1.5} />
                   <span className="text-[10px] font-black uppercase tracking-tighter">Energy Level Peak</span>
                 </div>
                 <p className="text-xs text-on-surface/80 leading-relaxed">Based on this week's data, your output volume peaked on {insightsData.peakDay}. Consider reserving that day for deep work next week.</p>
@@ -206,7 +207,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               {insightsData.riskCount > 0 ? (
                 <div className="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-primary/40">
                   <div className="flex items-center gap-2 text-primary">
-                    <span className="material-symbols-outlined text-sm">warning</span>
+                    <AlertTriangle className="w-4 h-4" strokeWidth={1.5} />
                     <span className="text-[10px] font-black uppercase tracking-tighter">Deadline Risk</span>
                   </div>
                   <p className="text-xs text-on-surface/80 leading-relaxed">{insightsData.riskDay} has {insightsData.riskCount} pending tasks remaining. Batch these soon to prevent spillover.</p>
@@ -214,7 +215,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               ) : (
                 <div className="bg-surface-container-high rounded-lg p-4 space-y-3 border-l-2 border-surface-variant">
                   <div className="flex items-center gap-2 text-on-surface-variant">
-                    <span className="material-symbols-outlined text-sm">check_circle</span>
+                    <CheckCircle2 className="text-sm" strokeWidth={1.5} />
                     <span className="text-[10px] font-black uppercase tracking-tighter">All Clear</span>
                   </div>
                   <p className="text-xs text-on-surface/80 leading-relaxed">You have zero outstanding risks tracked across your days. Excellent pacing.</p>
@@ -311,7 +312,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
               {isAiTyping && (
                 <div className="flex flex-col gap-2 max-w-[90%] items-start">
                   <div className="p-4 bg-surface-container-high border border-white/5 rounded-2xl rounded-tl-[4px] text-sm text-neutral-400 flex items-center gap-3">
-                    <span className="material-symbols-outlined text-sm text-tertiary animate-pulse">smart_toy</span>
+                    <Bot className="text-sm text-tertiary animate-pulse" strokeWidth={1.5} />
                     <span className="animate-pulse">Processing context...</span>
                   </div>
                 </div>
@@ -338,7 +339,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
         )}
         <div className="relative flex items-center">
           {variant === 'default' && (
-            <span className="material-symbols-outlined text-neutral-500 text-sm absolute left-3">auto_awesome</span>
+            <Sparkles className="text-neutral-500 text-sm absolute left-3" strokeWidth={1.5} />
           )}
           <input
             type="text"
@@ -353,7 +354,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
           <div className="absolute right-2 flex items-center gap-1">
             {variant === 'evaluation' && (
               <button onClick={() => handleSendMessage()} className="p-1.5 text-primary hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-[18px]">send</span>
+                <Send className="w-[18px] h-[18px]" strokeWidth={1.5} />
               </button>
             )}
           </div>
@@ -368,9 +369,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
           isActuallyOpen ? 'right-[calc(20rem-12px)]' : 'right-0 rounded-r-none border-r-0'
         } ${isFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       >
-        <span className="material-symbols-outlined text-[14px]">
-          {isRightSidebarOpen ? 'chevron_right' : 'chevron_left'}
-        </span>
+        {isRightSidebarOpen ? <ChevronRight className="w-[14px] h-[14px]" strokeWidth={1.5} /> : <ChevronLeft className="w-[14px] h-[14px]" strokeWidth={1.5} />}
       </button>
     </>
   )

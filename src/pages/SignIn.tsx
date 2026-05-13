@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Sparkles, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { signIn, signInWithGoogle, signUp } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -85,7 +86,7 @@ export function SignIn() {
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10 animate-fade-up relative z-10">
         <div className="w-11 h-11 rounded-2xl obsidian-gradient flex items-center justify-center shadow-[0_12px_36px_-8px_rgb(124_58_237_/_0.6)] animate-float-soft">
-          <span className="material-symbols-outlined text-white text-xl">auto_awesome</span>
+          <Sparkles className="text-white text-xl" strokeWidth={1.5} />
         </div>
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight gradient-text">WeeklyOS</h1>
@@ -126,7 +127,7 @@ export function SignIn() {
               <span className="text-sm font-semibold">Continue with Google</span>
             </span>
             {isOAuthLoading && (
-              <span className="material-symbols-outlined animate-spin text-lg text-primary">progress_activity</span>
+              <Loader2 className="animate-spin text-lg text-primary" strokeWidth={1.5} />
             )}
           </button>
 
@@ -168,13 +169,13 @@ export function SignIn() {
           {/* Error / Message */}
           {error && (
             <div className="p-3 bg-error/10 border border-error/25 rounded-xl text-error text-sm animate-shake flex items-start gap-2">
-              <span className="material-symbols-outlined text-lg shrink-0">error</span>
+              <AlertCircle className="text-lg shrink-0" strokeWidth={1.5} />
               <span className="flex-1">{error}</span>
             </div>
           )}
           {message && (
             <div className="p-3 bg-tertiary/10 border border-tertiary/25 rounded-xl text-tertiary text-sm animate-fade-up flex items-start gap-2">
-              <span className="material-symbols-outlined text-lg shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              <CheckCircle2 className="text-lg shrink-0" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
               <span className="flex-1">{message}</span>
             </div>
           )}

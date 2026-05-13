@@ -1,4 +1,6 @@
+import { DynamicIcon } from '../ui/DynamicIcon';
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Habit } from '../../store/useHabitStore'
 import { HabitCard } from './HabitCard'
@@ -40,9 +42,7 @@ export function HabitGroupSection({
         onClick={() => setIsOpen(v => !v)}
         className="flex items-center gap-2 w-full group"
       >
-        <span className="material-symbols-outlined text-[18px]" style={{ color: meta.color }}>
-          {meta.icon}
-        </span>
+        <DynamicIcon name={meta.icon} className="w-[18px] h-[18px]" color={meta.color} strokeWidth={1.5} />
         <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: meta.color }}>
           {meta.label}
         </span>
@@ -50,12 +50,7 @@ export function HabitGroupSection({
           {habits.length}
         </span>
         <div className="flex-1 h-px bg-outline-variant/30 ml-2" />
-        <span
-          className="material-symbols-outlined text-[16px] text-on-surface-variant transition-transform duration-200 group-hover:text-on-surface"
-          style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
-        >
-          expand_more
-        </span>
+        <ChevronDown className="text-[16px] text-on-surface-variant transition-transform duration-200 group-hover:text-on-surface" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }} strokeWidth={1.5} />
       </button>
 
       {/* Cards */}

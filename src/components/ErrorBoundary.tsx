@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { AlertCircle } from 'lucide-react'
 
 interface Props {
   children: ReactNode
@@ -35,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
       <div className="min-h-screen bg-background flex items-center justify-center p-8">
         <div className="max-w-md w-full text-center space-y-6 glass-panel rounded-3xl p-8 animate-scale-in">
           <div className="w-16 h-16 rounded-2xl bg-error/15 ring-1 ring-error/35 flex items-center justify-center mx-auto shadow-[0_12px_32px_-8px_rgb(251_113_133_/_0.4)]">
-            <span className="material-symbols-outlined text-3xl text-error" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+            <AlertCircle className="text-3xl text-error" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-on-surface">Something went wrong</h1>

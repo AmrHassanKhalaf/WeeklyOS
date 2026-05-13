@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { Moon, Sun, Monitor } from 'lucide-react'
 import { useSettingsStore } from '../../store/useSettingsStore'
 import { cn } from '../../lib/cn'
 import { RippleContainer, useRipple } from './Ripple'
@@ -23,7 +24,7 @@ export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
     light: 'system',
     system: 'dark',
   }
-  const icon = theme === 'dark' ? 'dark_mode' : theme === 'light' ? 'light_mode' : 'routine'
+  const Icon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
   const label = theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'System'
 
   return (
@@ -42,16 +43,16 @@ export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
       )}
     >
       <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={icon}
+        <motion.div
+          key={theme}
           initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
           animate={{ rotate: 0, opacity: 1, scale: 1 }}
           exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="material-symbols-outlined text-[20px]"
+          className="flex items-center justify-center"
         >
-          {icon}
-        </motion.span>
+          <Icon className="w-5 h-5" strokeWidth={1.5} />
+        </motion.div>
       </AnimatePresence>
       {!compact && <span className="text-xs font-semibold">{label}</span>}
       <RippleContainer ripples={ripples} />

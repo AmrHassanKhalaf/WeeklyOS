@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Inbox, Sparkles, Send, PlusCircle, Tag, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { TaskCard } from '../components/TaskCard'
@@ -71,9 +72,7 @@ export function BrainDump() {
               variant="secondary"
               className="text-on-surface text-sm font-semibold disabled:opacity-50"
             >
-              <span className={`material-symbols-outlined text-lg ${isStructuring ? 'animate-spin' : ''}`}>
-                {isStructuring ? 'progress_activity' : 'auto_awesome'}
-              </span>
+              <Sparkles className={`w-5 h-5 ${isStructuring ? 'animate-spin' : ''}`} strokeWidth={1.5} />
               {isStructuring ? 'Saving...' : 'Structure Tasks'}
             </Button>
           </div>
@@ -95,7 +94,7 @@ export function BrainDump() {
               variant="secondary"
               className="text-sm font-bold"
             >
-              <span className="material-symbols-outlined text-sm">send</span>
+              <Send className="w-4 h-4" strokeWidth={1.5} />
               Send to Distribution
             </Button>
           </div>
@@ -109,7 +108,7 @@ export function BrainDump() {
             ))
           ) : brainDumpItems.length === 0 ? (
             <div className="text-center py-16">
-              <span className="material-symbols-outlined text-6xl text-neutral-700 block mb-4">inbox</span>
+              <Inbox className="text-6xl text-neutral-700 block mb-4" strokeWidth={1.5} />
               <p className="text-neutral-500">Your brain dump is empty.</p>
               <p className="text-neutral-600 text-sm mt-1">Start typing above and hit Structure Tasks.</p>
             </div>
@@ -137,7 +136,7 @@ export function BrainDump() {
                 className="p-5 border-2 border-dashed border-surface-variant rounded-xl flex items-center justify-center text-outline hover:border-outline hover:text-on-surface transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
+                  <PlusCircle className="w-6 h-6 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
                   <span className="text-sm font-semibold tracking-wide uppercase">Add a quick task</span>
                 </div>
               </div>
@@ -164,7 +163,7 @@ export function BrainDump() {
             }}
             className="flex items-center gap-2 px-6 py-3 bg-surface-bright text-on-surface rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors"
           >
-            <span className="material-symbols-outlined text-lg">tag</span>
+            <Tag className="w-5 h-5" strokeWidth={1.5} />
             Bulk Tag
           </button>
           <div className="w-[1px] h-8 bg-surface-variant mx-1" />
@@ -172,7 +171,7 @@ export function BrainDump() {
             onClick={deleteSelected}
             className="flex items-center gap-2 px-6 py-3 bg-error-container text-on-error-container rounded-xl text-xs font-bold hover:opacity-90 transition-colors"
           >
-            <span className="material-symbols-outlined text-lg">delete_sweep</span>
+            <Trash2 className="w-5 h-5" strokeWidth={1.5} />
             Delete Selected
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, lazy, Suspense, useRef } from 'react'
+import { Sparkles, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -23,7 +24,7 @@ function LoadingScreen() {
       <div className="flex flex-col items-center gap-5 animate-fade-up relative z-10">
         <div className="relative w-14 h-14">
           <div className="absolute inset-0 rounded-2xl obsidian-gradient animate-float-soft shadow-[0_18px_40px_-8px_rgb(124_58_237_/_0.65)] flex items-center justify-center">
-            <span className="material-symbols-outlined text-white text-2xl">auto_awesome</span>
+            <Sparkles className="text-white text-2xl" strokeWidth={1.5} />
           </div>
           <div className="absolute -inset-2 rounded-2xl border-2 border-primary/35 border-t-transparent animate-spin" />
         </div>
@@ -58,7 +59,7 @@ function PWAUpdateBanner() {
           role="status"
           aria-live="polite"
         >
-          <span className="material-symbols-outlined text-primary text-[20px] shrink-0">system_update</span>
+          <MonitorDown className="w-[20px] h-[20px] text-primary shrink-0" strokeWidth={1.5} />
           <p className="flex-1 text-[13px] font-medium leading-snug">
             New version available
           </p>
@@ -76,7 +77,7 @@ function PWAUpdateBanner() {
             aria-label="Dismiss"
             className="shrink-0 text-on-surface-variant hover:text-on-surface transition-colors p-1"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <X className="text-[18px]" strokeWidth={1.5} />
           </button>
         </motion.div>
       )}

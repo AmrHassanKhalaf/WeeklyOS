@@ -8,6 +8,7 @@ import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
 import { Button } from '../components/ui/Button'
+import { Calendar, Brain, Tag, Sparkles, Loader2, X } from 'lucide-react'
 
 function extractJsonFromText(raw: string) {
   const trimmed = raw.trim()
@@ -208,7 +209,7 @@ Make sure:
               Week {currentWeek.weekNumber} — {currentWeek.dateRange.split('—')[1]?.trim() ?? String(currentWeek.year)}
             </h1>
             <p className="text-sm text-on-surface-variant flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">calendar_today</span>
+              <Calendar className="w-4 h-4 text-on-surface-variant/80" strokeWidth={1.5} />
               Distribution Phase: Aligning energy with impact.
             </p>
           </div>
@@ -221,7 +222,7 @@ Make sure:
               variant="secondary"
               className={brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
             >
-              <span className="material-symbols-outlined text-lg">psychology</span>
+              <Brain className="w-4 h-4" strokeWidth={2} />
               Assign Braindump
             </Button>
             <Button
@@ -231,7 +232,7 @@ Make sure:
               variant="ghost"
               className="text-xs font-semibold border border-white/10 hover:border-white/20"
             >
-              <span className="material-symbols-outlined text-lg">sell</span>
+              <Tag className="w-4 h-4" strokeWidth={2} />
               {showTags ? 'Hide Tags' : 'Show Tags'}
             </Button>
             <Button
@@ -242,9 +243,11 @@ Make sure:
               variant="primary"
               className={isDistributing || brainDumpItems.length === 0 ? 'opacity-50 cursor-not-allowed grayscale' : ''}
             >
-              <span className={`material-symbols-outlined text-lg ${isDistributing ? 'animate-spin' : ''}`}>
-                {isDistributing ? 'sync' : 'auto_mode'}
-              </span>
+              {isDistributing ? (
+                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
+              ) : (
+                <Sparkles className="w-4 h-4" strokeWidth={2} />
+              )}
               {isDistributing ? 'Distributing...' : 'Auto-distribute'}
             </Button>
           </div>
@@ -292,7 +295,7 @@ Make sure:
                   className="p-2 rounded-lg hover:bg-white/10 text-on-surface-variant"
                   title="Close"
                 >
-                  <span className="material-symbols-outlined">close</span>
+                  <X className="w-5 h-5" strokeWidth={1.5} />
                 </button>
               </div>
 

@@ -1,4 +1,5 @@
 import { AppLayout } from '../components/layout/AppLayout'
+import { AlertCircle, X, TrendingUp, ThumbsUp, Sparkles, ThumbsDown, Lightbulb } from 'lucide-react'
 import { useWeekStore } from '../store/useWeekStore'
 import { useAiApi } from '../hooks/useApi'
 import { useState, useEffect } from 'react'
@@ -99,10 +100,10 @@ export function WeeklyEvaluation() {
         {/* AI Error Banner */}
         {aiError && (
           <div className="flex items-center gap-3 bg-error/10 border border-error/20 rounded-xl px-5 py-3 mb-8">
-            <span className="material-symbols-outlined text-error text-xl shrink-0">error</span>
+            <AlertCircle className="text-error text-xl shrink-0" strokeWidth={1.5} />
             <p className="text-sm text-error flex-1">{aiError}</p>
             <button onClick={() => setAiError(null)} className="text-error/60 hover:text-error transition-colors" aria-label="Dismiss">
-              <span className="material-symbols-outlined text-lg">close</span>
+              <X className="text-lg" strokeWidth={1.5} />
             </button>
           </div>
         )}
@@ -119,7 +120,7 @@ export function WeeklyEvaluation() {
             <span className="text-xs uppercase tracking-widest text-on-surface-variant">Weekly Score</span>
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-5xl font-extrabold text-primary">{score}%</span>
-              <span className="material-symbols-outlined text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
+              <TrendingUp className="text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
             </div>
             <div className="mt-4 h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-primary-container to-primary" style={{ width: `${score}%` }} />
@@ -165,7 +166,7 @@ export function WeeklyEvaluation() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-tertiary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_up</span>
+                  <ThumbsUp className="text-tertiary text-xl" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-xl font-bold">What went well?</h3>
               </div>
@@ -174,7 +175,7 @@ export function WeeklyEvaluation() {
                 disabled={isGenerating['wentWell']}
                 className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                <Sparkles className="text-[14px]" strokeWidth={1.5} />
                 {isGenerating['wentWell'] ? 'Generating...' : 'Auto-Generate'}
               </button>
             </div>
@@ -192,7 +193,7 @@ export function WeeklyEvaluation() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-error text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_down</span>
+                  <ThumbsDown className="text-error text-xl" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-xl font-bold">Where did I struggle?</h3>
               </div>
@@ -201,7 +202,7 @@ export function WeeklyEvaluation() {
                 disabled={isGenerating['struggle']}
                 className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                <Sparkles className="text-[14px]" strokeWidth={1.5} />
                 {isGenerating['struggle'] ? 'Generating...' : 'Auto-Generate'}
               </button>
             </div>
@@ -219,7 +220,7 @@ export function WeeklyEvaluation() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
+                  <Lightbulb className="text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-xl font-bold">Lessons learned</h3>
               </div>
@@ -228,7 +229,7 @@ export function WeeklyEvaluation() {
                 disabled={isGenerating['lessons']}
                 className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                <Sparkles className="text-[14px]" strokeWidth={1.5} />
                 {isGenerating['lessons'] ? 'Generating...' : 'Auto-Generate'}
               </button>
             </div>
