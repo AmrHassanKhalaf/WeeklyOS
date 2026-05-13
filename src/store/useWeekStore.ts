@@ -796,6 +796,26 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
 
       // 4. Brain dump (MIGRATED to useBrainDumpStore)
+
+      // Step 6 — PWA Tab-Discard Reconnect
+      // When the browser discards a background tab to reclaim RAM, the JS heap is
+      // evicted. On return, the tab reloads — but if the SW serves the app shell
+      // from cache the HTML/JS loads instantly while the data is stale. This
+      // visibilitychange listener re-fetches only when the tab becomes visible
+      // again, without a full page reload.
+      const handleVisibility = () => {
+        if (document.visibilityState !== 'visible') return
+        // Re-initialize data if the week data is missing (stale or discarded)
+        const { currentWeek, isLoadingWeek } = get()
+        if (!currentWeek && !isLoadingWeek) {
+          console.info('[useWeekStore] Tab restored — re-initializing week data')
+          void get().initialize()
+        }
+      }
+
+      // Remove any previously registered listener before re-attaching
+      document.removeEventListener('visibilitychange', handleVisibility)
+      document.addEventListener('visibilitychange', handleVisibility)
     },
 
     goToWeek: async (weekNumber, year) => {

@@ -95,17 +95,10 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
   const shouldShowAssistant = isRightSidebarOpen && !isFocusMode
 
-  // Register the service worker and offline queue network listeners once on mount
+  // Register the offline queue network listeners once on mount.
+  // NOTE: Service worker registration is handled automatically by vite-plugin-pwa
+  // (injectRegister: 'auto') — do NOT call navigator.serviceWorker.register here.
   useEffect(() => {
-    // Register SW
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
-        .then((reg) => console.info('[SW] Registered:', reg.scope))
-        .catch((err) => console.warn('[SW] Registration failed:', err))
-    }
-
-    // Offline queue listeners
     const unregister = registerListeners()
     return unregister
   }, [registerListeners])

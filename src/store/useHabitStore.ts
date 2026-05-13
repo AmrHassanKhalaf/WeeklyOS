@@ -224,6 +224,18 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
 
       set({ habits, completions })
     })
+
+    // Step 6 — Tab-Discard Reconnect
+    // Re-load habits when the user returns to a background-discarded tab.
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return
+      if (get().habits.length === 0 && !get().isLoading) {
+        console.info('[useHabitStore] Tab restored — re-loading habit data')
+        void get().loadData()
+      }
+    }
+    document.removeEventListener('visibilitychange', handleVisibility)
+    document.addEventListener('visibilitychange', handleVisibility)
   },
 
   // ── CRUD ────────────────────────────────────────────────────────────────────

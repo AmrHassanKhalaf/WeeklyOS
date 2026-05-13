@@ -1,9 +1,11 @@
 import { useEffect, lazy, Suspense, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useWeekStore } from './store/useWeekStore'
 import { useSettingsStore } from './store/useSettingsStore'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { usePWA } from './hooks/usePWA'
 
 const SignIn = lazy(() => import('./pages/SignIn').then(m => ({ default: m.SignIn })))
 const loadDashboard = () => import('./pages/Dashboard').then(m => ({ default: m.Dashboard }))
@@ -30,6 +32,55 @@ function LoadingScreen() {
         </p>
       </div>
     </div>
+  )
+}
+
+// ── PWA Update Banner ─────────────────────────────────────────────────────────
+// Non-intrusive bottom banner that appears when a new SW version is waiting.
+function PWAUpdateBanner() {
+  const { needsRefresh, updateApp } = usePWA()
+
+  return (
+    <AnimatePresence>
+      {needsRefresh && (
+        <motion.div
+          key="pwa-update-banner"
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+          className={
+            'fixed bottom-4 left-1/2 -translate-x-1/2 z-[9998] ' +
+            'flex items-center gap-3 px-4 py-3 rounded-2xl ' +
+            'bg-surface-container border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl ' +
+            'text-sm text-on-surface max-w-sm w-[calc(100%-2rem)]'
+          }
+          role="status"
+          aria-live="polite"
+        >
+          <span className="material-symbols-outlined text-primary text-[20px] shrink-0">system_update</span>
+          <p className="flex-1 text-[13px] font-medium leading-snug">
+            New version available
+          </p>
+          <button
+            onClick={updateApp}
+            className={
+              'shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-bold uppercase tracking-widest ' +
+              'bg-primary text-on-primary hover:bg-primary/90 active:scale-95 transition-all'
+            }
+          >
+            Update
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            aria-label="Dismiss"
+            className="shrink-0 text-on-surface-variant hover:text-on-surface transition-colors p-1"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -110,6 +161,8 @@ export default function App() {
           <AppRouter />
         </AuthProvider>
       </ErrorBoundary>
+      {/* PWA update banner — outside AuthProvider so it shows even on /signin */}
+      <PWAUpdateBanner />
     </BrowserRouter>
   )
 }
