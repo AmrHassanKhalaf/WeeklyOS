@@ -4,6 +4,17 @@ import { useWeekStore } from '../store/useWeekStore'
 import { useAiApi } from '../hooks/useApi'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { 
+  AlertCircle, 
+  X, 
+  Trash2, 
+  Trophy, 
+  Pencil, 
+  Brain, 
+  Sparkles, 
+  Zap, 
+  LineChart 
+} from 'lucide-react'
 
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
@@ -132,14 +143,14 @@ export function Dashboard() {
         {/* AI Error Banner */}
         {aiError && (
           <div className="flex items-center gap-3 bg-error/10 border border-error/20 rounded-xl px-5 py-3">
-            <span className="material-symbols-outlined text-error text-xl shrink-0">error</span>
+            <AlertCircle className="w-5 h-5 text-error shrink-0" />
             <p className="text-sm text-error flex-1">{aiError}</p>
             <button
               onClick={() => setAiError(null)}
               className="text-error/60 hover:text-error transition-colors"
               aria-label="Dismiss error"
             >
-              <span className="material-symbols-outlined text-lg">close</span>
+              <X className="w-[18px] h-[18px]" strokeWidth={2} />
             </button>
           </div>
         )}
@@ -152,8 +163,8 @@ export function Dashboard() {
                   <span className="inline-block w-6 h-px bg-primary/60" />
                   Week {summary.weekNumber}
                 </p>
-                <h2 className="text-4xl font-extrabold tracking-tight mb-2 gradient-text">{summary.title}</h2>
-                <p className="text-on-surface-variant max-w-lg">
+                <h2 className="text-3xl font-bold tracking-tight mb-3 gradient-text">{summary.title}</h2>
+                <p className="text-on-surface-variant/90 text-sm max-w-lg leading-relaxed">
                   {summary.dateRange}. Status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
                 </p>
               </>
@@ -166,7 +177,7 @@ export function Dashboard() {
           </div>
           <div className="flex items-center gap-6 shrink-0">
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Week Score</p>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-medium">Week Score</p>
               {hasSummary ? (
                 <motion.p
                   key={summary.score}
@@ -181,9 +192,9 @@ export function Dashboard() {
                 <Skeleton className="h-8 w-16" />
               )}
             </div>
-            <div className="w-px h-10 bg-surface-variant" />
+            <div className="w-px h-10 bg-surface-variant/50" />
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Completed</p>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-medium">Completed</p>
               {tasksReady ? (
                 <motion.p
                   key={`${currentWeek.totalCompleted}-${currentWeek.totalPlanned}`}
@@ -198,7 +209,7 @@ export function Dashboard() {
                 <Skeleton className="h-8 w-20" />
               )}
             </div>
-            <div className="w-px h-10 bg-surface-variant" />
+            <div className="w-px h-10 bg-surface-variant/50" />
             <button 
               onClick={() => {
                 if (confirm('Are you sure you want to clear ALL data for this week? this includes all tasks and notes.')) {
@@ -206,10 +217,10 @@ export function Dashboard() {
                 }
               }}
               disabled={!tasksReady}
-              className="p-3 text-on-surface-variant hover:text-error transition-colors rounded-xl hover:bg-error/5 group disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-3 text-neutral-500 hover:text-error transition-colors rounded-xl hover:bg-error/5 group disabled:opacity-40 disabled:cursor-not-allowed focus-ring"
               title="Clear Entire Week Data"
             >
-              <span className="material-symbols-outlined text-2xl group-active:scale-95 transition-transform">delete_forever</span>
+              <Trash2 className="w-5 h-5 group-active:scale-95 transition-transform" strokeWidth={1.5} />
             </button>
           </div>
         </section>
@@ -230,7 +241,7 @@ export function Dashboard() {
               {/* Header Section */}
               <div className="relative z-10 flex flex-col gap-6">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <span className="material-symbols-outlined text-6xl text-primary">emoji_events</span>
+                  <Trophy className="w-16 h-16 text-primary" strokeWidth={1} />
                 </div>
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -241,10 +252,10 @@ export function Dashboard() {
                     </span>
                     <button 
                       onClick={() => { setManualChallenge(challengeTitle || ''); setIsEditingChallenge(true); }}
-                      className="ml-2 text-primary hover:text-white transition-colors flex items-center justify-center w-5 h-5 rounded-full hover:bg-white/10"
+                      className="ml-2 text-primary hover:text-white transition-colors flex items-center justify-center w-6 h-6 rounded-md hover:bg-white/10"
                       title="Edit Challenge"
                     >
-                      <span className="material-symbols-outlined text-[13px]">edit</span>
+                      <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
                     </button>
                   </div>
                   {isMotionReady ? (
@@ -281,7 +292,7 @@ export function Dashboard() {
           <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
           <Section variant="glass" className="border border-dashed border-white/20 flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-2xl text-primary">psychology</span>
+                <Brain className="w-6 h-6 text-primary" strokeWidth={1.5} />
                 <div>
                   <h3 className="text-on-surface font-bold text-lg">Define Weekly Challenge</h3>
                   <p className="text-sm text-on-surface-variant">Set a goal manually or let AI generate one based on your pending tasks.</p>
@@ -327,7 +338,7 @@ export function Dashboard() {
                     size="sm"
                     className="text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                    <Sparkles className="w-4 h-4" strokeWidth={1.5} />
                     {isGeneratingChallenge ? 'Generating...' : 'Auto-Generate via AI'}
                   </Button>
                   {isEditingChallenge && currentWeek.challengeTitle && (
@@ -415,7 +426,7 @@ export function Dashboard() {
               className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full"
               style={{ background: 'radial-gradient(circle, rgb(34 211 238 / 0.22), transparent 65%)' }}
             />
-            <span className="material-symbols-outlined absolute top-[-20px] right-[-12px] text-9xl text-tertiary opacity-10 rotate-12 pointer-events-none">bolt</span>
+            <Zap className="absolute top-[-20px] right-[-12px] w-28 h-28 text-tertiary opacity-10 rotate-12 pointer-events-none" strokeWidth={1} />
             <p className="text-[10px] uppercase tracking-[0.28em] text-tertiary font-extrabold mb-2">Focus Mode</p>
             <h3 className="text-xl font-bold mb-4 text-on-surface">AI Insight</h3>
             <p className="text-sm text-on-surface-variant mb-8 leading-relaxed flex-1">
@@ -428,7 +439,7 @@ export function Dashboard() {
               loading={isInsightLoading}
               variant="tertiary"
               className="w-full"
-              leftIcon={!isInsightLoading ? <span className="material-symbols-outlined text-sm">analytics</span> : undefined}
+              leftIcon={!isInsightLoading ? <LineChart className="w-4 h-4" strokeWidth={1.5} /> : undefined}
             >
               {isInsightLoading ? 'Generating…' : 'Analyze My Week'}
             </Button>

@@ -1,6 +1,7 @@
 import type { DayPlan, DayOfWeek } from '../data/mockData'
 import { useWeekStore } from '../store/useWeekStore'
 import { useState, useEffect } from 'react'
+import { CheckCircle2, CircleDashed, Trash2, Edit3 } from 'lucide-react'
 import { cn } from '../lib/cn'
 
 interface DayCardProps {
@@ -107,15 +108,11 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
               : 'bg-primary/10 ring-1 ring-primary/25',
           )}
         >
-          <span
-            className={cn(
-              'material-symbols-outlined text-base',
-              day.progress === 100 ? 'text-tertiary' : 'text-primary',
-            )}
-            style={day.progress === 100 ? { fontVariationSettings: "'FILL' 1" } : {}}
-          >
-            {day.progress === 100 ? 'check_circle' : 'pending'}
-          </span>
+          {day.progress === 100 ? (
+            <CheckCircle2 className="w-4 h-4 text-tertiary" strokeWidth={2} />
+          ) : (
+            <CircleDashed className="w-4 h-4 text-primary" strokeWidth={2} />
+          )}
         </div>
 
         <button
@@ -124,7 +121,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
           title="Clear Day Data"
           aria-label={`Clear ${day.day} data`}
         >
-          <span className="material-symbols-outlined text-base group-active:scale-90 transition-transform">delete_sweep</span>
+          <Trash2 className="w-4 h-4 group-active:scale-90 transition-transform" strokeWidth={1.5} />
         </button>
       </div>
 
@@ -224,7 +221,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
         <div className="mt-8 pt-6 border-t border-outline-variant/15 space-y-3">
           <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant/70">
             <span className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-xs">edit_note</span>
+              <Edit3 className="w-3.5 h-3.5" strokeWidth={2} />
               Daily Reflections / Constraints
             </span>
           </div>
