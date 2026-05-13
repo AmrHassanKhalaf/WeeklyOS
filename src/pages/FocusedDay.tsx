@@ -23,6 +23,33 @@ function CircularProgress({ progress, phase, size = 240 }: { progress: number; p
   const circumference = 2 * Math.PI * r
   const offset = circumference * (1 - progress)
   const color = phase === 'focus' ? '#8b5cf6' : '#0ea5e9'
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      
+      if (e.key.toLowerCase() === 'f') {
+        e.preventDefault()
+        if (isFocusMode) setFocusMode(false)
+        else setFocusMode(true, 'deep')
+      } else if (e.key === 'Escape') {
+        if (isFocusMode && focusLevel === 'deep') {
+          e.preventDefault()
+          setFocusMode(false)
+        }
+      } else if (e.key === ' ') {
+        if (isFocusMode && focusLevel === 'deep') {
+          e.preventDefault()
+          handleToggle()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFocusMode, focusLevel, setFocusMode, handleToggle])
+
+  const [showEndConfirm, setShowEndConfirm] = useState(false)
+  
   return (
     <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
       <circle cx={size/2} cy={size/2} r={r+10} fill="none" stroke={color} strokeWidth={1} strokeOpacity={0.1} />
@@ -162,7 +189,8 @@ export function FocusedDay() {
     focusSessions,
     saveFocusSession
   } = useWeekStore()
-  const { isFocusMode, toggleFocusMode } = useLayoutStore()
+  const { isFocusMode, focusLevel, setFocusMode } = useLayoutStore()
+  const [showFocusMenu, setShowFocusMenu] = useState(false)
 
   const workerRef = useRef<Worker | null>(null)
   const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -396,7 +424,7 @@ export function FocusedDay() {
             animate={{ opacity: 1, backdropFilter: 'blur(30px)' }}
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505]/90 overflow-hidden font-body"
+            className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#030303] overflow-hidden font-body ${isIdle ? 'cursor-none' : ''}`}
           >
             {/* Ambient breathing glow */}
             <motion.div 
@@ -406,7 +434,7 @@ export function FocusedDay() {
               }}
               transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
               className={`absolute w-[800px] h-[800px] rounded-full blur-[140px] pointer-events-none ${
-                pomodoroPhase === 'focus' ? 'bg-violet-600/30' : 'bg-sky-500/30'
+                pomodoroPhase === 'focus' ? 'bg-violet-600/40' : 'bg-sky-500/40'
               }`}
             />
 
@@ -444,7 +472,7 @@ export function FocusedDay() {
                 transition={{ duration: 5, times: [0, 0.2, 0.8, 1] }}
                 className="absolute -top-20 text-violet-300/60 font-medium tracking-[0.3em] uppercase text-xs"
               >
-                {pomodoroPhase === 'focus' ? 'Deep work starts now.' : 'Rest and recharge.'}
+                {pomodoroPhase === 'focus' ? 'One thing. One session.' : 'Rest and recharge.'}
               </motion.p>
 
               {/* Main Timer */}
@@ -458,7 +486,7 @@ export function FocusedDay() {
                   }`}>
                     {pomodoroPhase === 'focus' ? 'Focus Session' : 'Break Time'}
                   </span>
-                  <span className="text-8xl md:text-[140px] font-mono font-black text-white tabular-nums tracking-tighter leading-none drop-shadow-[0_0_40px_rgba(255,255,255,0.15)]">
+                  <motion.div layoutId="pomodoro-time-box" className="bg-transparent border-transparent"><motion.span layoutId="pomodoro-time-text" className="text-8xl md:text-[140px] font-mono font-black text-white tabular-nums tracking-tighter leading-none drop-shadow-[0_0_40px_rgba(255,255,255,0.15)]">
                     {formatTime(pomodoroTime)}
                   </span>
                 </div>
@@ -513,12 +541,25 @@ export function FocusedDay() {
         )}
       </AnimatePresence>
 
-      <div className={`max-w-[1200px] mx-auto px-4 md:px-8 py-10 pb-24 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            {/* Background Darkener for Minimal Focus */}
+      <AnimatePresence>
+        {isFocusMode && focusLevel === 'minimal' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
+            className="fixed inset-0 bg-[#050505]/60 pointer-events-none z-0"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.div layout className={`max-w-[1200px] mx-auto px-4 md:px-8 py-10 pb-24 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         isFocusMode ? 'opacity-0 blur-2xl scale-[0.98] pointer-events-none absolute' : 'opacity-100 blur-0 scale-100'
       }`}>
         
         {/* ── Left Column (Main Content) ─────────────────────────────────── */}
-        <div className="space-y-10">
+        <motion.div layout className="space-y-10">
 
           {/* ── Header ─────────────────────────────────────────────────────── */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -579,7 +620,7 @@ export function FocusedDay() {
                   <div className={`px-4 py-2 rounded-2xl border backdrop-blur-sm shadow-[0_0_25px_rgba(124,58,237,0.2)] ${
                     pomodoroPhase === 'focus' ? 'bg-violet-500/10 border-violet-300/30' : 'bg-sky-500/10 border-sky-300/30'
                   }`}>
-                    <span className="text-6xl md:text-7xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
+                    <motion.span layoutId="pomodoro-time-text" className="text-6xl md:text-7xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
                       {formatTime(pomodoroTime)}
                     </span>
                   </div>

@@ -9,6 +9,8 @@ import { persist } from 'zustand/middleware'
  */
 export type SidebarMode = 'expanded' | 'rail' | 'hidden'
 
+export type FocusModeLevel = 'minimal' | 'deep'
+
 interface LayoutState {
   /** Primary source of truth for desktop/tablet sidebar */
   sidebarMode: SidebarMode
@@ -18,7 +20,10 @@ interface LayoutState {
 
   isRightSidebarOpen: boolean
   isMobile: boolean
+  
+  // Focus Mode
   isFocusMode: boolean
+  focusLevel: FocusModeLevel
 
   /** Actions */
   toggleLeftSidebar: () => void
@@ -28,6 +33,8 @@ interface LayoutState {
 
   toggleRightSidebar: () => void
   toggleFocusMode: () => void
+  setFocusMode: (isActive: boolean, level?: FocusModeLevel) => void
+  setFocusLevel: (level: FocusModeLevel) => void
   setMobile: (isMobile: boolean) => void
   closeSidebarsOnMobile: () => void
 }
@@ -43,6 +50,7 @@ export const useLayoutStore = create<LayoutState>()(
       isRightSidebarOpen: false,
       isMobile: initialIsMobile,
       isFocusMode: false,
+      focusLevel: 'minimal',
 
       toggleLeftSidebar: () =>
         set((state) => {
@@ -74,7 +82,15 @@ export const useLayoutStore = create<LayoutState>()(
         set(() => ({ sidebarMode: mode, isLeftSidebarOpen: mode !== 'hidden' })),
 
       toggleRightSidebar: () => set((state) => ({ isRightSidebarOpen: !state.isRightSidebarOpen })),
+      
       toggleFocusMode: () => set((state) => ({ isFocusMode: !state.isFocusMode })),
+      
+      setFocusMode: (isActive, level) => set((state) => ({
+        isFocusMode: isActive,
+        focusLevel: level !== undefined ? level : state.focusLevel
+      })),
+
+      setFocusLevel: (level) => set({ focusLevel: level }),
 
       setMobile: (isMobile) =>
         set((state) => {
@@ -109,8 +125,12 @@ export const useLayoutStore = create<LayoutState>()(
     }),
     {
       name: 'weeklyos:layout',
-      // Only persist user preferences (NOT isMobile which is derived from viewport)
-      partialize: (state) => ({ sidebarMode: state.sidebarMode }),
+      // Only persist user preferences
+      partialize: (state) => ({ 
+        sidebarMode: state.sidebarMode,
+        focusLevel: state.focusLevel,
+        isFocusMode: state.isFocusMode
+      }),
     },
   ),
 )
