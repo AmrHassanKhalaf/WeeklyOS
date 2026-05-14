@@ -10,6 +10,7 @@ import { HabitSummaryBar } from '../components/habittracker/HabitSummaryBar'
 import { Skeleton } from '../components/ui/Skeleton'
 import { FloatingActionButton } from '../components/ui/FloatingActionButton'
 import { useLayoutStore } from '../store/useLayoutStore'
+import { Plus, CheckCircle2, Ban, Flame, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const getDaysInMonth = (m: number, y: number) => new Date(y, m, 0).getDate()
@@ -20,7 +21,7 @@ function EmptyHabits({ tab, onAdd }: { tab: 'build' | 'break'; onAdd: () => void
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-16 text-center gap-4">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
-        <span className="material-symbols-outlined text-4xl" style={{ color }}>{isBuild ? 'add_task' : 'do_not_disturb_on'}</span>
+        {isBuild ? <CheckCircle2 className="w-9 h-9" color={color} strokeWidth={1.5} /> : <Ban className="w-9 h-9" color={color} strokeWidth={1.5} />}
       </div>
       <div>
         <h3 className="text-lg font-bold text-on-surface mb-1">{isBuild ? 'No build habits yet' : 'No break habits yet'}</h3>
@@ -29,7 +30,7 @@ function EmptyHabits({ tab, onAdd }: { tab: 'build' | 'break'; onAdd: () => void
         </p>
       </div>
       <button onClick={onAdd} className="btn btn-sm font-semibold" style={{ background: `${color}18`, color, border: `1px solid ${color}30` }}>
-        <span className="material-symbols-outlined text-base">add</span>
+        <Plus className="w-4 h-4" strokeWidth={2} />
         {isBuild ? 'Add Build Habit' : 'Add Break Habit'}
       </button>
     </motion.div>
@@ -82,7 +83,7 @@ export function HabitTracker() {
           border: active ? `1.5px solid ${color}30` : '1.5px solid transparent',
         }}
       >
-        <span className="material-symbols-outlined text-[18px]">{isBuild ? 'check_circle' : 'block'}</span>
+        {isBuild ? <CheckCircle2 className="w-[18px] h-[18px]" strokeWidth={2} /> : <Ban className="w-[18px] h-[18px]" strokeWidth={2} />}
         {isBuild ? 'Build Habits' : 'Break Habits'}
         {count > 0 && (
           <span className="text-[11px] font-black px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center"
@@ -103,13 +104,13 @@ export function HabitTracker() {
         <section className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="material-symbols-outlined text-primary text-2xl">local_fire_department</span>
+              <Flame className="w-6 h-6 text-primary" strokeWidth={2} />
               <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">Habit Tracker</h1>
             </div>
             <p className="text-sm text-on-surface-variant">Build consistency, break patterns, and track your month.</p>
           </div>
           <button onClick={handleOpenAdd} className="btn btn-primary">
-            <span className="material-symbols-outlined text-lg">add</span>Add Habit
+            <Plus className="w-5 h-5" strokeWidth={2} />Add Habit
           </button>
         </section>
 
@@ -117,14 +118,14 @@ export function HabitTracker() {
         <section className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button onClick={goToPrevMonth} className="w-9 h-9 rounded-xl btn btn-ghost flex items-center justify-center">
-              <span className="material-symbols-outlined text-xl">chevron_left</span>
+              <ChevronLeft className="w-5 h-5" strokeWidth={2} />
             </button>
             <div className="text-center min-w-[9rem]">
               <p className="text-lg font-extrabold text-on-surface">{MONTH_NAMES[currentMonth - 1]}</p>
               <p className="text-[11px] text-on-surface-variant font-semibold">{currentYear}</p>
             </div>
             <button onClick={goToNextMonth} disabled={isNextMonth} className="w-9 h-9 rounded-xl btn btn-ghost flex items-center justify-center disabled:opacity-30">
-              <span className="material-symbols-outlined text-xl">chevron_right</span>
+              <ChevronRight className="w-5 h-5" strokeWidth={2} />
             </button>
             {!isCurrentMonth && (
               <button onClick={() => useHabitStore.getState().setMonth(todayMonth, todayYear)} className="btn btn-sm btn-secondary text-xs">Today</button>
@@ -153,13 +154,13 @@ export function HabitTracker() {
           {viewMode === 'weekly' && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-3">
               <button onClick={() => setWeekOffset(v => Math.max(0, v - 1))} disabled={weekOffset === 0} className="btn btn-ghost btn-sm disabled:opacity-30">
-                <span className="material-symbols-outlined text-lg">chevron_left</span>Prev Week
+                <ChevronLeft className="w-5 h-5" strokeWidth={2} />Prev Week
               </button>
               <span className="text-sm font-semibold text-on-surface-variant flex-1 text-center">
                 Days {weekOffset * 7 + 1}–{Math.min((weekOffset + 1) * 7, totalDays)}
               </span>
               <button onClick={() => setWeekOffset(v => Math.min(maxWeekOffset, v + 1))} disabled={weekOffset >= maxWeekOffset} className="btn btn-ghost btn-sm disabled:opacity-30">
-                Next Week<span className="material-symbols-outlined text-lg">chevron_right</span>
+                Next Week<ChevronRight className="w-5 h-5" strokeWidth={2} />
               </button>
             </motion.div>
           )}
@@ -184,7 +185,7 @@ export function HabitTracker() {
 
         {error && (
           <div className="flex items-center gap-3 bg-error/10 border border-error/20 rounded-xl px-5 py-3">
-            <span className="material-symbols-outlined text-error text-xl shrink-0">error</span>
+            <AlertCircle className="w-5 h-5 text-error shrink-0" strokeWidth={2} />
             <p className="text-sm text-error flex-1">{error}</p>
           </div>
         )}
@@ -202,14 +203,14 @@ export function HabitTracker() {
             {habits.length === 0 ? (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-24 text-center gap-5">
                 <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-4xl">local_fire_department</span>
+                  <Flame className="w-9 h-9 text-primary" strokeWidth={1.5} />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-on-surface mb-2">No habits yet this month</h3>
                   <p className="text-sm text-on-surface-variant max-w-sm leading-relaxed">Start small — consistency beats intensity.</p>
                 </div>
                 <button onClick={handleOpenAdd} className="btn btn-primary btn-lg">
-                  <span className="material-symbols-outlined text-lg">add</span>Add Your First Habit
+                  <Plus className="w-5 h-5" strokeWidth={2} />Add Your First Habit
                 </button>
               </motion.div>
             ) : (
@@ -244,7 +245,7 @@ export function HabitTracker() {
       {isMobile && (
         <FloatingActionButton
           label="Add habit"
-          icon={<span className="material-symbols-outlined">add</span>}
+          icon={<Plus className="w-6 h-6" strokeWidth={2} />}
           onClick={handleOpenAdd}
           show={!isModalOpen && !detailHabit}
         />

@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '../../lib/cn'
-import { RippleContainer, useRipple } from './Ripple'
+import { RippleContainer } from './Ripple'
+import { useRipple } from './useRipple'
 
 type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'danger'
 type ButtonSize = 'sm' | 'md' | 'lg'

@@ -1,8 +1,10 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { LayoutDashboard, CalendarRange, Flame, BarChart3, Menu } from 'lucide-react'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
-import { RippleContainer, useRipple } from '../ui/Ripple'
+import { RippleContainer } from '../ui/Ripple'
+import { useRipple } from '../ui/useRipple'
 import { cn } from '../../lib/cn'
 
 /**
@@ -10,20 +12,20 @@ import { cn } from '../../lib/cn'
  * containing the full sidebar nav for secondary destinations.
  */
 const TABS = [
-  { to: '/dashboard',           icon: 'dashboard',             label: 'Home'    },
-  { to: '/weekly-distribution', icon: 'calendar_view_week',    label: 'Plan'    },
-  { to: '/habit-tracker',       icon: 'local_fire_department', label: 'Habits'  },
-  { to: '/weekly-evaluation',   icon: 'assessment',            label: 'Stats'   },
+  { to: '/dashboard',           icon: LayoutDashboard, label: 'Home'    },
+  { to: '/weekly-distribution', icon: CalendarRange,   label: 'Plan'    },
+  { to: '/habit-tracker',       icon: Flame,           label: 'Habits'  },
+  { to: '/weekly-evaluation',   icon: BarChart3,       label: 'Stats'   },
 ] as const
 
 function Tab({
   to,
-  icon,
+  icon: Icon,
   label,
   pendingBadge,
 }: {
   to: string
-  icon: string
+  icon: React.ElementType
   label: string
   pendingBadge?: number
 }) {
@@ -44,17 +46,16 @@ function Tab({
             />
           )}
           <span className="relative">
-            <motion.span
+            <motion.div
               animate={{ scale: isActive ? 1.1 : 1, y: isActive ? -1 : 0 }}
               transition={{ type: 'spring', damping: 18, stiffness: 340 }}
               className={cn(
-                'material-symbols-outlined text-[22px] transition-colors',
-                isActive ? 'text-primary' : 'text-on-surface-variant',
+                'flex items-center justify-center transition-colors',
+                isActive ? 'text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : 'text-neutral-400',
               )}
-              style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
             >
-              {icon}
-            </motion.span>
+              <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.5} />
+            </motion.div>
             {typeof pendingBadge === 'number' && pendingBadge > 0 && (
               <motion.span
                 key={pendingBadge}
@@ -70,7 +71,7 @@ function Tab({
           <span
             className={cn(
               'text-[10px] font-bold tracking-wide transition-colors',
-              isActive ? 'text-primary' : 'text-on-surface-variant',
+              isActive ? 'text-primary' : 'text-neutral-400',
             )}
           >
             {label}
@@ -135,17 +136,17 @@ export function MobileBottomNav() {
             aria-expanded={isLeftSidebarOpen}
             aria-label="Open menu"
           >
-            <motion.span
+            <motion.div
               animate={{ rotate: isLeftSidebarOpen ? 90 : 0 }}
               transition={{ type: 'spring', damping: 18, stiffness: 280 }}
               className={cn(
-                'material-symbols-outlined text-[22px]',
-                !activePath ? 'text-primary' : 'text-on-surface-variant',
+                'flex items-center justify-center transition-colors',
+                !activePath ? 'text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : 'text-neutral-400',
               )}
             >
-              menu
-            </motion.span>
-            <span className="text-[10px] font-bold tracking-wide text-on-surface-variant">
+              <Menu className="w-[22px] h-[22px]" strokeWidth={!activePath ? 2 : 1.5} />
+            </motion.div>
+            <span className="text-[10px] font-bold tracking-wide text-neutral-400">
               More
             </span>
             <RippleContainer ripples={ripples} />

@@ -256,7 +256,7 @@ export function generateCompleteDataset(options: SeederOptions = {}) {
 /**
  * Export seed data to JSON format
  */
-export function exportToJSON(data: any): string {
+export function exportToJSON(data: unknown): string {
   return JSON.stringify(data, null, 2);
 }
 

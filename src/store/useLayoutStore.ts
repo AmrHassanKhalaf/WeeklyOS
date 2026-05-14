@@ -9,6 +9,8 @@ import { persist } from 'zustand/middleware'
  */
 export type SidebarMode = 'expanded' | 'rail' | 'hidden'
 
+export type FocusModeLevel = 'minimal' | 'deep'
+
 interface LayoutState {
   /** Primary source of truth for desktop/tablet sidebar */
   sidebarMode: SidebarMode
@@ -18,7 +20,14 @@ interface LayoutState {
 
   isRightSidebarOpen: boolean
   isMobile: boolean
+  
+  // ── Focus Mode ──────────────────────────────────────────────────────────────
   isFocusMode: boolean
+  focusLevel: FocusModeLevel
+  /** Transient: whether the focus level picker popover is open */
+  isFocusPickerOpen: boolean
+  /** User preference: automatically enter Focus Mode when a pomodoro session starts */
+  autoEnterFocusOnStart: boolean
 
   /** Actions */
   toggleLeftSidebar: () => void
@@ -28,6 +37,11 @@ interface LayoutState {
 
   toggleRightSidebar: () => void
   toggleFocusMode: () => void
+  setFocusMode: (isActive: boolean, level?: FocusModeLevel) => void
+  setFocusLevel: (level: FocusModeLevel) => void
+  openFocusPicker: () => void
+  closeFocusPicker: () => void
+  setAutoEnterFocus: (value: boolean) => void
   setMobile: (isMobile: boolean) => void
   closeSidebarsOnMobile: () => void
 }
@@ -43,15 +57,16 @@ export const useLayoutStore = create<LayoutState>()(
       isRightSidebarOpen: false,
       isMobile: initialIsMobile,
       isFocusMode: false,
+      focusLevel: 'minimal',
+      isFocusPickerOpen: false,
+      autoEnterFocusOnStart: false,
 
       toggleLeftSidebar: () =>
         set((state) => {
           if (state.isMobile) {
-            // On mobile this is a drawer: toggle visible / hidden
             const open = !state.isLeftSidebarOpen
             return { isLeftSidebarOpen: open, sidebarMode: open ? 'expanded' : 'hidden' }
           }
-          // Desktop: toggle between hidden and last non-hidden mode (default expanded)
           if (state.sidebarMode === 'hidden') {
             return { sidebarMode: 'expanded', isLeftSidebarOpen: true }
           }
@@ -74,12 +89,28 @@ export const useLayoutStore = create<LayoutState>()(
         set(() => ({ sidebarMode: mode, isLeftSidebarOpen: mode !== 'hidden' })),
 
       toggleRightSidebar: () => set((state) => ({ isRightSidebarOpen: !state.isRightSidebarOpen })),
-      toggleFocusMode: () => set((state) => ({ isFocusMode: !state.isFocusMode })),
+      
+      toggleFocusMode: () => set((state) => ({
+        isFocusMode: !state.isFocusMode,
+        isFocusPickerOpen: false,
+      })),
+      
+      setFocusMode: (isActive, level) => set((state) => ({
+        isFocusMode: isActive,
+        focusLevel: level !== undefined ? level : state.focusLevel,
+        isFocusPickerOpen: false,
+      })),
+
+      setFocusLevel: (level) => set({ focusLevel: level }),
+
+      openFocusPicker: () => set({ isFocusPickerOpen: true }),
+      closeFocusPicker: () => set({ isFocusPickerOpen: false }),
+
+      setAutoEnterFocus: (value) => set({ autoEnterFocusOnStart: value }),
 
       setMobile: (isMobile) =>
         set((state) => {
           if (isMobile && !state.isMobile) {
-            // Entering mobile: hide desktop sidebars
             return {
               isMobile,
               sidebarMode: 'hidden',
@@ -88,7 +119,6 @@ export const useLayoutStore = create<LayoutState>()(
             }
           }
           if (!isMobile && state.isMobile) {
-            // Leaving mobile: restore to expanded by default
             return {
               isMobile,
               sidebarMode: 'expanded',
@@ -109,8 +139,13 @@ export const useLayoutStore = create<LayoutState>()(
     }),
     {
       name: 'weeklyos:layout',
-      // Only persist user preferences (NOT isMobile which is derived from viewport)
-      partialize: (state) => ({ sidebarMode: state.sidebarMode }),
+      // Only persist user preferences, not transient UI state
+      partialize: (state) => ({ 
+        sidebarMode: state.sidebarMode,
+        focusLevel: state.focusLevel,
+        isFocusMode: state.isFocusMode,
+        autoEnterFocusOnStart: state.autoEnterFocusOnStart,
+      }),
     },
   ),
 )

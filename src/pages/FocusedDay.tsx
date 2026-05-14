@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown, Pin, Star } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
 import { useWeekStore } from '../store/useWeekStore'
@@ -6,6 +8,9 @@ import type { Task } from '../store/useWeekStore'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
+import { DeepFocusOverlay } from '../components/focus/DeepFocusOverlay'
+import { MinimalFocusBanner } from '../components/focus/MinimalFocusBanner'
+import { FocusModeMenu } from '../components/focus/FocusModeMenu'
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 const PRESETS = [
@@ -96,7 +101,7 @@ function TaskRow({
         className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
           ${done ? 'border-neutral-600 bg-neutral-700' : 'border-neutral-600 hover:border-neutral-400'}`}
       >
-        {done && <span className="material-symbols-outlined text-[11px] text-neutral-300" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>}
+        {done && <Check className="text-[11px] text-neutral-300" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />}
       </button>
 
       <span className={`flex-1 min-w-0 text-sm font-medium truncate ${done ? 'line-through text-neutral-600' : 'text-neutral-200'}`}>
@@ -106,12 +111,12 @@ function TaskRow({
       <div className="hidden sm:flex items-center gap-2 shrink-0">
         {task.estimatedTime && (
           <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border border-white/10 bg-white/5 text-neutral-500 uppercase tracking-wider whitespace-nowrap">
-            <span className="material-symbols-outlined text-[10px]">schedule</span>
+            <Clock className="text-[10px]" strokeWidth={1.5} />
             Duration: {task.estimatedTime}
           </span>
         )}
         <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border uppercase tracking-wider whitespace-nowrap ${durationPillCls}`}>
-          <span className="material-symbols-outlined text-[10px]">timer</span>
+          <Timer className="text-[10px]" strokeWidth={1.5} />
           Task Duration: {taskDuration}
         </span>
       </div>
@@ -160,7 +165,15 @@ export function FocusedDay() {
     focusSessions,
     saveFocusSession
   } = useWeekStore()
-  const { isFocusMode, toggleFocusMode } = useLayoutStore()
+  const {
+    isFocusMode,
+    focusLevel,
+    setFocusMode,
+    isFocusPickerOpen,
+    openFocusPicker,
+    closeFocusPicker,
+    autoEnterFocusOnStart,
+  } = useLayoutStore()
 
   const workerRef = useRef<Worker | null>(null)
   const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -169,6 +182,31 @@ export function FocusedDay() {
   const [customBreak, setCustomBreak] = useState(String(pomodoroBreakMin))
   const [showPresets, setShowPresets] = useState(false)
   const [sessionCount, setSessionCount] = useState(0)
+
+  // ── Global keyboard shortcut: F toggles focus picker ─────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key.toLowerCase() === 'f' && !isFocusPickerOpen) {
+        if (isFocusMode) {
+          setFocusMode(false)
+        } else {
+          openFocusPicker()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFocusMode, isFocusPickerOpen, setFocusMode, openFocusPicker])
+
+  // ── Auto-enter focus on session start ─────────────────────────────────────
+  const prevRunning = useRef(isPomodoroRunning)
+  useEffect(() => {
+    if (!prevRunning.current && isPomodoroRunning && autoEnterFocusOnStart && !isFocusMode) {
+      setFocusMode(true, focusLevel)
+    }
+    prevRunning.current = isPomodoroRunning
+  }, [isPomodoroRunning, autoEnterFocusOnStart, isFocusMode, focusLevel, setFocusMode])
 
   // ── Active Task Logic ───────────────────────────────────────────────────────
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
@@ -346,18 +384,77 @@ export function FocusedDay() {
 
   return (
     <AppLayout>
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-10 pb-24 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 items-start">
+      {/* ── Deep Focus Overlay (full immersion) ─────────────────────────────── */}
+      <DeepFocusOverlay
+        pomodoroTime={pomodoroTime}
+        totalPhaseSecs={totalSecs}
+        pomodoroPhase={pomodoroPhase}
+        isPomodoroRunning={isPomodoroRunning}
+        pomodoroFocusMin={pomodoroFocusMin}
+        pomodoroBreakMin={pomodoroBreakMin}
+        activeTaskTitle={
+          activeTaskId
+            ? [mainTask, ...mediumTasks, ...quickWins].find(t => t?.id === activeTaskId)?.title
+            : mainTask?.title
+        }
+        todayFocusSeconds={todayFocusSeconds}
+        sessionCount={sessionCount}
+        onToggle={handleToggle}
+        onReset={resetPomodoro}
+      />
+
+      {/* ── Minimal Focus Banner (floating timer pill) ──────────────────── */}
+      <MinimalFocusBanner
+        pomodoroTime={pomodoroTime}
+        pomodoroPhase={pomodoroPhase}
+        isPomodoroRunning={isPomodoroRunning}
+        activeTaskTitle={
+          activeTaskId
+            ? [mainTask, ...mediumTasks, ...quickWins].find(t => t?.id === activeTaskId)?.title
+            : mainTask?.title
+        }
+        onToggle={handleToggle}
+        onOpenPicker={openFocusPicker}
+      />
+
+      {/* ── Focus Mode Picker Menu ────────────────────────────────────── */}
+      <FocusModeMenu
+        isOpen={isFocusPickerOpen}
+        onClose={closeFocusPicker}
+      />
+
+      {/* ── Minimal Focus: subtle darkening overlay ───────────────────── */}
+      <AnimatePresence>
+        {isFocusMode && focusLevel === 'minimal' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: 'easeInOut' }}
+            className="fixed inset-0 bg-[#050505]/50 pointer-events-none z-[1]"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        layout
+        className={`max-w-[1200px] mx-auto px-4 md:px-8 pb-24 items-start transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isFocusMode && focusLevel === 'deep'
+            ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
+            : isFocusMode && focusLevel === 'minimal'
+            ? 'pt-16 grid grid-cols-1 gap-10 opacity-100'
+            : 'py-10 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-10 opacity-100'
+        }`}
+      >
         
         {/* ── Left Column (Main Content) ─────────────────────────────────── */}
-        <div className="space-y-10">
+        <motion.div layout className="space-y-10">
 
           {/* ── Header ─────────────────────────────────────────────────────── */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <span className="material-symbols-outlined text-primary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                bolt
-              </span>
+              <Zap className="text-primary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-on-surface">
                 Focused Day
               </h1>
@@ -412,9 +509,9 @@ export function FocusedDay() {
                   <div className={`px-4 py-2 rounded-2xl border backdrop-blur-sm shadow-[0_0_25px_rgba(124,58,237,0.2)] ${
                     pomodoroPhase === 'focus' ? 'bg-violet-500/10 border-violet-300/30' : 'bg-sky-500/10 border-sky-300/30'
                   }`}>
-                    <span className="text-6xl md:text-7xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
+                    <motion.span layoutId="pomodoro-time-text" className="text-6xl md:text-7xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
                       {formatTime(pomodoroTime)}
-                    </span>
+                    </motion.span>
                   </div>
                   {sessionCount > 0 && (
                     <span className="mt-2 text-[10px] text-neutral-500 tracking-widest uppercase">
@@ -438,7 +535,7 @@ export function FocusedDay() {
 
                 {/* Current preset display */}
                 <div className="flex items-center gap-2 text-sm text-neutral-400">
-                  <span className="material-symbols-outlined text-[18px]">timer</span>
+                  <Timer className="text-[18px]" strokeWidth={1.5} />
                   <span>{pomodoroFocusMin}min focus · {pomodoroBreakMin}min break</span>
                 </div>
 
@@ -451,9 +548,7 @@ export function FocusedDay() {
                     size="sm"
                     className="px-6 py-2.5 rounded-xl font-bold text-sm min-w-[140px]"
                   >
-                    <span className="material-symbols-outlined text-[18px]">
-                      {isPomodoroRunning ? 'pause' : 'play_arrow'}
-                    </span>
+                    {isPomodoroRunning ? <Pause className="w-[18px] h-[18px]" strokeWidth={1.5} /> : <Play className="w-[18px] h-[18px]" strokeWidth={1.5} />}
                     {isPomodoroRunning ? 'Pause Focus' : 'Start Focus'}
                   </Button>
 
@@ -464,21 +559,27 @@ export function FocusedDay() {
                     size="sm"
                     className="px-4 py-2.5 rounded-xl font-bold text-sm border border-white/10 hover:border-white/20"
                   >
-                    <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+                    <RotateCcw className="text-[18px]" strokeWidth={1.5} />
                     Reset
                   </Button>
 
                   <Button
                     type="button"
-                    onClick={toggleFocusMode}
+                    onClick={isFocusMode ? () => setFocusMode(false) : openFocusPicker}
                     variant="ghost"
                     size="sm"
-                    className="px-4 py-2.5 rounded-xl font-bold text-sm border border-white/10 hover:border-white/20"
+                    className={`px-4 py-2.5 rounded-xl font-bold text-sm border transition-all ${
+                      isFocusMode
+                        ? 'border-violet-500/40 text-violet-300 bg-violet-500/10 hover:bg-violet-500/15'
+                        : 'border-white/10 hover:border-primary/30 hover:text-primary hover:bg-primary/5'
+                    }`}
                   >
-                    <span className="material-symbols-outlined text-[18px]">
-                      {isFocusMode ? 'visibility' : 'visibility_off'}
-                    </span>
-                    {isFocusMode ? 'Show' : 'Hide'} UI
+                    <Layers className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                    {isFocusMode
+                      ? `Exit ${focusLevel === 'deep' ? 'Deep' : 'Minimal'} Focus`
+                      : 'Focus Mode'
+                    }
+                    {!isFocusMode && <kbd className="ml-1 text-[9px] opacity-40 font-mono border border-current/30 rounded px-1">F</kbd>}
                   </Button>
                 </div>
 
@@ -488,11 +589,9 @@ export function FocusedDay() {
                     onClick={() => setShowPresets(p => !p)}
                     className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
                   >
-                    <span className="material-symbols-outlined text-[14px]">tune</span>
+                    <SlidersHorizontal className="text-[14px]" strokeWidth={1.5} />
                     Customize Timer
-                    <span className="material-symbols-outlined text-[14px]">
-                      {showPresets ? 'expand_less' : 'expand_more'}
-                    </span>
+                    {showPresets ? <ChevronUp className="w-[14px] h-[14px]" strokeWidth={1.5} /> : <ChevronDown className="w-[14px] h-[14px]" strokeWidth={1.5} />}
                   </button>
 
                   {showPresets && (
@@ -592,7 +691,7 @@ export function FocusedDay() {
                       mainTask.status === 'done' ? 'bg-primary border-primary' : 'border-primary/40 group-hover:border-primary'
                     }`}>
                       {mainTask.status === 'done' && (
-                        <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                        <Check className="text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
                       )}
                     </div>
                     <div className="flex-1 min-w-0 flex justify-between items-start gap-4">
@@ -600,7 +699,7 @@ export function FocusedDay() {
                         <h3 className={`text-xl font-bold mb-1.5 leading-snug flex items-center gap-2 ${mainTask.status === 'done' ? 'line-through opacity-50' : ''}`}>
                           {mainTask.title}
                           {mainTask.type === 'pinned' && (
-                            <span className="material-symbols-outlined text-[16px] text-primary" title="Pinned Task">push_pin</span>
+                            <Pin className="text-[16px] text-primary" title="Pinned Task" strokeWidth={1.5} />
                           )}
                         </h3>
                         {mainTask.description && (
@@ -608,19 +707,19 @@ export function FocusedDay() {
                         )}
                         <div className="mt-4 flex flex-wrap gap-2 items-center">
                           <span className="text-[10px] font-mono bg-violet-500/10 text-violet-300 px-2 py-1 rounded-md uppercase tracking-wider border border-violet-500/20 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[12px]">star</span>
+                            <Star className="text-[12px]" strokeWidth={1.5} />
                             Priority: Critical
                           </span>
                           {mainTask.estimatedTime && (
                             <span className="text-[10px] font-mono bg-white/5 text-neutral-400 px-2 py-1 rounded-md uppercase tracking-wider flex items-center gap-1 border border-white/10">
-                              <span className="material-symbols-outlined text-[12px]">schedule</span>
+                              <Clock className="text-[12px]" strokeWidth={1.5} />
                               Duration: {mainTask.estimatedTime}
                             </span>
                           )}
                           <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md uppercase tracking-[0.14em] border flex items-center gap-1.5 ${
                             activeTaskId === mainTask.id ? 'bg-violet-500/15 text-violet-300 border-violet-500/30 shadow-[0_0_14px_rgba(139,92,246,0.2)]' : 'bg-white/5 text-neutral-400 border-white/10'
                           }`}>
-                            <span className="material-symbols-outlined text-[12px]">timer</span>
+                            <Timer className="text-[12px]" strokeWidth={1.5} />
                             Task Duration: {`${Math.floor(((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) / 60)}m ${((mainTask.actualDuration || 0) + (activeTaskId === mainTask.id ? sessionSeconds : 0)) % 60}s`}
                           </span>
                         </div>
@@ -658,7 +757,7 @@ export function FocusedDay() {
               </div>
             ) : (
               <div className="border-2 border-dashed border-white/10 rounded-2xl p-10 text-center">
-                <span className="material-symbols-outlined text-4xl text-neutral-700 block mb-3">target</span>
+                <Target className="text-4xl text-neutral-700 block mb-3" strokeWidth={1.5} />
                 <p className="text-neutral-500 italic text-sm">No high-priority task for this day yet.</p>
                 <p className="text-neutral-600 text-xs mt-2">Add one in Weekly Distribution.</p>
               </div>
@@ -722,7 +821,7 @@ export function FocusedDay() {
           {/* Empty state */}
           {!mainTask && mediumTasks.length === 0 && quickWins.length === 0 && (
             <div className="text-center py-20">
-              <span className="material-symbols-outlined text-6xl text-neutral-700 mb-4 block">inbox</span>
+              <Inbox className="text-6xl text-neutral-700 mb-4 block" strokeWidth={1.5} />
               <p className="text-neutral-500">No tasks scheduled for today.</p>
               <p className="text-neutral-600 text-sm mt-1">Go to Weekly Distribution to assign tasks.</p>
             </div>
@@ -739,12 +838,7 @@ export function FocusedDay() {
               className="px-12 py-4 rounded-2xl font-bold group"
             >
               <div className="flex flex-col items-center gap-1.5">
-                <span
-                  className="material-symbols-outlined text-3xl mb-0.5 group-hover:scale-110 transition-transform"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  verified
-                </span>
+                <BadgeCheck className="text-3xl mb-0.5 group-hover:scale-110 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
                 <span className="text-base">Mark Day Complete</span>
                 <span className="text-[10px] font-normal uppercase tracking-widest text-tertiary/60">
                   Finalize All Progress
@@ -752,10 +846,18 @@ export function FocusedDay() {
               </div>
             </Button>
           </div>
-        </div>
+        </motion.div>
 
         {/* ── Right Column (Sidebar) ─────────────────────────────────────── */}
-        <div className="space-y-6 xl:sticky xl:top-8 self-start">
+        <AnimatePresence>
+          {!(isFocusMode && focusLevel === 'minimal') && (
+            <motion.div
+              initial={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
+              animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
+              exit={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-6 xl:sticky xl:top-8 self-start"
+            >
           {/* 1. FOCUS TIME TODAY */}
           <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
              <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-4">Focus Time Today</h3>
@@ -763,7 +865,7 @@ export function FocusedDay() {
                <div>
                  <span className="text-3xl font-black text-on-surface">{Math.floor(todayFocusSeconds / 3600)}h {Math.floor((todayFocusSeconds % 3600) / 60)}m</span>
                  <p className="text-xs text-tertiary mt-1.5 flex items-center gap-1">
-                   <span className="material-symbols-outlined text-[14px]">trending_up</span>
+                   <TrendingUp className="text-[14px]" strokeWidth={1.5} />
                    +15m from yesterday
                  </p>
                </div>
@@ -798,7 +900,7 @@ export function FocusedDay() {
            <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Focus Time Records</h3>
-                <span className="material-symbols-outlined text-neutral-500 text-[18px]">history</span>
+                <History className="text-neutral-500 text-[18px]" strokeWidth={1.5} />
              </div>
              <div className="space-y-5 relative">
                <div className="absolute left-2 top-2 bottom-2 w-px bg-white/10" />
@@ -822,9 +924,11 @@ export function FocusedDay() {
              </div>
           </Card>
 
-        </div>
+          </motion.div>
+          )}
+        </AnimatePresence>
 
-      </div>
+      </motion.div>
     </AppLayout>
   )
 }

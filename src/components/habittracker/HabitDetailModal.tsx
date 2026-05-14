@@ -1,4 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { X } from 'lucide-react'
+import { DynamicIcon } from '../ui/DynamicIcon'
 import type { Habit } from '../../store/useHabitStore'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
 import { HabitBubbleGrid } from './HabitBubbleGrid'
@@ -107,9 +109,7 @@ export function HabitDetailModal({ habit, totalDays, onClose }: HabitDetailModal
                       className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                       style={{ background: `${accentColor}20` }}
                     >
-                      <span className="material-symbols-outlined text-[22px]" style={{ color: accentColor }}>
-                        {cat.icon}
-                      </span>
+                      <DynamicIcon name={cat.icon} className="w-[22px] h-[22px]" color={accentColor} strokeWidth={1.5} />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -130,7 +130,7 @@ export function HabitDetailModal({ habit, totalDays, onClose }: HabitDetailModal
                     onClick={onClose}
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors shrink-0 ml-3"
                   >
-                    <span className="material-symbols-outlined text-xl">close</span>
+                    <X className="text-xl" strokeWidth={1.5} />
                   </button>
                 </div>
 

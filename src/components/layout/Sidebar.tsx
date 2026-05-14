@@ -1,5 +1,20 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import {
+  LayoutDashboard,
+  CalendarRange,
+  Focus,
+  Brain,
+  BarChart3,
+  Flame,
+  Settings,
+  Sparkles,
+  Plus,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Lightbulb
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signOut } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -7,31 +22,32 @@ import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
 import { FeedbackModal } from '../FeedbackModal'
 import { Button } from '../ui/Button'
-import { RippleContainer, useRipple } from '../ui/Ripple'
+import { RippleContainer } from '../ui/Ripple'
+import { useRipple } from '../ui/useRipple'
 import { StatusDot } from '../ui/StatusDot'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { cn } from '../../lib/cn'
 
 /** Nav items — share structure with mobile bottom nav (primary first). */
 export const NAV_ITEMS = [
-  { to: '/dashboard',           icon: 'dashboard',             label: 'Dashboard',    short: 'Home' },
-  { to: '/weekly-distribution', icon: 'calendar_view_week',    label: 'Plan Week',    short: 'Plan' },
-  { to: '/focused-day',         icon: 'target',                label: 'Focused Day',  short: 'Focus' },
-  { to: '/brain-dump',          icon: 'psychology',            label: 'Brain Dump',   short: 'Dump' },
-  { to: '/weekly-evaluation',   icon: 'assessment',            label: 'Evaluation',   short: 'Stats' },
-  { to: '/habit-tracker',       icon: 'local_fire_department', label: 'Habits',       short: 'Habits' },
-  { to: '/settings',            icon: 'settings',              label: 'Settings',     short: 'Settings' },
+  { to: '/dashboard',           icon: LayoutDashboard, label: 'Dashboard',    short: 'Home' },
+  { to: '/weekly-distribution', icon: CalendarRange,   label: 'Plan Week',    short: 'Plan' },
+  { to: '/focused-day',         icon: Focus,           label: 'Focused Day',  short: 'Focus' },
+  { to: '/brain-dump',          icon: Brain,           label: 'Brain Dump',   short: 'Dump' },
+  { to: '/weekly-evaluation',   icon: BarChart3,       label: 'Evaluation',   short: 'Stats' },
+  { to: '/habit-tracker',       icon: Flame,           label: 'Habits',       short: 'Habits' },
+  { to: '/settings',            icon: Settings,        label: 'Settings',     short: 'Settings' },
 ] as const
 
 function NavItem({
   to,
-  icon,
+  icon: Icon,
   label,
   collapsed,
   onNavigate,
 }: {
   to: string
-  icon: string
+  icon: React.ElementType
   label: string
   collapsed: boolean
   onNavigate: () => void
@@ -45,11 +61,11 @@ function NavItem({
       onPointerDown={onPointerDown}
       className={({ isActive }) =>
         cn(
-          'ripple-surface group relative flex items-center rounded-xl transition-all duration-200 focus-ring',
-          collapsed ? 'justify-center px-0 py-3 mx-auto w-12 h-12' : 'gap-3 px-3 py-2.5',
+          'ripple-surface group relative flex items-center rounded-xl transition-all duration-300 focus-ring',
+          collapsed ? 'justify-center px-0 py-2.5 mx-auto w-11 h-11' : 'gap-3 px-3 py-2',
           isActive
-            ? 'text-on-surface bg-primary/15 shadow-[inset_0_0_0_1px_rgb(var(--color-primary)/0.28),0_8px_24px_-12px_rgb(124_58_237_/_0.45)]'
-            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60',
+            ? 'text-on-surface bg-surface-container-high/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_4px_12px_-4px_rgba(0,0,0,0.2)]'
+            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low/40',
         )
       }
       title={collapsed ? label : undefined}
@@ -60,34 +76,35 @@ function NavItem({
             <motion.span
               layoutId="sidebar-active-pill"
               className={cn(
-                'absolute bg-primary/10 rounded-xl',
+                'absolute bg-primary/10 rounded-xl border border-primary/20',
                 collapsed ? 'inset-0' : 'inset-0',
               )}
-              transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             />
           )}
           {isActive && !collapsed && (
             <motion.span
               layoutId="sidebar-active-bar"
-              className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"
-              transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary/80 shadow-[0_0_10px_rgba(124,58,237,0.5)]"
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             />
           )}
-          <span
+          <Icon 
             className={cn(
-              'material-symbols-outlined text-[20px] relative z-10 transition-transform duration-200',
-              isActive && 'text-primary',
-              'group-hover:scale-110',
+              'w-[18px] h-[18px] relative z-10 transition-transform duration-300',
+              isActive ? 'text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : 'text-neutral-500 group-hover:text-neutral-300',
+              'group-hover:scale-105',
             )}
-            style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
-          >
-            {icon}
-          </span>
+            strokeWidth={isActive ? 2 : 1.5}
+          />
           {!collapsed && (
             <motion.span
               initial={false}
               animate={{ opacity: 1 }}
-              className="relative z-10 text-sm font-semibold truncate"
+              className={cn(
+                "relative z-10 text-[13px] tracking-wide truncate transition-colors duration-300",
+                isActive ? "font-semibold text-neutral-100" : "font-medium text-neutral-400 group-hover:text-neutral-200"
+              )}
             >
               {label}
             </motion.span>
@@ -148,10 +165,8 @@ export function Sidebar() {
               isRail ? 'justify-center' : 'gap-3 px-2',
             )}
           >
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center obsidian-gradient shrink-0 shadow-[0_10px_28px_-8px_rgb(124_58_237_/_0.6)] animate-float-soft">
-              <span className="material-symbols-outlined text-white text-lg">
-                auto_awesome
-              </span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center obsidian-gradient shrink-0 shadow-[0_8px_24px_-6px_rgb(124_58_237_/_0.4)] animate-float-soft">
+              <Sparkles className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
             <AnimatePresence>
               {!isRail && (
@@ -240,8 +255,8 @@ export function Sidebar() {
                   closeSidebarsOnMobile()
                 }}
                 size="sm"
-                className="w-full font-bold"
-                leftIcon={<span className="material-symbols-outlined text-sm">add</span>}
+                className="w-full font-bold tracking-wide"
+                leftIcon={<Plus className="w-4 h-4" strokeWidth={2} />}
               >
                 New Plan
               </Button>
@@ -253,9 +268,9 @@ export function Sidebar() {
                   closeSidebarsOnMobile()
                 }}
                 title="New Plan"
-                className="ripple-surface w-12 h-12 mx-auto rounded-xl flex items-center justify-center obsidian-gradient text-white shadow-[0_10px_28px_-8px_rgb(124_58_237_/_0.55)] focus-ring transition-transform hover:scale-105 active:scale-95"
+                className="ripple-surface w-11 h-11 mx-auto rounded-xl flex items-center justify-center obsidian-gradient text-white shadow-[0_8px_20px_-6px_rgb(124_58_237_/_0.4)] focus-ring transition-transform hover:scale-105 active:scale-95"
               >
-                <span className="material-symbols-outlined text-lg">add</span>
+                <Plus className="w-5 h-5" strokeWidth={2} />
               </button>
             )}
 
@@ -268,11 +283,11 @@ export function Sidebar() {
                 title="Feedback & Support"
                 className={cn(
                   'ripple-surface rounded-xl border border-outline-variant/30 bg-surface-container-low/60',
-                  'text-amber-400 hover:bg-surface-container-low transition-colors focus-ring',
+                  'text-amber-500 hover:text-amber-400 hover:bg-surface-container-low transition-colors focus-ring',
                   isRail ? 'w-10 h-10 flex items-center justify-center' : 'px-3 py-2 flex items-center gap-2',
                 )}
               >
-                <span className="material-symbols-outlined text-[18px]">lightbulb</span>
+                <Lightbulb className="w-[16px] h-[16px]" strokeWidth={1.5} />
                 {!isRail && <span className="text-xs font-semibold">Feedback</span>}
               </button>
             </div>
@@ -308,7 +323,7 @@ export function Sidebar() {
                   isRail ? 'w-8 h-8 flex items-center justify-center' : 'p-1',
                 )}
               >
-                <span className="material-symbols-outlined text-lg">logout</span>
+                <LogOut className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
           </div>
@@ -332,13 +347,13 @@ export function Sidebar() {
                   : 'Show sidebar'
             }
           >
-            <motion.span
+            <motion.div
               animate={{ rotate: sidebarMode === 'hidden' ? 180 : 0 }}
               transition={{ duration: 0.2 }}
-              className="material-symbols-outlined text-[14px]"
+              className="flex items-center justify-center"
             >
-              chevron_left
-            </motion.span>
+              <ChevronLeft className="w-3.5 h-3.5" strokeWidth={2} />
+            </motion.div>
           </button>
         )}
       </motion.aside>
@@ -350,7 +365,7 @@ export function Sidebar() {
           className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-6 h-8 rounded-r-xl border border-l-0 border-outline-variant/40 bg-surface-container/90 text-on-surface-variant hover:text-on-surface hover:bg-surface-container shadow-md transition-all flex items-center justify-center"
           title="Show sidebar"
         >
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} />
         </button>
       )}
 

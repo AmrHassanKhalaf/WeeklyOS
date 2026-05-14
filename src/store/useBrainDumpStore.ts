@@ -1,5 +1,18 @@
+// ─── useBrainDumpStore ────────────────────────────────────────────────────────
+// Refactored to:
+//  - Use brainDumpRepository instead of raw supabase.from() calls (Issue 2)
+//  - Use createAsyncSlice factory for isLoading/error lifecycle (Issue 4)
+
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
+import {
+  getBrainDumpItems,
+  createBrainDumpItem,
+  updateBrainDumpItem,
+  deleteBrainDumpItem,
+  deleteBrainDumpItems,
+} from '../lib/repository/brainDumpRepository'
+import { createAsyncSlice, type AsyncSlice } from './utils/createAsyncSlice'
 
 export interface BrainDumpItem {
   id: string
@@ -9,10 +22,9 @@ export interface BrainDumpItem {
   selected?: boolean
 }
 
-interface BrainDumpState {
+interface BrainDumpState extends AsyncSlice {
   brainDumpItems: BrainDumpItem[]
-  isLoading: boolean
-  
+
   loadItems: () => Promise<void>
   addItem: (content: string, tags?: string[]) => Promise<void>
   removeItem: (id: string) => Promise<void>
@@ -23,36 +35,25 @@ interface BrainDumpState {
 
 export const useBrainDumpStore = create<BrainDumpState>((set, get) => ({
   brainDumpItems: [],
-  isLoading: false,
+  ...createAsyncSlice<BrainDumpState>(set),
 
   loadItems: async () => {
-    set({ isLoading: true })
-    try {
+    await get().withAsync(async () => {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       if (!user) return
 
-      const { data, error } = await supabase
-        .from('brain_dump')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      set({ 
-        brainDumpItems: data.map(item => ({
-          id: item.id,
-          content: item.content || '',
-          tags: item.tags || [],
-          createdAt: item.created_at,
-          selected: false
-        }))
+      const rows = await getBrainDumpItems(user.id)
+      set({
+        brainDumpItems: rows.map((r) => ({
+          id: r.id,
+          content: r.content ?? '',
+          tags: r.tags ?? [],
+          createdAt: r.created_at,
+          selected: false,
+        })),
       })
-    } catch (e) {
-      console.error('[useBrainDumpStore] loadItems failed:', e)
-    } finally {
-      set({ isLoading: false })
-    }
+    })
   },
 
   addItem: async (content: string, tags: string[] = []) => {
@@ -60,80 +61,73 @@ export const useBrainDumpStore = create<BrainDumpState>((set, get) => ({
     const user = session?.user
     if (!user) return
 
-    const { data, error } = await supabase
-      .from('brain_dump')
-      .insert({ user_id: user.id, content, tags })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('[useBrainDumpStore] addItem failed:', error)
-      return
+    try {
+      const row = await createBrainDumpItem({ user_id: user.id, content, tags })
+      set((state) => ({
+        brainDumpItems: [
+          {
+            id: row.id,
+            content: row.content ?? '',
+            tags: row.tags ?? [],
+            createdAt: row.created_at,
+            selected: false,
+          },
+          ...state.brainDumpItems,
+        ],
+      }))
+    } catch (err) {
+      console.error('[useBrainDumpStore] addItem failed:', err)
     }
-
-    set(state => ({
-      brainDumpItems: [{
-        id: data.id,
-        content: data.content || '',
-        tags: data.tags || [],
-        createdAt: data.created_at,
-        selected: false
-      }, ...state.brainDumpItems]
-    }))
   },
 
   removeItem: async (id: string) => {
-    const { error } = await supabase.from('brain_dump').delete().eq('id', id)
-    if (error) {
-      console.error('[useBrainDumpStore] removeItem failed:', error)
-      return
+    // Optimistic removal
+    const snapshot = get().brainDumpItems
+    set((state) => ({ brainDumpItems: state.brainDumpItems.filter((i) => i.id !== id) }))
+    try {
+      await deleteBrainDumpItem(id)
+    } catch (err) {
+      console.error('[useBrainDumpStore] removeItem failed, reverting:', err)
+      set({ brainDumpItems: snapshot })
     }
-    set(state => ({ 
-      brainDumpItems: state.brainDumpItems.filter(i => i.id !== id) 
-    }))
   },
 
   updateItem: async (id: string, updates: Partial<{ content: string; tags: string[] }>) => {
-    const payload: Record<string, any> = {}
-    if (updates.content !== undefined) payload.content = updates.content.trim()
-    if (updates.tags !== undefined) payload.tags = updates.tags
-
-    if (Object.keys(payload).length > 0) {
-      const { error } = await supabase.from('brain_dump').update(payload).eq('id', id)
-      if (error) {
-        console.error('[useBrainDumpStore] updateItem failed:', error)
-        return
-      }
-    }
-
-    set(state => ({
-      brainDumpItems: state.brainDumpItems.map(i => i.id === id ? { ...i, ...updates } : i),
+    // Optimistic update
+    const snapshot = get().brainDumpItems
+    set((state) => ({
+      brainDumpItems: state.brainDumpItems.map((i) =>
+        i.id === id ? { ...i, ...updates } : i
+      ),
     }))
+    try {
+      await updateBrainDumpItem(id, updates)
+    } catch (err) {
+      console.error('[useBrainDumpStore] updateItem failed, reverting:', err)
+      set({ brainDumpItems: snapshot })
+    }
   },
 
   toggleSelection: (id) =>
-    set(state => ({
-      brainDumpItems: state.brainDumpItems.map(i =>
+    set((state) => ({
+      brainDumpItems: state.brainDumpItems.map((i) =>
         i.id === id ? { ...i, selected: !i.selected } : i
       ),
     })),
 
   deleteSelected: async () => {
-    const selected = get().brainDumpItems.filter(i => i.selected)
+    const selected = get().brainDumpItems.filter((i) => i.selected)
     if (!selected.length) return
 
-    const { error } = await supabase
-      .from('brain_dump')
-      .delete()
-      .in('id', selected.map(i => i.id))
+    // Optimistic removal
+    const snapshot = get().brainDumpItems
+    set((state) => ({ brainDumpItems: state.brainDumpItems.filter((i) => !i.selected) }))
 
-    if (error) {
-      console.error('[useBrainDumpStore] deleteSelected failed:', error)
-      return
+    try {
+      await deleteBrainDumpItems(selected.map((i) => i.id))
+    } catch (err) {
+      console.error('[useBrainDumpStore] deleteSelected failed, reverting:', err)
+      set({ brainDumpItems: snapshot })
     }
-
-    set(state => ({ 
-      brainDumpItems: state.brainDumpItems.filter(i => !i.selected) 
-    }))
-  }
+  },
 }))

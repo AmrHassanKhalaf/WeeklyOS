@@ -37,6 +37,8 @@ vi.mock('../lib/supabase', () => ({
 }))
 
 describe('useSettingsStore', () => {
+  const getSessionMock = vi.mocked(supabase.auth.getSession)
+
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
@@ -60,8 +62,7 @@ describe('useSettingsStore', () => {
   })
 
   it('should update activeProvider and sync to Supabase', async () => {
-    // @ts-ignore
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+    getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
 
     await useSettingsStore.getState().setActiveProvider('grok')
 
@@ -72,8 +73,7 @@ describe('useSettingsStore', () => {
   })
 
   it('should update activeModel and sync to Supabase', async () => {
-    // @ts-ignore
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+    getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
 
     await useSettingsStore.getState().setActiveModel('gemini-3.1-pro-preview')
 
@@ -84,8 +84,7 @@ describe('useSettingsStore', () => {
   })
 
   it('should update timezone and sync to user_settings', async () => {
-    // @ts-ignore
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+    getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
 
     useSettingsStore.getState().setTimezone('UTC')
     await Promise.resolve()
@@ -98,8 +97,7 @@ describe('useSettingsStore', () => {
   })
 
   it('should update weekStartDay and sync to user_settings', async () => {
-    // @ts-ignore
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+    getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
 
     useSettingsStore.getState().setWeekStartDay('monday')
     await Promise.resolve()
@@ -112,8 +110,7 @@ describe('useSettingsStore', () => {
   })
 
   it('should update auto download report setting and sync to user_settings', async () => {
-    // @ts-ignore
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
+    getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user1' } } } })
 
     useSettingsStore.getState().setAutoDownloadCompletedWeekReport(true)
     await Promise.resolve()

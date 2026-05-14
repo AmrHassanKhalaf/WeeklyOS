@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import { LineChart } from 'lucide-react'
 import { useWeekStore } from '../store/useWeekStore'
 import { DayCardDistribution } from './DayCardDistribution'
 import type { WeekData } from '../store/useWeekStore'
@@ -43,7 +44,7 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
         className="relative bg-[#131313] text-[#e5e2e1] w-[1200px] h-[1697px] p-12 flex flex-col"
       >
         <div className="absolute top-8 right-8 flex items-center gap-2 opacity-50">
-          <span className="material-symbols-outlined text-sm">dashboard</span>
+          <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
           <span className="text-xs font-bold tracking-widest uppercase">WeeklyOS Report</span>
         </div>
 
@@ -72,7 +73,7 @@ export const WeeklyReportPrintView = forwardRef<HTMLDivElement, WeeklyReportPrin
         className="relative bg-[#131313] text-[#e5e2e1] w-[1200px] h-[1697px] p-12 flex flex-col"
       >
         <div className="absolute top-8 right-8 flex items-center gap-2 opacity-50">
-          <span className="material-symbols-outlined text-sm">insights</span>
+          <LineChart className="text-sm" strokeWidth={1.5} />
           <span className="text-xs font-bold tracking-widest uppercase">WeeklyOS Evaluation</span>
         </div>
 

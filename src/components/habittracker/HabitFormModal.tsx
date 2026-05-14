@@ -1,4 +1,6 @@
+import { DynamicIcon } from '../ui/DynamicIcon';
 import { useEffect, useState } from 'react'
+import { X, Info, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { HabitCategory, HabitGroup, NewHabitData } from '../../store/useHabitStore'
 import { useHabitStore } from '../../store/useHabitStore'
@@ -209,12 +211,12 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
               >
                 <div className="flex items-center justify-between mb-0.5">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="material-symbols-outlined text-xl transition-colors duration-300"
-                      style={{ color: selectedCategory.color }}
-                    >
-                      {editingHabit ? 'edit' : 'add_circle'}
-                    </span>
+                    <DynamicIcon
+                      name={editingHabit ? 'Edit3' : 'PlusCircle'}
+                      className="w-5 h-5 transition-colors duration-300"
+                      color={selectedCategory.color}
+                      strokeWidth={1.5}
+                    />
                     <h2 className="text-base font-bold text-on-surface">
                       {editingHabit ? 'Edit Habit' : 'New Habit'}
                     </h2>
@@ -224,7 +226,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                     onClick={onClose}
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
                   >
-                    <span className="material-symbols-outlined text-xl">close</span>
+                    <X className="text-xl" strokeWidth={1.5} />
                   </button>
                 </div>
                 {isBreakHabit && (
@@ -234,7 +236,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                     exit={{ opacity: 0, height: 0 }}
                     className="text-[11px] text-rose-300/80 mt-1 flex items-center gap-1"
                   >
-                    <span className="material-symbols-outlined text-[13px]">info</span>
+                    <Info className="text-[13px]" strokeWidth={1.5} />
                     Every day you don't do it counts as a clean day ✓ — tapping marks a slip.
                   </motion.p>
                 )}
@@ -334,7 +336,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                             : 'border-outline-variant/30 bg-surface-container-low/50 text-on-surface-variant hover:border-outline-variant'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[16px]">{g.icon}</span>
+                        <DynamicIcon name={g.icon} className="w-4 h-4" strokeWidth={1.5} />
                         {g.label}
                       </button>
                     ))}
@@ -395,7 +397,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                       </span>
                     ) : justSaved ? (
                       <span className="flex items-center gap-2 animate-checkmark">
-                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        <CheckCircle2 className="text-[18px]" strokeWidth={1.5} />
                         Saved
                       </span>
                     ) : editingHabit ? 'Save Changes' : isBreakHabit ? 'Add to Break 🚫' : 'Add Habit ✓'}

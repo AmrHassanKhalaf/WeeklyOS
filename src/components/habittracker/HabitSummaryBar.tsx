@@ -1,4 +1,6 @@
+import { DynamicIcon } from '../ui/DynamicIcon';
 import { motion } from 'framer-motion'
+import { LineChart } from 'lucide-react'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
 
 interface HabitSummaryBarProps {
@@ -21,7 +23,7 @@ function StatCard({ icon, label, value, sub, color, bg, delay = 0 }: {
       style={{ borderTop: `2px solid ${color}`, background: bg }}
     >
       <div className="flex items-center gap-1.5 mb-0.5">
-        <span className="material-symbols-outlined text-[15px]" style={{ color }}>{icon}</span>
+        <DynamicIcon name={icon} className="w-[15px] h-[15px]" color={color} strokeWidth={1.5} />
         <p className="text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold truncate">{label}</p>
       </div>
       <p className="text-lg font-black truncate" style={{ color }}>{value}</p>
@@ -81,7 +83,7 @@ export function HabitSummaryBar({ totalDays, activeTab }: HabitSummaryBarProps) 
       <div className="space-y-4">
         {/* Section label */}
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-emerald-400 text-lg">insights</span>
+          <LineChart className="text-emerald-400 text-lg" strokeWidth={1.5} />
           <h2 className="text-[11px] font-black uppercase tracking-[0.14em] text-on-surface-variant">
             Build Habits · Monthly Summary
           </h2>
@@ -137,7 +139,7 @@ export function HabitSummaryBar({ totalDays, activeTab }: HabitSummaryBarProps) 
     <div className="space-y-4">
       {/* Section label */}
       <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-rose-400 text-lg">insights</span>
+        <LineChart className="text-rose-400 text-lg" strokeWidth={1.5} />
         <h2 className="text-[11px] font-black uppercase tracking-[0.14em] text-on-surface-variant">
           Break Habits · Monthly Summary
         </h2>

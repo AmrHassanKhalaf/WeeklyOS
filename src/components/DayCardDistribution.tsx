@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { DayPlan, Task, DayOfWeek, Priority } from '../data/mockData'
 import { useWeekStore } from '../store/useWeekStore'
 import { Button } from './ui/Button'
+import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus } from 'lucide-react'
 
 interface DayCardDistributionProps {
   day: DayPlan
@@ -10,6 +11,12 @@ interface DayCardDistributionProps {
 }
 
 const DAYS_OPTIONS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+
+const normalizeInput = (value: unknown): string => {
+  if (typeof value === 'string') return value.trim()
+  if (value === null || value === undefined) return ''
+  return String(value).trim()
+}
 
 function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void; showTags?: boolean }) {
   const { toggleTaskComplete, deleteTask, updateTask } = useWeekStore()
@@ -35,14 +42,14 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
   }, [isEditing, task])
 
   const handleSave = async () => {
-    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
-    if (safeTrim(editData.title)) {
+    const title = normalizeInput(editData.title)
+    if (title) {
       try {
         await updateTask(task!.id, {
-          title: safeTrim(editData.title),
-          startTime: safeTrim(editData.start) || undefined,
-          estimatedTime: safeTrim(editData.duration) || undefined,
-          description: safeTrim(editData.description) || undefined,
+          title,
+          startTime: normalizeInput(editData.start) || undefined,
+          estimatedTime: normalizeInput(editData.duration) || undefined,
+          description: normalizeInput(editData.description) || undefined,
           day: editData.day,
           priority: editData.priority
         })
@@ -133,7 +140,7 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
         
         <div className="flex justify-between items-center mt-1 pt-2 border-t border-white/5">
           <button onClick={() => deleteTask(task.id)} className="text-[10px] text-error hover:bg-error/10 px-2 py-1.5 rounded transition-colors flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">delete</span> Delete
+            <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
           <div className="flex gap-2">
             <button onClick={() => setIsEditing(false)} className="text-[10px] text-neutral-400 hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors">Cancel</button>
@@ -155,13 +162,13 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
                 task.status === 'done' ? 'bg-primary border-primary text-background' : 'border-outline-variant hover:border-primary text-transparent'
             }`}
         >
-            <span className="material-symbols-outlined text-[12px] font-bold">check</span>
+            <Check className="w-3 h-3" strokeWidth={3} />
         </button>
         <div className="flex-1 min-w-0" onClick={() => setIsEditing(true)}>
             <div className="flex items-center gap-2">
               <div className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}>{task.title}</div>
               {task.type === 'pinned' && (
-                <span className="material-symbols-outlined text-[12px] text-primary" title="Pinned Task">push_pin</span>
+                <Pin className="w-3.5 h-3.5 text-primary" strokeWidth={2} title="Pinned Task" />
               )}
             </div>
             {showTags && task.tags && task.tags.length > 0 && (
@@ -176,8 +183,8 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             {task.description && <div className="text-xs text-on-surface-variant mt-1 line-clamp-2">{task.description}</div>}
             {(task.startTime || task.estimatedTime) && (
             <div className="flex gap-2 mt-2 text-[10px] text-primary/70 font-medium bg-primary/5 w-max px-2 py-0.5 rounded">
-                {task.startTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">schedule</span>{task.startTime}</div>}
-                {task.estimatedTime && <div className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">hourglass_bottom</span>{task.estimatedTime}</div>}
+                {task.startTime && <div className="flex items-center gap-1"><Clock className="w-3 h-3" strokeWidth={2} />{task.startTime}</div>}
+                {task.estimatedTime && <div className="flex items-center gap-1"><Hourglass className="w-3 h-3" strokeWidth={2} />{task.estimatedTime}</div>}
             </div>
             )}
         </div>
@@ -197,13 +204,13 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
   }
 
   const handleSave = () => {
-    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
-    if (safeTrim(editData.title)) {
+    const title = normalizeInput(editData.title)
+    if (title) {
       onSave({
-        title: safeTrim(editData.title),
-        startTime: safeTrim(editData.start) || undefined,
-        estimatedTime: safeTrim(editData.duration) || undefined,
-        description: safeTrim(editData.description) || undefined,
+        title,
+        startTime: normalizeInput(editData.start) || undefined,
+        estimatedTime: normalizeInput(editData.duration) || undefined,
+        description: normalizeInput(editData.description) || undefined,
         day: editData.day,
         priority: editData.priority
       })
@@ -277,8 +284,9 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
                 description: taskUpdates.description
               })
               setAddingFor(null)
-            } catch (e: any) {
-              alert(e.message)
+            } catch (err) {
+              const message = err instanceof Error ? err.message : 'Failed to create task'
+              alert(message)
             }
           }}
           onCancel={() => setAddingFor(null)}
@@ -299,13 +307,13 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
             <span className="text-[10px] uppercase tracking-widest text-tertiary font-black">Rest Day</span>
             <h2 className="text-2xl font-bold text-tertiary">{day.date}</h2>
           </div>
-          <span className="material-symbols-outlined text-tertiary">eco</span>
+          <Leaf className="w-6 h-6 text-tertiary" strokeWidth={1.5} />
         </div>
         <div className={`flex-1 p-6 relative z-10 ${isOverridingRest ? 'overflow-y-auto' : 'flex flex-col items-center justify-center text-center'}`}>
           {!isOverridingRest ? (
             <>
               <div className="w-20 h-20 bg-tertiary/10 rounded-full flex items-center justify-center mb-6">
-                <span className="material-symbols-outlined text-4xl text-tertiary">bedtime</span>
+                <Moon className="w-10 h-10 text-tertiary" strokeWidth={1.5} />
               </div>
               <h3 className="text-lg font-bold text-tertiary mb-2">Recharge Phase</h3>
               <p className="text-xs text-neutral-500 leading-relaxed max-w-xs mb-8">
@@ -349,11 +357,11 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
             >
               Day Complete
             </Button>
-            <span className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer">drag_indicator</span>
+            <GripVertical className="w-5 h-5 text-on-surface-variant/40 hover:text-primary cursor-pointer" strokeWidth={1.5} />
           </div>
         </div>
         <div className="p-6 flex-1 flex flex-col items-center justify-center bg-primary-container/5 rounded-b-2xl">
-          <span className="material-symbols-outlined text-5xl text-primary mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+          <Sparkles className="w-12 h-12 text-primary mb-4" strokeWidth={1.5} />
           <h3 className="text-primary font-bold uppercase tracking-widest text-xs mb-1">High Output Zone</h3>
           <p className="text-[10px] text-primary/60">Peak cognitive window identified</p>
         </div>
@@ -396,7 +404,7 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
           >
             Day Complete
           </Button>
-          <span className="material-symbols-outlined text-on-surface-variant/40 hover:text-primary cursor-pointer">drag_indicator</span>
+          <GripVertical className="w-5 h-5 text-on-surface-variant/40 hover:text-primary cursor-pointer" strokeWidth={1.5} />
         </div>
       </div>
         
@@ -420,7 +428,7 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
           className="p-6 flex-1 flex flex-col items-center justify-center text-center opacity-20 cursor-pointer hover:opacity-40 transition-opacity"
           onClick={() => startAdd('medium')}
         >
-          <span className="material-symbols-outlined text-6xl mb-4">format_list_bulleted</span>
+          <ListTodo className="w-14 h-14 mb-4" strokeWidth={1} />
           <p className="text-sm">Click to plan this day</p>
         </div>
       ) : (
@@ -431,11 +439,12 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
               <span className="tracking-widest">High Impact</span>
               <div className="flex items-center gap-2">
                 <span>{highFilled}/{highSlots}</span>
-                <span
-                  className={`material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors ${highFilled >= highSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                <Plus
+                  className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${highFilled >= highSlots ? 'opacity-20 pointer-events-none' : ''}`}
                   onClick={() => highFilled < highSlots && startAdd('high')}
                   title={highFilled >= highSlots ? "Limit reached (1 High task)" : "Add High Impact Task"}
-                >add</span>
+                  strokeWidth={2}
+                />
               </div>
             </div>
             <TaskItem task={day.highTask} emptyHeight="h-24" onEmptyClick={() => startAdd('high')} showTags={showTags} />
@@ -448,11 +457,12 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
               <span className="tracking-widest">Medium Priority</span>
               <div className="flex items-center gap-2">
                 <span>{medFilled}/{medSlots}</span>
-                <span
-                  className={`material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors ${medFilled >= medSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                <Plus
+                  className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${medFilled >= medSlots ? 'opacity-20 pointer-events-none' : ''}`}
                   onClick={() => medFilled < medSlots && startAdd('medium')}
                   title={medFilled >= medSlots ? "Limit reached (3 Medium tasks)" : "Add Medium Priority Task"}
-                >add</span>
+                  strokeWidth={2}
+                />
               </div>
             </div>
             {Array.from({ length: medSlots }).map((_, i) => (
@@ -467,11 +477,12 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
               <span className="tracking-widest">Small Tasks</span>
               <div className="flex items-center gap-2">
                 <span>{smallFilled}/{smallSlots}</span>
-                <span
-                  className={`material-symbols-outlined text-sm cursor-pointer hover:text-white transition-colors ${smallFilled >= smallSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                <Plus
+                  className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${smallFilled >= smallSlots ? 'opacity-20 pointer-events-none' : ''}`}
                   onClick={() => smallFilled < smallSlots && startAdd('low')}
                   title={smallFilled >= smallSlots ? "Limit reached (5 Small tasks)" : "Add Small Task"}
-                >add</span>
+                  strokeWidth={2}
+                />
               </div>
             </div>
             <div className="space-y-2">

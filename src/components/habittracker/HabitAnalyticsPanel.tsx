@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { BarChart2, LayoutGrid } from 'lucide-react'
 import { useHabitStore } from '../../store/useHabitStore'
 
 interface HabitAnalyticsPanelProps {
@@ -57,7 +58,7 @@ export function HabitAnalyticsPanel({ totalDays }: HabitAnalyticsPanelProps) {
       {/* Weekly bar chart */}
       <div className="ui-card ui-card--glass space-y-4">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-lg">bar_chart</span>
+          <BarChart2 className="text-primary text-lg" strokeWidth={1.5} />
           <h3 className="text-sm font-bold text-on-surface">Last 7 Days</h3>
         </div>
 
@@ -98,7 +99,7 @@ export function HabitAnalyticsPanel({ totalDays }: HabitAnalyticsPanelProps) {
       {/* Monthly heatmap */}
       <div className="ui-card ui-card--glass space-y-3">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-lg">grid_view</span>
+          <LayoutGrid className="text-primary text-lg" strokeWidth={1.5} />
           <h3 className="text-sm font-bold text-on-surface">Month Heatmap</h3>
           <span className="ml-auto flex items-center gap-2 text-[10px] text-on-surface-variant">
             <span className="w-3 h-3 rounded-sm bg-surface-container-high inline-block" /> 0%

@@ -12,9 +12,7 @@
 // استخدام dbQuery للاستعلامات المباشرة
 import {
   querySelect,
-  queryInsertBatch,
   queryCount,
-  queryDatabaseStats,
   printDatabaseStats,
 } from '@/lib/dbQuery';
 
@@ -58,9 +56,6 @@ export async function exampleDatabaseQueries() {
 
 import {
   generateCompleteDataset,
-  generateWeekTasks,
-  generateBrainDumps,
-  generatePinnedTasks,
   printStats,
 } from '@/lib/dbSeeder';
 
@@ -189,6 +184,8 @@ export async function comprehensiveExample() {
 
   const userId = 'user-123';
   const weekId = 'week-456';
+
+  console.log('Sample IDs:', { userId, weekId });
 
   console.log('📦 إنشاء بيانات اختبار شاملة...\n');
 

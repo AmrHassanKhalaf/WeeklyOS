@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Lightbulb, X, Check, ChevronDown, Send } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/Button'
@@ -68,7 +69,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">lightbulb</span>
+                  <Lightbulb className="text-primary" strokeWidth={1.5} />
                   Feedback &amp; Support
                 </h2>
                 <button
@@ -76,14 +77,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 transition-colors focus-ring"
                   aria-label="Close"
                 >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
+                  <X className="text-[20px]" strokeWidth={1.5} />
                 </button>
               </div>
 
               {success ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-tertiary/15 text-tertiary flex items-center justify-center animate-bounce-in">
-                    <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                    <Check className="text-3xl" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
                   </div>
                   <h3 className="text-lg font-bold text-on-surface mb-2">Thank you!</h3>
                   <p className="text-on-surface-variant text-sm">Your feedback has been received and will be reviewed shortly.</p>
@@ -102,7 +103,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                         <option value="question">❓ Question</option>
                         <option value="other">📝 Other</option>
                       </Select>
-                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" strokeWidth={1.5} />
                     </div>
                   </div>
 
@@ -124,7 +125,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       loading={isSubmitting}
                       size="lg"
                       className="w-full"
-                      leftIcon={!isSubmitting ? <span className="material-symbols-outlined text-sm">send</span> : undefined}
+                      leftIcon={!isSubmitting ? <Send className="w-4 h-4" strokeWidth={1.5} /> : undefined}
                     >
                       {isSubmitting ? 'Sending…' : 'Send Feedback'}
                     </Button>

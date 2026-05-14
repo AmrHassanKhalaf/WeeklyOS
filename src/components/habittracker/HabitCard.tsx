@@ -1,4 +1,6 @@
+import { DynamicIcon } from '../ui/DynamicIcon';
 import { useCallback, useState } from 'react'
+import { Calendar, Edit3, Trash2, Ban } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Habit } from '../../store/useHabitStore'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
@@ -38,13 +40,13 @@ function CardActions({ habit, onEdit, onViewDetail, onDelete }: {
   return (
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
       <button onClick={() => onViewDetail(habit)} className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Full month view">
-        <span className="material-symbols-outlined text-[16px]">calendar_month</span>
+        <Calendar className="text-[16px]" strokeWidth={1.5} />
       </button>
       <button onClick={() => onEdit(habit)} className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Edit">
-        <span className="material-symbols-outlined text-[16px]">edit</span>
+        <Edit3 className="text-[16px]" strokeWidth={1.5} />
       </button>
       <button onClick={onDelete} className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors" title="Delete">
-        <span className="material-symbols-outlined text-[16px]">delete</span>
+        <Trash2 className="text-[16px]" strokeWidth={1.5} />
       </button>
     </div>
   )
@@ -86,7 +88,7 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: cat.bg }}>
-          <span className="material-symbols-outlined text-[18px]" style={{ color }}>{cat.icon}</span>
+          <DynamicIcon name={cat.icon} className="w-[18px] h-[18px]" color={color} strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -99,7 +101,7 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
           {habit.motivation && (
             <button onClick={() => setShowReason(v => !v)}
               className="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors mt-0.5 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]">{showReason ? 'expand_less' : 'psychology'}</span>
+              {showReason ? <ChevronUp className="w-[12px] h-[12px]" strokeWidth={1.5} /> : <Brain className="w-[12px] h-[12px]" strokeWidth={1.5} />}
               {showReason ? 'Hide' : 'Why?'}
             </button>
           )}
@@ -218,7 +220,7 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(248,113,113,0.12)' }}>
-          <span className="material-symbols-outlined text-[18px]" style={{ color }}>block</span>
+          <Ban className="text-[18px]" style={{ color }} strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -231,7 +233,7 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
           {habit.motivation && (
             <button onClick={() => setShowReason(v => !v)}
               className="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors mt-0.5 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]">{showReason ? 'expand_less' : 'psychology'}</span>
+              {showReason ? <ChevronUp className="w-[12px] h-[12px]" strokeWidth={1.5} /> : <Brain className="w-[12px] h-[12px]" strokeWidth={1.5} />}
               {showReason ? 'Hide' : 'Why quit?'}
             </button>
           )}
