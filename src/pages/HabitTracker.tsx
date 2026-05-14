@@ -8,7 +8,6 @@ import { HabitFormModal } from '../components/habittracker/HabitFormModal'
 import { HabitDetailModal } from '../components/habittracker/HabitDetailModal'
 import { HabitSummaryBar } from '../components/habittracker/HabitSummaryBar'
 import { Skeleton } from '../components/ui/Skeleton'
-import { FloatingActionButton } from '../components/ui/FloatingActionButton'
 import { useLayoutStore } from '../store/useLayoutStore'
 import { Plus, CheckCircle2, Ban, Flame, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 
@@ -241,15 +240,7 @@ export function HabitTracker() {
       <HabitFormModal isOpen={isModalOpen} editingHabit={editingHabit} onClose={handleCloseModal} />
       <HabitDetailModal habit={detailHabit} totalDays={totalDays} onClose={() => setDetailHabit(null)} />
 
-      {/* Mobile FAB for quick habit add */}
-      {isMobile && (
-        <FloatingActionButton
-          label="Add habit"
-          icon={<Plus className="w-6 h-6" strokeWidth={2} />}
-          onClick={handleOpenAdd}
-          show={!isModalOpen && !detailHabit}
-        />
-      )}
+
     </AppLayout>
   )
 }
