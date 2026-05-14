@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Lightbulb, X, Check, ChevronDown } from 'lucide-react'
+import { Lightbulb, X, Check, ChevronDown, Send } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/Button'
