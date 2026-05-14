@@ -107,6 +107,12 @@ export default defineConfig({
     }),
   ],
 
+  server: {
+    headers: {
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com wss://*.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:;",
+    },
+  },
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
