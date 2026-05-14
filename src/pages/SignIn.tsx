@@ -115,7 +115,7 @@ export function SignIn() {
             onClick={handleGoogleSignIn}
             disabled={isLoading || isOAuthLoading}
             aria-busy={isOAuthLoading}
-            className="ripple-surface focus-ring w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-on-surface bg-surface-container-low/70 border border-outline-variant/40 hover:bg-surface-container/80 hover:border-primary/35 transition-all disabled:opacity-60 lift-on-hover"
+            className="ripple-surface focus-ring w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-on-surface bg-surface-container-low/70 border border-outline-variant/40 hover:bg-surface-container/80 hover:border-primary/35 transition-all disabled:opacity-60 lift-on-hover touch-target"
           >
             <span className="inline-flex items-center gap-3">
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -148,7 +148,7 @@ export function SignIn() {
               onChange={e => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="focus-ring"
+              className="focus-ring text-base sm:text-sm"
             />
           </div>
 
@@ -162,7 +162,7 @@ export function SignIn() {
               required
               minLength={6}
               placeholder="••••••••"
-              className="focus-ring"
+              className="focus-ring text-base sm:text-sm"
             />
           </div>
 
@@ -186,7 +186,7 @@ export function SignIn() {
             loading={isLoading}
             disabled={isOAuthLoading}
             size="lg"
-            className="w-full mt-2 text-sm font-bold"
+            className="w-full mt-2 text-sm font-bold touch-target"
           >
             {mode === 'signin' ? 'Sign In' : 'Create Account'}
           </Button>

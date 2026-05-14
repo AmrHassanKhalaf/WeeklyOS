@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useAiApi } from '../hooks/useApi'
 import { useBrainDumpStore, type BrainDumpItem } from '../store/useBrainDumpStore'
 import { useSettingsStore } from '../store/useSettingsStore'
+import { useScrollLock } from '../hooks/useScrollLock'
 import BorderGlow from '../components/effects/BorderGlow'
 import { Button } from '../components/ui/Button'
 import { Calendar, Brain, Tag, Sparkles, Loader2, X } from 'lucide-react'
@@ -106,6 +107,7 @@ export function WeeklyDistribution() {
   const [isDistributing, setIsDistributing] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  useScrollLock(isAssignModalOpen)
   const [assignDrafts, setAssignDrafts] = useState<AssignDraft[]>([])
   const [showTags, setShowTags] = useState(true)
   const { sendMessage } = useAiApi()
@@ -241,17 +243,17 @@ Make sure:
     <AppLayout>
       <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="px-8 py-8 flex items-end justify-between shrink-0">
-          <div className="space-y-1">
-            <h1 className="text-[2.75rem] font-bold tracking-tight text-on-surface leading-none">
+        <div className="container-responsive py-responsive flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 shrink-0">
+          <div className="space-y-1 w-full sm:w-auto">
+            <h1 className="text-responsive-h1 font-bold tracking-tight text-on-surface leading-none">
               Week {currentWeek.weekNumber} — {currentWeek.dateRange.split('—')[1]?.trim() ?? String(currentWeek.year)}
             </h1>
             <p className="text-sm text-on-surface-variant flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-on-surface-variant/80" strokeWidth={1.5} />
+              <Calendar className="w-4 h-4 text-on-surface-variant/80 shrink-0" strokeWidth={1.5} />
               Distribution Phase: Aligning energy with impact.
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end">
             <Button
               type="button"
               onClick={openAssignModal}
@@ -292,8 +294,8 @@ Make sure:
         </div>
 
         {/* Day grid */}
-        <div className="flex-1 px-8 pb-8 overflow-y-auto custom-scrollbar">
-          <div className="grid grid-cols-2 gap-6 pb-12">
+        <div className="flex-1 container-responsive pb-8 overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
             {currentWeek.days.map((dayData) => (
               <BorderGlow
                 key={dayData.day}
@@ -321,34 +323,35 @@ Make sure:
         </div>
 
         {isAssignModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
-            <div className="w-full max-w-5xl max-h-[85vh] overflow-hidden rounded-2xl border border-white/10 bg-surface-container shadow-2xl">
-              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center sm:p-6">
+            <div className="w-full max-w-5xl h-full sm:h-auto max-h-[100dvh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-none sm:rounded-2xl border-0 sm:border border-white/10 bg-surface-container shadow-2xl">
+              <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between shrink-0 mt-[var(--safe-top,0px)]">
                 <div>
                   <h3 className="text-lg font-bold text-on-surface">Assign Braindump Tasks</h3>
-                  <p className="text-xs text-on-surface-variant">Choose day + priority for each task, then add selected tasks to weekly distribution.</p>
+                  <p className="text-xs text-on-surface-variant hidden sm:block">Choose day + priority for each task, then add selected tasks to weekly distribution.</p>
                 </div>
                 <button
                   onClick={() => setIsAssignModalOpen(false)}
-                  className="p-2 rounded-lg hover:bg-white/10 text-on-surface-variant"
+                  className="p-3 sm:p-2 touch-target rounded-lg hover:bg-white/10 text-on-surface-variant"
                   title="Close"
                 >
-                  <X className="w-5 h-5" strokeWidth={1.5} />
+                  <X className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={1.5} />
                 </button>
               </div>
 
-              <div className="p-6 overflow-auto max-h-[62vh] space-y-3">
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3">
                 {assignDrafts.map((draft) => (
-                  <div key={draft.id} className="grid grid-cols-12 gap-3 items-center p-3 rounded-xl border border-white/10 bg-surface-container-low">
-                    <div className="col-span-1 flex justify-center">
+                  <div key={draft.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-3 items-start sm:items-center p-4 sm:p-3 rounded-xl border border-white/10 bg-surface-container-low">
+                    <div className="sm:col-span-1 flex items-center gap-3 sm:justify-center">
                       <input
                         type="checkbox"
                         checked={draft.selected}
                         onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, selected: e.target.checked } : d))}
-                        className="w-4 h-4"
+                        className="w-5 h-5 sm:w-4 sm:h-4 shrink-0 rounded touch-target sm:min-h-0 sm:min-w-0"
                       />
+                      <p className="text-base sm:text-sm font-medium text-on-surface sm:hidden truncate">{draft.title}</p>
                     </div>
-                    <div className="col-span-5 min-w-0">
+                    <div className="sm:col-span-5 min-w-0 hidden sm:block">
                       <p className="text-sm font-medium text-on-surface truncate">{draft.title}</p>
                       <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                         {draft.tags.length === 0 ? (
@@ -360,11 +363,20 @@ Make sure:
                         ))}
                       </div>
                     </div>
-                    <div className="col-span-3">
+                    <div className="sm:hidden w-full flex items-center gap-1.5 flex-wrap pl-8">
+                       {draft.tags.length === 0 ? (
+                          <span className="text-[10px] text-on-surface-variant">No tags</span>
+                        ) : draft.tags.map(tag => (
+                          <span key={tag} className="px-1.5 py-0.5 bg-surface-container-high text-[9px] text-on-surface-variant rounded uppercase tracking-wider">
+                            {tag}
+                          </span>
+                        ))}
+                    </div>
+                    <div className="sm:col-span-3 flex sm:block gap-3 pl-8 sm:pl-0 mt-1 sm:mt-0">
                       <select
                         value={draft.day}
                         onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, day: e.target.value as DayOfWeek } : d))}
-                        className="w-full bg-surface-container-high rounded-lg px-3 py-2 text-xs outline-none"
+                        className="w-full bg-surface-container-high rounded-lg px-3 py-3 sm:py-2 text-sm sm:text-xs outline-none touch-target sm:min-h-0"
                       >
                         {currentWeek.days.map(day => (
                           <option key={day.day} value={day.day}>
@@ -372,12 +384,21 @@ Make sure:
                           </option>
                         ))}
                       </select>
-                    </div>
-                    <div className="col-span-3">
                       <select
                         value={draft.priority}
                         onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, priority: e.target.value as Priority } : d))}
-                        className="w-full bg-surface-container-high rounded-lg px-3 py-2 text-xs outline-none"
+                        className="w-full sm:hidden bg-surface-container-high rounded-lg px-3 py-3 text-sm outline-none touch-target"
+                      >
+                        <option value="high">high</option>
+                        <option value="medium">medium</option>
+                        <option value="low">low</option>
+                      </select>
+                    </div>
+                    <div className="hidden sm:block sm:col-span-3">
+                      <select
+                        value={draft.priority}
+                        onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, priority: e.target.value as Priority } : d))}
+                        className="w-full bg-surface-container-high rounded-lg px-3 py-2 text-xs outline-none touch-target sm:min-h-0"
                       >
                         <option value="high">high</option>
                         <option value="medium">medium</option>
@@ -388,17 +409,17 @@ Make sure:
                 ))}
               </div>
 
-              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-                <span className="text-xs text-on-surface-variant">
+              <div className="px-4 sm:px-6 py-4 sm:py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 pb-[calc(1rem+var(--safe-bottom))] sm:pb-4">
+                <span className="text-sm sm:text-xs text-on-surface-variant w-full sm:w-auto text-center sm:text-left">
                   {assignDrafts.filter(d => d.selected).length} selected
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                   <Button
                     type="button"
                     onClick={() => setIsAssignModalOpen(false)}
                     size="sm"
                     variant="ghost"
-                    className="text-xs font-semibold border border-white/10 hover:border-white/20"
+                    className="flex-1 sm:flex-none text-sm sm:text-xs font-semibold border border-white/10 hover:border-white/20 touch-target"
                   >
                     Cancel
                   </Button>
@@ -408,7 +429,10 @@ Make sure:
                     disabled={isAssigning || assignDrafts.every(d => !d.selected)}
                     size="sm"
                     variant="primary"
-                    className={isAssigning || assignDrafts.every(d => !d.selected) ? 'opacity-50 cursor-not-allowed' : ''}
+                    className={cn(
+                      'flex-1 sm:flex-none touch-target text-sm sm:text-xs',
+                      (isAssigning || assignDrafts.every(d => !d.selected)) ? 'opacity-50 cursor-not-allowed' : ''
+                    )}
                   >
                     {isAssigning ? 'Assigning...' : 'Assign Selected'}
                   </Button>

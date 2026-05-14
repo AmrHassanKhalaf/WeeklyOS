@@ -146,7 +146,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
         </div>
 
         {/* 3-col task grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
           {/* Strategic */}
           <div>
             <p className="text-[10px] uppercase tracking-widest text-primary mb-3 font-black flex items-center gap-1.5">
@@ -230,7 +230,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             onChange={e => setNote(e.target.value)}
             onBlur={handleNoteBlur}
             placeholder="What did you learn today? Any blockers?"
-            className="input-base resize-none min-h-[80px] text-xs"
+            className="input-base resize-none min-h-[80px] text-base sm:text-xs"
           />
         </div>
       </div>

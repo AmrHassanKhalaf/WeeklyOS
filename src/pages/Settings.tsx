@@ -207,30 +207,29 @@ export function Settings() {
   }
 
   const Toggle = ({ label, desc, checked, onChange }: { label: string, desc: string, checked: boolean, onChange: (c: boolean) => void }) => (
-    <Card variant="glass" className="flex items-center justify-between gap-4 p-4">
-      <div>
+    <Card variant="glass" className="flex items-center justify-between gap-3 sm:gap-4 p-4 cursor-pointer touch-target" onClick={() => onChange(!checked)}>
+      <div className="flex-1">
         <p className="font-bold text-on-surface text-sm">{label}</p>
-        <p className="text-xs text-neutral-500 mt-0.5">{desc}</p>
+        <p className="text-[11px] sm:text-xs text-neutral-500 mt-0.5 leading-snug">{desc}</p>
       </div>
-      <button 
-        onClick={() => onChange(!checked)}
-        className={`w-12 h-6 rounded-full p-1 transition-colors ${checked ? 'bg-primary' : 'bg-surface-variant'}`}
+      <div 
+        className={`shrink-0 w-12 h-6 rounded-full p-1 transition-colors ${checked ? 'bg-primary' : 'bg-surface-variant'}`}
       >
         <div className={`w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
-      </button>
+      </div>
     </Card>
   )
 
   return (
     <AppLayout>
-      <div className="max-w-[1280px] mx-auto px-4 md:px-8 lg:px-10 py-8 md:py-10">
-        <Section variant="glass" className="mb-8 rounded-2xl border border-white/10 bg-gradient-to-br from-surface-container-low/70 to-surface-container-lowest/80 p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+      <div className="max-w-[1280px] mx-auto container-responsive py-responsive pb-32 sm:pb-16">
+        <Section variant="glass" className="mb-6 sm:mb-8 rounded-2xl border border-white/10 bg-gradient-to-br from-surface-container-low/70 to-surface-container-lowest/80 p-5 sm:p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-on-surface mb-2">Settings</h1>
+              <h1 className="text-responsive-h1 font-extrabold tracking-tight text-on-surface mb-2">Settings</h1>
               <p className="text-sm md:text-base text-neutral-300">Configure your WeeklyOS experience, AI integrations, and privacy in one place.</p>
             </div>
-            <div className="flex items-center gap-2 text-xs uppercase tracking-widest font-bold">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
               <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary">Workspace</span>
               <span className="px-2.5 py-1 rounded-full bg-tertiary/15 text-tertiary">AI</span>
               <span className="px-2.5 py-1 rounded-full bg-error/15 text-error">Privacy</span>
@@ -254,7 +253,7 @@ export function Settings() {
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Primary Model</label>
                   <div className="flex flex-col gap-3">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Select value={localProvider}
                         onChange={e => { const p=e.target.value as AIProvider; setLocalProvider(p); if(p==='grok')setLocalModel('grok-2-mini'); if(p==='gemini')setLocalModel('gemini-1.5-flash') }}
                         className="text-sm text-on-surface">
@@ -303,7 +302,7 @@ export function Settings() {
                 <p className="text-xs text-neutral-500">Pinned tasks repeat every week on your selected day/time until disabled or deleted.</p>
                 <Input type="text" placeholder="Task title" value={pinnedDraft.title} onChange={e=>setPinnedDraft(p=>({...p,title:e.target.value}))} className="text-sm" />
                 <Textarea rows={2} placeholder="Description (optional)" value={pinnedDraft.description} onChange={e=>setPinnedDraft(p=>({...p,description:e.target.value}))} className="text-sm resize-none" />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Select value={pinnedDraft.priority} onChange={e=>setPinnedDraft(p=>({...p,priority:e.target.value as Priority}))} className="text-sm">
                     <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
                   </Select>
@@ -318,7 +317,7 @@ export function Settings() {
                 <Input type="text" placeholder="Tags (comma separated)" value={pinnedDraft.tags} onChange={e=>setPinnedDraft(p=>({...p,tags:e.target.value}))} className="text-sm" />
                 <Input type="date" value={pinnedDraft.untilDate} onChange={e=>setPinnedDraft(p=>({...p,untilDate:e.target.value}))} className="text-sm" />
                 <p className="text-[11px] text-neutral-500">Leave date empty to repeat indefinitely.</p>
-                <Button type="button" onClick={handleCreatePinnedTask} size="sm" variant="secondary" className="text-[11px] font-bold uppercase tracking-widest">Create Pinned Task</Button>
+                <Button type="button" onClick={handleCreatePinnedTask} size="sm" variant="secondary" className="text-[11px] font-bold uppercase tracking-widest touch-target mt-2">Create Pinned Task</Button>
                 <div className="space-y-2 pt-2 border-t border-white/10 max-h-64 overflow-y-auto pr-1">
                   {pinnedStore.items.length===0&&<p className="text-xs text-neutral-500">No pinned tasks yet.</p>}
                   {pinnedStore.items.map(item=>(
@@ -352,7 +351,7 @@ export function Settings() {
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Work Schedule</h2>
               </div>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Timezone</label>
                     <Select value={settings.timezone} onChange={e=>settings.setTimezone(e.target.value)} className="text-sm">

@@ -115,6 +115,8 @@
   --glow-tr-color: 244 114 182; /* top-right  — pink   */
 
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --vh-full: 100dvh;
+  --vh-safe: calc(100dvh - var(--safe-bottom, 0px));
 }
 
 body.light {
@@ -983,6 +985,44 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
     box-shadow:
       0 14px 28px -12px rgb(225 29 72 / 0.45),
       0 1px 0 rgb(var(--color-glass-inner) / 0.18) inset;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────── */
+/*  Responsive Utilities (Mobile First)                                    */
+/* ──────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .min-h-dvh {
+    min-height: var(--vh-full, 100dvh);
+  }
+
+  .h-dvh {
+    height: var(--vh-full, 100dvh);
+  }
+
+  .text-responsive-h1 { @apply text-2xl sm:text-3xl md:text-4xl; }
+  .text-responsive-h2 { @apply text-xl sm:text-2xl md:text-3xl; }
+  .text-responsive-h3 { @apply text-lg sm:text-xl md:text-2xl; }
+  .text-responsive-body { @apply text-sm sm:text-base; }
+
+  .container-responsive {
+    @apply px-4 sm:px-6 md:px-8;
+  }
+
+  .py-responsive {
+    @apply py-4 sm:py-6 md:py-8;
+  }
+
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent viewport shift on mobile keyboard */
+@supports (height: 100dvh) {
+  input, textarea, select {
+    font-size: 16px; /* Prevents iOS zoom on focus */
   }
 }
 

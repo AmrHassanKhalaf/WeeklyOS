@@ -126,7 +126,7 @@ export function Dashboard() {
   if (!hasSummary && isLoadingWeek) {
     return (
       <AppLayout>
-        <div className="max-w-4xl mx-auto p-8 space-y-8">
+        <div className="container-responsive py-responsive mx-auto max-w-4xl space-y-8">
           <Skeleton className="h-20" />
           <LoadingCard />
           <LoadingCard />
@@ -139,7 +139,7 @@ export function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto p-8 space-y-12">
+      <div className="container-responsive py-responsive mx-auto max-w-4xl space-y-8 sm:space-y-12">
         {/* AI Error Banner */}
         {aiError && (
           <div className="flex items-center gap-3 bg-error/10 border border-error/20 rounded-xl px-5 py-3">
@@ -155,7 +155,7 @@ export function Dashboard() {
           </div>
         )}
         {/* Hero Stats */}
-        <section className="flex justify-between items-end gap-8">
+        <section className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 sm:gap-8">
           <div className="flex-1">
             {hasSummary ? (
               <>
@@ -163,7 +163,7 @@ export function Dashboard() {
                   <span className="inline-block w-6 h-px bg-primary/60" />
                   Week {summary.weekNumber}
                 </p>
-                <h2 className="text-3xl font-bold tracking-tight mb-3 gradient-text">{summary.title}</h2>
+                <h2 className="text-responsive-h1 font-bold tracking-tight mb-3 gradient-text">{summary.title}</h2>
                 <p className="text-on-surface-variant/90 text-sm max-w-lg leading-relaxed">
                   {summary.dateRange}. Status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
                 </p>
@@ -175,7 +175,7 @@ export function Dashboard() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-6 shrink-0">
+          <div className="flex flex-row items-center gap-4 sm:gap-6 shrink-0 w-full sm:w-auto justify-between sm:justify-end mt-4 sm:mt-0">
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 font-medium">Week Score</p>
               {hasSummary ? (
@@ -259,7 +259,7 @@ export function Dashboard() {
                     </button>
                   </div>
                   {isMotionReady ? (
-                    <Suspense fallback={<h3 className="text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>}>
+                    <Suspense fallback={<h3 className="text-2xl sm:text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>}>
                       <RotatingText
                         texts={[challengeTitle]}
                         auto={false}
@@ -270,19 +270,19 @@ export function Dashboard() {
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: '-120%', opacity: 0 }}
                         transition={{ type: 'spring', damping: 30, stiffness: 380 }}
-                        mainClassName="text-[2rem] font-black tracking-tight"
+                        mainClassName="text-2xl sm:text-[2rem] font-black tracking-tight"
                         splitLevelClassName="overflow-hidden pb-1"
                         elementLevelClassName="inline-block text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
                       />
                     </Suspense>
                   ) : (
-                    <h3 className="text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>
+                    <h3 className="text-2xl sm:text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>
                   )}
                 </div>
               </div>
 
               {/* 7-Day Challenge Circles */}
-              <div className="border-t border-white/5 pt-6">
+              <div className="border-t border-white/5 pt-6 overflow-x-auto hide-scrollbar -mx-6 px-6 sm:mx-0 sm:px-0">
                 <WeeklyChallengeCircles />
               </div>
 
@@ -379,9 +379,9 @@ export function Dashboard() {
         </section>
 
         {/* Bottom Stats */}
-        <section className="grid grid-cols-3 gap-8 pb-12">
-          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-2">
-          <Card variant="glass" className="col-span-2 p-8">
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 pb-8 sm:pb-12">
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-1 sm:col-span-2">
+          <Card variant="glass" className="col-span-1 sm:col-span-2 p-6 sm:p-8">
             <div className="flex justify-between items-center mb-8">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.24em] text-on-surface-variant font-extrabold mb-1">Deep Work</p>
@@ -392,7 +392,7 @@ export function Dashboard() {
                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_6px_rgb(34_211_238_/_0.7)]" /><span className="text-xs text-on-surface-variant">Admin</span></div>
               </div>
             </div>
-            <div className="h-48 flex items-end justify-between gap-4 px-4">
+            <div className="h-32 sm:h-40 md:h-48 flex items-end justify-between gap-2 sm:gap-4 px-2 sm:px-4">
               {deepWorkData.map((d, i) => (
                 <motion.div
                   key={i}
@@ -419,8 +419,8 @@ export function Dashboard() {
             </div>
           </Card>
           </BorderGlow>
-          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']}>
-          <Card variant="glass" className="p-8 relative overflow-hidden flex flex-col">
+          <BorderGlow edgeSensitivity={30} glowColor="40 80 80" backgroundColor="transparent" borderRadius={14} glowRadius={40} glowIntensity={1} coneSpread={25} animated={false} colors={['#c084fc', '#f472b6', '#38bdf8']} className="col-span-1">
+          <Card variant="glass" className="p-6 sm:p-8 relative overflow-hidden flex flex-col">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full"

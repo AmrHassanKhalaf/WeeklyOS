@@ -67,10 +67,10 @@ export function TopNav() {
       initial={false}
       animate={{ left: offsetLeft }}
       transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-      className="fixed top-0 right-0 h-14 z-40 bg-background/60 backdrop-blur-2xl backdrop-saturate-150 flex items-center justify-between px-4 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
+      className="fixed top-0 right-0 h-14 z-40 bg-background/60 backdrop-blur-2xl backdrop-saturate-150 flex items-center justify-between px-2 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
     >
       {/* Left: hamburger + page title */}
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           onPointerDown={onMenuDown}
           onClick={toggleLeftSidebar}
@@ -100,18 +100,18 @@ export function TopNav() {
         </div>
 
         {/* Week navigator — condensed on mobile */}
-        <div className="hidden sm:flex items-center gap-1.5 ml-4">
+        <div className="flex items-center gap-1 sm:gap-1.5 ml-2 sm:ml-4">
           <button
             onClick={() => void goToPreviousWeek()}
             disabled={!canGoPreviousWeek}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed focus-ring transition-colors"
+            className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed focus-ring transition-colors"
             title="Previous Week"
           >
             <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={1.5} />
           </button>
           <button
             onClick={() => void goToCurrentWeek()}
-            className="text-[11px] font-medium px-3 h-7 rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border border-white/10 focus-ring transition-colors"
+            className="hidden sm:block text-[11px] font-medium px-3 h-7 rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border border-white/10 focus-ring transition-colors"
             title="Go to Current Week"
           >
             Today
@@ -119,7 +119,7 @@ export function TopNav() {
           <button
             onClick={() => void goToNextWeek()}
             disabled={!canGoNextWeek}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed focus-ring transition-colors"
+            className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed focus-ring transition-colors"
             title="Next Week"
           >
             <ChevronRight className="w-[18px] h-[18px]" strokeWidth={1.5} />

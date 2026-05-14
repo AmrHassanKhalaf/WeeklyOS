@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Layers, Zap, X, Eye, BrainCircuit } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import type { FocusModeLevel } from '../../store/useLayoutStore'
 
@@ -81,7 +82,9 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
     onClose()
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -96,19 +99,21 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
             onClick={onClose}
           />
 
-          {/* Menu panel */}
-          <motion.div
-            ref={menuRef}
-            key="focus-menu-panel"
-            initial={{ opacity: 0, scale: 0.92, y: 10, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 0.95, y: 8, filter: 'blur(6px)' }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed z-[201] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm mx-auto px-4"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Focus mode selector"
-          >
+          {/* Menu panel container for scrolling and centering */}
+          <div className="fixed inset-0 z-[201] overflow-y-auto overflow-x-hidden pointer-events-none">
+            <div className="flex min-h-[100dvh] items-center justify-center p-4 sm:p-6">
+              <motion.div
+                ref={menuRef}
+                key="focus-menu-panel"
+                initial={{ opacity: 0, scale: 0.92, y: 10, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, scale: 0.95, y: 8, filter: 'blur(6px)' }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-sm mx-auto pointer-events-auto"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Focus mode selector"
+              >
             <div className="rounded-3xl border border-white/10 bg-[#0e0e12]/95 backdrop-blur-3xl shadow-[0_40px_80px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.04)_inset] overflow-hidden">
 
               {/* Header */}
@@ -245,8 +250,11 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
               </div>
             </div>
           </motion.div>
+        </div>
+      </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
