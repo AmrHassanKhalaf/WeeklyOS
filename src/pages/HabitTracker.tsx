@@ -98,43 +98,43 @@ export function HabitTracker() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto p-6 pb-16 space-y-6">
+      <div className="max-w-5xl mx-auto container-responsive py-responsive pb-32 sm:pb-16 space-y-6 sm:space-y-8">
 
         {/* Header */}
-        <section className="flex items-start justify-between gap-4 flex-wrap">
+        <section className="flex flex-col sm:flex-row items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Flame className="w-6 h-6 text-primary" strokeWidth={2} />
-              <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">Habit Tracker</h1>
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <Flame className="w-6 h-6 sm:w-7 sm:h-7 text-primary" strokeWidth={2} />
+              <h1 className="text-responsive-h1 font-extrabold tracking-tight text-on-surface">Habit Tracker</h1>
             </div>
-            <p className="text-sm text-on-surface-variant">Build consistency, break patterns, and track your month.</p>
+            <p className="text-sm sm:text-base text-on-surface-variant">Build consistency, break patterns, and track your month.</p>
           </div>
-          <button onClick={handleOpenAdd} className="btn btn-primary">
+          <button onClick={handleOpenAdd} className="btn btn-primary touch-target w-full sm:w-auto mt-2 sm:mt-0">
             <Plus className="w-5 h-5" strokeWidth={2} />Add Habit
           </button>
         </section>
 
         {/* Month nav + controls */}
-        <section className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button onClick={goToPrevMonth} className="w-9 h-9 rounded-xl btn btn-ghost flex items-center justify-center">
+        <section className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+            <button onClick={goToPrevMonth} className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl btn btn-ghost flex items-center justify-center touch-target">
               <ChevronLeft className="w-5 h-5" strokeWidth={2} />
             </button>
             <div className="text-center min-w-[9rem]">
               <p className="text-lg font-extrabold text-on-surface">{MONTH_NAMES[currentMonth - 1]}</p>
               <p className="text-[11px] text-on-surface-variant font-semibold">{currentYear}</p>
             </div>
-            <button onClick={goToNextMonth} disabled={isNextMonth} className="w-9 h-9 rounded-xl btn btn-ghost flex items-center justify-center disabled:opacity-30">
+            <button onClick={goToNextMonth} disabled={isNextMonth} className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl btn btn-ghost flex items-center justify-center disabled:opacity-30 touch-target">
               <ChevronRight className="w-5 h-5" strokeWidth={2} />
             </button>
             {!isCurrentMonth && (
-              <button onClick={() => useHabitStore.getState().setMonth(todayMonth, todayYear)} className="btn btn-sm btn-secondary text-xs">Today</button>
+              <button onClick={() => useHabitStore.getState().setMonth(todayMonth, todayYear)} className="btn btn-sm btn-secondary text-xs touch-target ml-1 sm:ml-2">Today</button>
             )}
           </div>
-          <div className="flex items-center bg-surface-container-low/60 border border-outline-variant/30 rounded-xl p-0.5 gap-0.5">
+          <div className="flex items-center bg-surface-container-low/60 border border-outline-variant/30 rounded-xl p-0.5 gap-0.5 w-full sm:w-auto">
             {(['monthly', 'weekly'] as const).map(mode => (
               <button key={mode} onClick={() => setViewMode(mode)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${viewMode === mode ? 'bg-primary/20 text-primary border border-primary/30' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                className={`flex-1 sm:flex-none px-4 sm:px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-semibold transition-all capitalize touch-target ${viewMode === mode ? 'bg-primary/20 text-primary border border-primary/30' : 'text-on-surface-variant hover:text-on-surface'}`}>
                 {mode}
               </button>
             ))}
@@ -143,7 +143,7 @@ export function HabitTracker() {
 
         {/* Tabs */}
         {habits.length > 0 && (
-          <div className="flex items-center gap-1 border-b border-outline-variant/20">
+          <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant/20 pb-2 sm:pb-0 sm:gap-1">
             {tabBtn('build')}
             {tabBtn('break')}
           </div>
@@ -152,15 +152,15 @@ export function HabitTracker() {
         {/* Week nav */}
         <AnimatePresence>
           {viewMode === 'weekly' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-3">
-              <button onClick={() => setWeekOffset(v => Math.max(0, v - 1))} disabled={weekOffset === 0} className="btn btn-ghost btn-sm disabled:opacity-30">
-                <ChevronLeft className="w-5 h-5" strokeWidth={2} />Prev Week
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-row items-center justify-between gap-2 w-full sm:w-auto">
+              <button onClick={() => setWeekOffset(v => Math.max(0, v - 1))} disabled={weekOffset === 0} className="btn btn-ghost btn-sm disabled:opacity-30 touch-target flex-1 sm:flex-none justify-center px-1 sm:px-3 text-[11px] sm:text-xs">
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />Prev
               </button>
-              <span className="text-sm font-semibold text-on-surface-variant flex-1 text-center">
+              <span className="text-xs sm:text-sm font-semibold text-on-surface-variant shrink-0 text-center px-2">
                 Days {weekOffset * 7 + 1}–{Math.min((weekOffset + 1) * 7, totalDays)}
               </span>
-              <button onClick={() => setWeekOffset(v => Math.min(maxWeekOffset, v + 1))} disabled={weekOffset >= maxWeekOffset} className="btn btn-ghost btn-sm disabled:opacity-30">
-                Next Week<ChevronRight className="w-5 h-5" strokeWidth={2} />
+              <button onClick={() => setWeekOffset(v => Math.min(maxWeekOffset, v + 1))} disabled={weekOffset >= maxWeekOffset} className="btn btn-ghost btn-sm disabled:opacity-30 touch-target flex-1 sm:flex-none justify-center px-1 sm:px-3 text-[11px] sm:text-xs">
+                Next<ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
               </button>
             </motion.div>
           )}

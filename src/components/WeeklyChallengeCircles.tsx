@@ -46,8 +46,7 @@ export function WeeklyChallengeCircles() {
 
   return (
     <div className="space-y-6">
-      {/* Circle Grid */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
+      <div className="flex items-center justify-between gap-2 sm:flex-wrap">
         {orderedChallengeDays.map((day) => {
           const future = isFutureDay(day.dayOfWeek)
           const current = isToday(day.dayOfWeek)

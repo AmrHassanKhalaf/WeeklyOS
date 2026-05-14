@@ -45,23 +45,23 @@ export function BrainDump() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-12 py-16">
+      <div className="max-w-4xl mx-auto container-responsive py-responsive pb-32 sm:pb-16">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-extrabold tracking-tight mb-3">Prep & Brain Dump</h1>
-          <p className="text-on-surface-variant max-w-lg leading-relaxed">
+        <div className="mb-8 sm:mb-12">
+          <h1 className="text-responsive-h1 font-extrabold tracking-tight mb-2 sm:mb-3">Prep & Brain Dump</h1>
+          <p className="text-on-surface-variant max-w-lg leading-relaxed text-sm sm:text-base">
             Empty your mind. Don't worry about order or priority yet. Just get it all out of your system.
           </p>
         </div>
 
         {/* Brain Dump Input */}
-        <div className="relative group mb-16">
+        <div className="relative group mb-12 sm:mb-16">
           <textarea
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="What's on your mind? Start typing anything... (Ctrl+Enter to save)"
-            className="w-full h-48 bg-transparent border-b-2 border-surface-variant focus:border-primary focus:ring-0 text-xl font-light py-6 px-0 resize-none transition-all outline-none placeholder:text-surface-variant text-on-surface"
+            className="w-full h-40 sm:h-48 bg-transparent border-b-2 border-surface-variant focus:border-primary focus:ring-0 text-base sm:text-xl font-light py-4 sm:py-6 px-0 resize-none transition-all outline-none placeholder:text-surface-variant text-on-surface"
           />
           <div className="absolute bottom-4 right-0 flex gap-4">
             <Button
@@ -79,20 +79,20 @@ export function BrainDump() {
         </div>
 
         {/* Task List Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <h2 className="text-lg font-bold">Unprocessed Tasks</h2>
             <span className="px-2.5 py-0.5 bg-surface-container-high rounded-full text-[10px] font-bold text-outline">
               {brainDumpItems.length} TOTAL
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center w-full sm:w-auto">
             <Button
               type="button"
               onClick={() => navigate('/weekly-distribution')}
               size="sm"
               variant="secondary"
-              className="text-sm font-bold"
+              className="text-sm font-bold w-full sm:w-auto touch-target"
             >
               <Send className="w-4 h-4" strokeWidth={1.5} />
               Send to Distribution
@@ -147,9 +147,9 @@ export function BrainDump() {
 
       {/* Floating Action Bar */}
       {selectedCount > 0 && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 bg-surface-container-highest/80 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/5 z-50">
-          <span className="text-[10px] text-neutral-500 px-4">{selectedCount} selected</span>
-          <div className="w-[1px] h-8 bg-surface-variant" />
+        <div className="fixed bottom-[calc(5rem+var(--safe-bottom,0px))] sm:bottom-12 left-1/2 -translate-x-1/2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 p-2 bg-surface-container-highest/80 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-white/5 z-50 w-[92vw] sm:w-auto">
+          <span className="text-[10px] text-neutral-500 px-2 sm:px-4 shrink-0">{selectedCount} selected</span>
+          <div className="w-[1px] h-8 bg-surface-variant shrink-0" />
           <button
             onClick={async () => {
               const tag = window.prompt('Enter tag name:')
@@ -161,18 +161,18 @@ export function BrainDump() {
                 }))
               }
             }}
-            className="flex items-center gap-2 px-6 py-3 bg-surface-bright text-on-surface rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors"
+            className="flex flex-1 sm:flex-none items-center justify-center gap-1 sm:gap-2 px-2 sm:px-6 py-3 touch-target bg-surface-bright text-on-surface rounded-xl text-[11px] sm:text-xs font-bold hover:bg-surface-variant transition-colors whitespace-nowrap"
           >
-            <Tag className="w-5 h-5" strokeWidth={1.5} />
+            <Tag className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
             Bulk Tag
           </button>
-          <div className="w-[1px] h-8 bg-surface-variant mx-1" />
+          <div className="w-[1px] h-8 bg-surface-variant mx-0 sm:mx-1 shrink-0" />
           <button
             onClick={deleteSelected}
-            className="flex items-center gap-2 px-6 py-3 bg-error-container text-on-error-container rounded-xl text-xs font-bold hover:opacity-90 transition-colors"
+            className="flex flex-1 sm:flex-none items-center justify-center gap-1 sm:gap-2 px-2 sm:px-6 py-3 touch-target bg-error-container text-on-error-container rounded-xl text-[11px] sm:text-xs font-bold hover:opacity-90 transition-colors whitespace-nowrap"
           >
-            <Trash2 className="w-5 h-5" strokeWidth={1.5} />
-            Delete Selected
+            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
+            Delete
           </button>
         </div>
       )}

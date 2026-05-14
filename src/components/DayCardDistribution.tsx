@@ -91,14 +91,14 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
           onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
           onKeyDown={e => e.key === 'Enter' && handleSave()}
           placeholder="Task title..."
-          className="w-full bg-transparent text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
+          className="w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
         />
         <textarea
           value={editData.description}
           onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
           placeholder="Notes (optional)..."
           rows={2}
-          className="w-full bg-transparent text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
+          className="w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
         />
         <div className="flex gap-2">
           <input
@@ -106,7 +106,7 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             title="Start Time"
             value={editData.start}
             onChange={e => setEditData(p => ({ ...p, start: e.target.value }))}
-            className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 flex-1 text-on-surface-variant [color-scheme:dark]"
+            className="bg-surface-container-low rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:ring-1 focus:ring-primary/40 flex-1 text-on-surface-variant [color-scheme:dark]"
           />
           <input
             value={editData.duration}
@@ -114,14 +114,14 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             onChange={e => setEditData(p => ({ ...p, duration: e.target.value }))}
             onKeyDown={e => e.key === 'Enter' && handleSave()}
             placeholder="Duration (e.g. 2h)"
-            className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 w-24 text-on-surface-variant placeholder:text-neutral-600"
+            className="bg-surface-container-low rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:ring-1 focus:ring-primary/40 w-24 text-on-surface-variant placeholder:text-neutral-600"
           />
         </div>
         <div className="flex gap-2 items-center">
             <select
                 value={editData.priority}
                 onChange={e => setEditData(p => ({ ...p, priority: e.target.value as Priority }))}
-                className="bg-surface-container-low text-xs text-on-surface-variant rounded outline-none p-1 flex-1"
+                className="bg-surface-container-low text-base sm:text-xs text-on-surface-variant rounded outline-none p-1 flex-1"
             >
                 <option value="high">High Priority</option>
                 <option value="medium">Medium Priority</option>
@@ -130,7 +130,7 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             <select
                 value={editData.day}
                 onChange={e => setEditData(p => ({ ...p, day: e.target.value as DayOfWeek }))}
-                className="bg-surface-container-low text-xs text-on-surface-variant rounded outline-none p-1 flex-1"
+                className="bg-surface-container-low text-base sm:text-xs text-on-surface-variant rounded outline-none p-1 flex-1"
             >
                 {DAYS_OPTIONS.map(d => (
                     <option key={d} value={d}>{d[0].toUpperCase() + d.substring(1)}</option>
@@ -225,28 +225,28 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
         onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
         onKeyDown={handleKeyDown}
         placeholder={`${priority.charAt(0).toUpperCase() + priority.slice(1)} task title...`}
-        className="w-full bg-transparent text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
+        className="w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
       />
       <textarea
         value={editData.description}
         onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
         placeholder="Notes (optional)..."
         rows={2}
-        className="w-full bg-transparent text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
+        className="w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
       />
       <div className="flex gap-2">
         <input
           type="time"
           value={editData.start}
           onChange={e => setEditData(p => ({ ...p, start: e.target.value }))}
-          className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 flex-1 text-on-surface-variant [color-scheme:dark]"
+          className="bg-surface-container-low rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:ring-1 focus:ring-primary/40 flex-1 text-on-surface-variant [color-scheme:dark]"
         />
         <input
           value={editData.duration}
           onChange={e => setEditData(p => ({ ...p, duration: e.target.value }))}
           onKeyDown={handleKeyDown}
           placeholder="Duration (e.g. 2h)"
-          className="bg-surface-container-low rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40 w-24 text-on-surface-variant placeholder:text-neutral-600"
+          className="bg-surface-container-low rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:ring-1 focus:ring-primary/40 w-24 text-on-surface-variant placeholder:text-neutral-600"
         />
       </div>
       <div className="flex justify-end gap-2 mt-1">

@@ -1,6 +1,6 @@
 import { DynamicIcon } from '../ui/DynamicIcon';
 import { useCallback, useState } from 'react'
-import { Calendar, Edit3, Trash2, Ban } from 'lucide-react'
+import { Calendar, Edit3, Trash2, Ban, ChevronUp, Brain } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Habit } from '../../store/useHabitStore'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
@@ -38,14 +38,14 @@ function CardActions({ habit, onEdit, onViewDetail, onDelete }: {
   onDelete: () => void
 }) {
   return (
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-      <button onClick={() => onViewDetail(habit)} className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Full month view">
+    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+      <button onClick={() => onViewDetail(habit)} className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Full month view">
         <Calendar className="text-[16px]" strokeWidth={1.5} />
       </button>
-      <button onClick={() => onEdit(habit)} className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Edit">
+      <button onClick={() => onEdit(habit)} className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Edit">
         <Edit3 className="text-[16px]" strokeWidth={1.5} />
       </button>
-      <button onClick={onDelete} className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors" title="Delete">
+      <button onClick={onDelete} className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors" title="Delete">
         <Trash2 className="text-[16px]" strokeWidth={1.5} />
       </button>
     </div>
@@ -100,7 +100,7 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
           </div>
           {habit.motivation && (
             <button onClick={() => setShowReason(v => !v)}
-              className="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors mt-0.5 flex items-center gap-1">
+              className="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors mt-1 sm:mt-0.5 py-1.5 sm:py-0 flex items-center gap-1 touch-target sm:min-h-0 sm:min-w-0">
               {showReason ? <ChevronUp className="w-[12px] h-[12px]" strokeWidth={1.5} /> : <Brain className="w-[12px] h-[12px]" strokeWidth={1.5} />}
               {showReason ? 'Hide' : 'Why?'}
             </button>
@@ -232,7 +232,7 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
           </div>
           {habit.motivation && (
             <button onClick={() => setShowReason(v => !v)}
-              className="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors mt-0.5 flex items-center gap-1">
+              className="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors mt-1 sm:mt-0.5 py-1.5 sm:py-0 flex items-center gap-1 touch-target sm:min-h-0 sm:min-w-0">
               {showReason ? <ChevronUp className="w-[12px] h-[12px]" strokeWidth={1.5} /> : <Brain className="w-[12px] h-[12px]" strokeWidth={1.5} />}
               {showReason ? 'Hide' : 'Why quit?'}
             </button>

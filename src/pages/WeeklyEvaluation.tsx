@@ -69,11 +69,11 @@ export function WeeklyEvaluation() {
   if (isLoadingWeek || !currentWeek) {
     return (
       <AppLayout aiVariant="evaluation">
-        <div className="max-w-4xl mx-auto p-8 space-y-8">
+        <div className="max-w-4xl mx-auto container-responsive py-responsive space-y-8 pb-32 sm:pb-16">
           <div className="h-20 bg-surface-container-low rounded-xl animate-pulse" />
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-4 h-40 bg-surface-container-low rounded-xl animate-pulse" />
-            <div className="col-span-8 h-40 bg-surface-container-low rounded-xl animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="md:col-span-4 h-40 bg-surface-container-low rounded-xl animate-pulse" />
+            <div className="md:col-span-8 h-40 bg-surface-container-low rounded-xl animate-pulse" />
           </div>
         </div>
       </AppLayout>
@@ -96,27 +96,27 @@ export function WeeklyEvaluation() {
 
   return (
     <AppLayout aiVariant="evaluation">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-4xl mx-auto container-responsive py-responsive pb-32 sm:pb-16">
         {/* AI Error Banner */}
         {aiError && (
           <div className="flex items-center gap-3 bg-error/10 border border-error/20 rounded-xl px-5 py-3 mb-8">
             <AlertCircle className="text-error text-xl shrink-0" strokeWidth={1.5} />
             <p className="text-sm text-error flex-1">{aiError}</p>
-            <button onClick={() => setAiError(null)} className="text-error/60 hover:text-error transition-colors" aria-label="Dismiss">
+            <button onClick={() => setAiError(null)} className="text-error/60 hover:text-error transition-colors touch-target" aria-label="Dismiss">
               <X className="text-lg" strokeWidth={1.5} />
             </button>
           </div>
         )}
         {/* Header */}
-        <header className="mb-12">
-          <h2 className="text-4xl font-extrabold tracking-tight mb-2">Weekly Evaluation</h2>
-          <p className="text-on-surface-variant">Reviewing {currentWeek.dateRange}. Clarity leads to mastery.</p>
+        <header className="mb-8 sm:mb-12">
+          <h2 className="text-responsive-h1 font-extrabold tracking-tight mb-2">Weekly Evaluation</h2>
+          <p className="text-sm sm:text-base text-on-surface-variant">Reviewing {currentWeek.dateRange}. Clarity leads to mastery.</p>
         </header>
 
         {/* Bento Grid Metrics */}
-        <div className="grid grid-cols-12 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 mb-8 sm:mb-12">
           {/* Score Card */}
-          <div className="col-span-4 bg-surface-container-low p-6 rounded-xl flex flex-col justify-between">
+          <div className="md:col-span-4 bg-surface-container-low p-5 sm:p-6 rounded-xl flex flex-col justify-between">
             <span className="text-xs uppercase tracking-widest text-on-surface-variant">Weekly Score</span>
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-5xl font-extrabold text-primary">{score}%</span>
@@ -131,15 +131,15 @@ export function WeeklyEvaluation() {
           </div>
 
           {/* Bar Chart */}
-          <div className="col-span-8 bg-surface-container-low p-6 rounded-xl">
+          <div className="md:col-span-8 bg-surface-container-low p-5 sm:p-6 rounded-xl">
             <div className="flex justify-between items-center mb-6">
-              <span className="text-xs uppercase tracking-widest text-on-surface-variant">Completed vs. Planned</span>
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-primary" /><span className="text-[10px] text-on-surface-variant uppercase">Done</span></div>
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-surface-variant" /><span className="text-[10px] text-on-surface-variant uppercase">Plan</span></div>
+              <span className="text-[10px] sm:text-xs uppercase tracking-widest text-on-surface-variant">Completed vs. Planned</span>
+              <div className="flex gap-2 sm:gap-4">
+                <div className="flex items-center gap-1 sm:gap-2"><div className="w-2 h-2 rounded-full bg-primary" /><span className="text-[10px] text-on-surface-variant uppercase">Done</span></div>
+                <div className="flex items-center gap-1 sm:gap-2"><div className="w-2 h-2 rounded-full bg-surface-variant" /><span className="text-[10px] text-on-surface-variant uppercase">Plan</span></div>
               </div>
             </div>
-            <div className="flex items-end justify-between h-24 gap-4">
+            <div className="flex items-end justify-between h-24 gap-2 sm:gap-4">
               {dailyStats.map((d) => {
                 const doneH = maxPlanned > 0 ? Math.round((d.completed / maxPlanned) * 80) : 0
                 const plannedH = maxPlanned > 0 ? Math.round((d.planned / maxPlanned) * 80) : 0
@@ -173,10 +173,11 @@ export function WeeklyEvaluation() {
               <button 
                 onClick={() => handleGenerate('wentWell')}
                 disabled={isGenerating['wentWell']}
-                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-2.5 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50 touch-target shrink-0"
               >
                 <Sparkles className="text-[14px]" strokeWidth={1.5} />
-                {isGenerating['wentWell'] ? 'Generating...' : 'Auto-Generate'}
+                <span className="hidden sm:inline">{isGenerating['wentWell'] ? 'Generating...' : 'Auto-Generate'}</span>
+                <span className="sm:hidden">{isGenerating['wentWell'] ? 'Wait...' : 'Auto'}</span>
               </button>
             </div>
             <textarea
@@ -184,7 +185,7 @@ export function WeeklyEvaluation() {
               onChange={e => setEvalState(prev => ({ ...prev, wentWell: e.target.value }))}
               onBlur={() => handleSave('wentWell')}
               placeholder="Reflect on your wins and successes this week..."
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-tertiary p-5 rounded-xl text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-tertiary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
 
@@ -200,10 +201,11 @@ export function WeeklyEvaluation() {
               <button 
                 onClick={() => handleGenerate('struggle')}
                 disabled={isGenerating['struggle']}
-                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-2.5 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50 touch-target shrink-0"
               >
                 <Sparkles className="text-[14px]" strokeWidth={1.5} />
-                {isGenerating['struggle'] ? 'Generating...' : 'Auto-Generate'}
+                <span className="hidden sm:inline">{isGenerating['struggle'] ? 'Generating...' : 'Auto-Generate'}</span>
+                <span className="sm:hidden">{isGenerating['struggle'] ? 'Wait...' : 'Auto'}</span>
               </button>
             </div>
             <textarea
@@ -211,7 +213,7 @@ export function WeeklyEvaluation() {
               onChange={e => setEvalState(prev => ({ ...prev, struggle: e.target.value }))}
               onBlur={() => handleSave('struggle')}
               placeholder="Note any roadblocks, distractions, or missed targets..."
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-error p-5 rounded-xl text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-error p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
 
@@ -227,10 +229,11 @@ export function WeeklyEvaluation() {
               <button 
                 onClick={() => handleGenerate('lessons')}
                 disabled={isGenerating['lessons']}
-                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-2.5 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50 touch-target shrink-0"
               >
                 <Sparkles className="text-[14px]" strokeWidth={1.5} />
-                {isGenerating['lessons'] ? 'Generating...' : 'Auto-Generate'}
+                <span className="hidden sm:inline">{isGenerating['lessons'] ? 'Generating...' : 'Auto-Generate'}</span>
+                <span className="sm:hidden">{isGenerating['lessons'] ? 'Wait...' : 'Auto'}</span>
               </button>
             </div>
             <textarea
@@ -238,7 +241,7 @@ export function WeeklyEvaluation() {
               onChange={e => setEvalState(prev => ({ ...prev, lessons: e.target.value }))}
               onBlur={() => handleSave('lessons')}
               placeholder="What changes will you make to your workflow next week?"
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-primary p-5 rounded-xl text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-primary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
         </div>
