@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Play, Pause, RotateCcw, X, Layers, CloudRain } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -204,7 +205,9 @@ export function DeepFocusOverlay({
   const sessionMsg = getSessionMessage(todayFocusSeconds, sessionCount)
   const displayTask = activeTaskTitle || `${isFocus ? pomodoroFocusMin : pomodoroBreakMin} min ${isFocus ? 'focus session' : 'break'}`
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isDeep && (
         <motion.div
@@ -439,6 +442,7 @@ export function DeepFocusOverlay({
           </div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

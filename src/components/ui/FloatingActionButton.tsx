@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { cn } from '../../lib/cn'
 import { RippleContainer } from './Ripple'
 import { useRipple } from './useRipple'
+import { createPortal } from 'react-dom'
 
 export type FloatingActionButtonProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -37,7 +38,7 @@ export function FloatingActionButton({
       ? 'left-1/2 -translate-x-1/2'
       : 'right-5 sm:right-8'
 
-  return (
+  const button = (
     <motion.button
       {...props}
       type={type ?? 'button'}
@@ -65,4 +66,7 @@ export function FloatingActionButton({
       <RippleContainer ripples={ripples} />
     </motion.button>
   )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(button, document.body)
 }

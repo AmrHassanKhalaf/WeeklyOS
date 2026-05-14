@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Layers, Zap, X, Eye, BrainCircuit } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import type { FocusModeLevel } from '../../store/useLayoutStore'
 
@@ -81,7 +82,9 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
     onClose()
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -247,6 +250,7 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

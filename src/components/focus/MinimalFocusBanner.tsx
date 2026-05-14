@@ -8,6 +8,7 @@
 
 import { motion } from 'framer-motion'
 import { Play, Pause, X, Layers } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
 
 interface MinimalFocusBannerProps {
@@ -34,7 +35,9 @@ export function MinimalFocusBanner({
   const ss = (pomodoroTime % 60).toString().padStart(2, '0')
   const isFocus = pomodoroPhase === 'focus'
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <motion.div
       initial={false}
       animate={{
@@ -102,6 +105,7 @@ export function MinimalFocusBanner({
           <X className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
       </div>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
