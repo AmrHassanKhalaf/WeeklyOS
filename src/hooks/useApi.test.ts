@@ -19,8 +19,8 @@ describe('useAiApi', () => {
   it('sendMessage should pass activeModel in body', async () => {
     useSettingsStore.setState({ activeModel: 'gemini-3.1-pro-preview', activeProvider: 'gemini' })
 
-    // @ts-ignore
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: { id: 'user1' }, access_token: 'token-123' } } })
+    const getSessionMock = vi.mocked(supabase.auth.getSession)
+    getSessionMock.mockResolvedValue({ data: { session: { user: { id: 'user1' }, access_token: 'token-123' } } })
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

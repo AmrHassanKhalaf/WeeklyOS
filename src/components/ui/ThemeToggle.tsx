@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Moon, Sun, Monitor } from 'lucide-react'
 import { useSettingsStore } from '../../store/useSettingsStore'
 import { cn } from '../../lib/cn'
-import { RippleContainer, useRipple } from './Ripple'
+import { RippleContainer } from './Ripple'
+import { useRipple } from './useRipple'
 
 interface ThemeToggleProps {
   /** Compact icon-only mode for collapsed sidebars / tight headers */

@@ -7,6 +7,9 @@ import type { Database } from './database.types';
  */
 
 type TableName = keyof Database['public']['Tables'];
+type TableRow<T extends TableName> = Database['public']['Tables'][T]['Row'];
+type TableInsert<T extends TableName> = Database['public']['Tables'][T]['Insert'];
+type TableUpdate<T extends TableName> = Database['public']['Tables'][T]['Update'];
 
 /**
  * Execute a SELECT query
@@ -14,10 +17,10 @@ type TableName = keyof Database['public']['Tables'];
 export async function querySelect<T extends TableName>(
   tableName: T,
   options?: {
-    filter?: Record<string, any>;
+    filter?: Partial<TableRow<T>>;
     limit?: number;
     offset?: number;
-    orderBy?: string;
+    orderBy?: keyof TableRow<T>;
     ascending?: boolean;
   }
 ) {
@@ -26,26 +29,26 @@ export async function querySelect<T extends TableName>(
   if (options?.filter) {
     Object.entries(options.filter).forEach(([key, value]) => {
       if (value !== undefined) {
-        (query as any) = (query as any).eq(key, value);
+        query = query.eq(key, value as TableRow<T>[keyof TableRow<T>]);
       }
     });
   }
 
   if (options?.limit) {
-    (query as any) = (query as any).limit(options.limit);
+    query = query.limit(options.limit);
   }
 
   if (options?.offset) {
-    (query as any) = (query as any).range(options.offset, options.offset + (options.limit || 10) - 1);
+    query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
   }
 
   if (options?.orderBy) {
-    (query as any) = (query as any).order(options.orderBy, {
+    query = query.order(options.orderBy as string, {
       ascending: options.ascending !== false,
     });
   }
 
-  const { data, error } = await (query as any);
+  const { data, error } = await query;
 
   if (error) {
     console.error(`Error querying ${tableName}:`, error);
@@ -78,19 +81,19 @@ export async function queryGetById<T extends TableName>(tableName: T, id: string
  */
 export async function queryCount<T extends TableName>(
   tableName: T,
-  filter?: Record<string, any>
+  filter?: Partial<TableRow<T>>
 ) {
   let query = supabase.from(tableName).select('*', { count: 'exact', head: true });
 
   if (filter) {
     Object.entries(filter).forEach(([key, value]) => {
       if (value !== undefined) {
-        (query as any) = (query as any).eq(key, value);
+        query = query.eq(key, value as TableRow<T>[keyof TableRow<T>]);
       }
     });
   }
 
-  const { count, error } = await (query as any);
+  const { count, error } = await query;
 
   if (error) {
     console.error(`Error counting ${tableName}:`, error);
@@ -105,7 +108,7 @@ export async function queryCount<T extends TableName>(
  */
 export async function queryInsert<T extends TableName>(
   tableName: T,
-  data: any
+  data: TableInsert<T>
 ) {
   const { data: result, error } = await supabase.from(tableName).insert(data).select();
 
@@ -122,7 +125,7 @@ export async function queryInsert<T extends TableName>(
  */
 export async function queryInsertBatch<T extends TableName>(
   tableName: T,
-  dataArray: any[]
+  dataArray: Array<TableInsert<T>>
 ) {
   const { data, error } = await supabase.from(tableName).insert(dataArray).select();
 
@@ -140,7 +143,7 @@ export async function queryInsertBatch<T extends TableName>(
 export async function queryUpdate<T extends TableName>(
   tableName: T,
   id: string,
-  updates: Partial<any>
+  updates: TableUpdate<T>
 ) {
   const { data, error } = await supabase
     .from(tableName)
@@ -175,17 +178,17 @@ export async function queryDelete<T extends TableName>(tableName: T, id: string)
  */
 export async function queryDeleteBatch<T extends TableName>(
   tableName: T,
-  filter: Record<string, any>
+  filter: Partial<TableRow<T>>
 ) {
   let query = supabase.from(tableName).delete();
 
   Object.entries(filter).forEach(([key, value]) => {
     if (value !== undefined) {
-      (query as any) = (query as any).eq(key, value);
+      query = query.eq(key, value as TableRow<T>[keyof TableRow<T>]);
     }
   });
 
-  const { error } = await (query as any);
+  const { error } = await query;
 
   if (error) {
     console.error(`Error batch deleting from ${tableName}:`, error);
@@ -254,7 +257,7 @@ export async function printDatabaseStats() {
 /**
  * Debug helper - print raw query result
  */
-export function debugLog(label: string, data: any) {
+export function debugLog(label: string, data: unknown) {
   console.log(`\n[DEBUG] ${label}:`);
   console.log(JSON.stringify(data, null, 2));
   console.log('');

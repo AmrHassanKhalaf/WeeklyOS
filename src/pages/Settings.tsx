@@ -1,6 +1,6 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { Bot, Pin, Calendar, Palette, Bell, FileText, History, Shield, MonitorDown, Download, RefreshCw, Eye, EyeOff } from 'lucide-react'
-import { useSettingsStore, AIProvider, WeekStartDay } from '../store/useSettingsStore'
+import { useSettingsStore, AIProvider, WeekStartDay, type SettingsState } from '../store/useSettingsStore'
 import { useState, useEffect } from 'react'
 import { generateWeeklyReportHTML } from '../lib/generateWeeklyReportHTML'
 import { Button } from '../components/ui/Button'
@@ -398,14 +398,14 @@ export function Settings() {
                 <h2 className="text-[13px] font-bold uppercase tracking-widest">Appearance</h2>
               </div>
               <div className="flex gap-3">
-                {['dark','light','system'].map(t=>(
+                {(['dark','light','system'] as SettingsState['theme'][]).map((t) => (
                   <Button
                     key={t}
                     type="button"
                     size="sm"
                     variant={settings.theme===t ? 'secondary' : 'ghost'}
                     active={settings.theme===t}
-                    onClick={()=>settings.setTheme(t as any)}
+                    onClick={() => settings.setTheme(t)}
                     className={`flex-1 text-[12px] font-bold uppercase tracking-wider ${settings.theme===t?'':'opacity-75 hover:opacity-100'}`}
                   >
                     {t}
@@ -529,7 +529,7 @@ export function Settings() {
     </AppLayout>
   )
 }
-function ProviderInput({ provider, label, settings }: { provider: AIProvider, label: string, settings: any }) {
+function ProviderInput({ provider, label, settings }: { provider: AIProvider; label: string; settings: SettingsState }) {
   const [localVal, setLocalVal] = useState(settings.aiKeys[provider] || '')
   const [isVis, setIsVis] = useState(false)
   const [isSaving, setIsSaving] = useState(false)

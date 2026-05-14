@@ -1,13 +1,33 @@
 import { supabase } from '../lib/supabase'
 import { useSettingsStore } from '../store/useSettingsStore'
 
-const SUPABASE_URL = (import.meta as any).env.VITE_SUPABASE_URL as string
+type AiHistoryRole = 'assistant' | 'user' | 'system'
+
+export interface AiHistoryMessage {
+  role: AiHistoryRole
+  content: string
+}
+
+export interface AiResponse {
+  response: string
+  providerUsed: string
+}
+
+export type AiRequestContext = Record<string, unknown>
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_PUBLIC_KEY =
-  ((import.meta as any).env.VITE_SUPABASE_ANON_KEY as string) ||
-  ((import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY as string)
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string)
 
 export function useAiApi() {
-  const sendMessage = async (type: string, input: string, context: any = {}, overrideProvider?: string, history: any[] = []) => {
+  const sendMessage = async (
+    type: string,
+    input: string,
+    context: AiRequestContext = {},
+    overrideProvider?: string,
+    history: AiHistoryMessage[] = []
+  ) => {
     try {
       if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
         throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY)')
@@ -46,9 +66,10 @@ export function useAiApi() {
         throw new Error(payload?.error || `Edge Function returned ${response.status}`)
       }
 
-      return await response.json() as { response: string, providerUsed: string }
-    } catch (e: any) {
-      throw new Error(e.message)
+      return await response.json() as AiResponse
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unexpected error'
+      throw new Error(message)
     }
   }
 

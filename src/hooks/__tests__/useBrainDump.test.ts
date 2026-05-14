@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTestDataSet, createTestBrainDump, mockBrainDumpStatuses } from '../../../test/fixtures';
 
 describe('Brain Dump Table - CRUD Operations', () => {
+  type BrainDumpStatus = 'pending' | 'converted' | 'archived'
   const { user } = createTestDataSet();
 
   beforeEach(() => {
@@ -178,7 +179,7 @@ describe('Brain Dump Table - CRUD Operations', () => {
   describe('Brain Dump Status Workflow', () => {
     it('should validate status values', () => {
       mockBrainDumpStatuses.forEach((status) => {
-        const dump = createTestBrainDump(user.id, { status: status as any });
+        const dump = createTestBrainDump(user.id, { status: status as BrainDumpStatus });
         expect(mockBrainDumpStatuses).toContain(dump.status);
       });
     });

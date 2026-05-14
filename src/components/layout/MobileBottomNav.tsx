@@ -3,7 +3,8 @@ import { motion } from 'framer-motion'
 import { LayoutDashboard, CalendarRange, Flame, BarChart3, Menu } from 'lucide-react'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
-import { RippleContainer, useRipple } from '../ui/Ripple'
+import { RippleContainer } from '../ui/Ripple'
+import { useRipple } from '../ui/useRipple'
 import { cn } from '../../lib/cn'
 
 /**

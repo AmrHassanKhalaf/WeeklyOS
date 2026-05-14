@@ -12,6 +12,12 @@ interface DayCardDistributionProps {
 
 const DAYS_OPTIONS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 
+const normalizeInput = (value: unknown): string => {
+  if (typeof value === 'string') return value.trim()
+  if (value === null || value === undefined) return ''
+  return String(value).trim()
+}
+
 function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void; showTags?: boolean }) {
   const { toggleTaskComplete, deleteTask, updateTask } = useWeekStore()
   const [isEditing, setIsEditing] = useState(false)
@@ -36,14 +42,14 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
   }, [isEditing, task])
 
   const handleSave = async () => {
-    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
-    if (safeTrim(editData.title)) {
+    const title = normalizeInput(editData.title)
+    if (title) {
       try {
         await updateTask(task!.id, {
-          title: safeTrim(editData.title),
-          startTime: safeTrim(editData.start) || undefined,
-          estimatedTime: safeTrim(editData.duration) || undefined,
-          description: safeTrim(editData.description) || undefined,
+          title,
+          startTime: normalizeInput(editData.start) || undefined,
+          estimatedTime: normalizeInput(editData.duration) || undefined,
+          description: normalizeInput(editData.description) || undefined,
           day: editData.day,
           priority: editData.priority
         })
@@ -198,13 +204,13 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
   }
 
   const handleSave = () => {
-    const safeTrim = (val: any) => typeof val === 'string' ? val.trim() : String(val || '').trim();
-    if (safeTrim(editData.title)) {
+    const title = normalizeInput(editData.title)
+    if (title) {
       onSave({
-        title: safeTrim(editData.title),
-        startTime: safeTrim(editData.start) || undefined,
-        estimatedTime: safeTrim(editData.duration) || undefined,
-        description: safeTrim(editData.description) || undefined,
+        title,
+        startTime: normalizeInput(editData.start) || undefined,
+        estimatedTime: normalizeInput(editData.duration) || undefined,
+        description: normalizeInput(editData.description) || undefined,
         day: editData.day,
         priority: editData.priority
       })
@@ -278,8 +284,9 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
                 description: taskUpdates.description
               })
               setAddingFor(null)
-            } catch (e: any) {
-              alert(e.message)
+            } catch (err) {
+              const message = err instanceof Error ? err.message : 'Failed to create task'
+              alert(message)
             }
           }}
           onCancel={() => setAddingFor(null)}

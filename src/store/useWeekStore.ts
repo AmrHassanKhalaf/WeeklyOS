@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { offlineDelete, offlineInsert, offlineUpdate } from '../lib/supabaseWithOffline'
 import type { Json } from '../lib/database.types'
 import { useSettingsStore } from './useSettingsStore'
 import type { WeekStartDay } from './useSettingsStore'
@@ -436,6 +437,7 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
 
 let _realtimeChannel: RealtimeChannel | null = null
 let _pinnedFeatureAvailable: boolean | null = null
+let _visibilityHandler: (() => void) | null = null
 
 // Issue 3: Track in-flight mutation IDs per task to cancel stale responses.
 // Key = taskId, Value = latest mutation ID string.
@@ -814,7 +816,10 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
 
       // Remove any previously registered listener before re-attaching
-      document.removeEventListener('visibilitychange', handleVisibility)
+      if (_visibilityHandler) {
+        document.removeEventListener('visibilitychange', _visibilityHandler)
+      }
+      _visibilityHandler = handleVisibility
       document.addEventListener('visibilitychange', handleVisibility)
     },
 
@@ -920,6 +925,10 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         }
         _realtimeChannel = null
       }
+      if (_visibilityHandler) {
+        document.removeEventListener('visibilitychange', _visibilityHandler)
+        _visibilityHandler = null
+      }
     },
 
     startNewPlan: async () => {
@@ -997,9 +1006,10 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
 
       const newStatus: TaskStatus = currentStatus === 'done' ? 'pending' : 'done'
-      const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
-      if (error) {
-        console.error('[toggleTaskComplete] DB write failed, reverting:', error)
+      try {
+        await offlineUpdate('tasks', taskId, { status: newStatus })
+      } catch (err) {
+        console.error('[toggleTaskComplete] DB write failed, reverting:', err)
         set({ currentWeek: snapshot })
       }
     },
@@ -1012,16 +1022,16 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       const currentWeek = get().currentWeek
       if (!currentWeek) return
       
-      const day = task.day || 'monday'
-      const tasksForDay = currentWeek.days.find(d => d.day === day)
+      const day = task.day
+      const tasksForDay = day ? currentWeek.days.find(d => d.day === day) : undefined
       
-      if (task.priority === 'high' && tasksForDay?.highTask) {
+      if (day && task.priority === 'high' && tasksForDay?.highTask) {
         throw new Error('Limit reached: Only 1 High priority task allowed per day.')
       }
-      if (task.priority === 'medium' && (tasksForDay?.mediumTasks?.length || 0) >= 3) {
+      if (day && task.priority === 'medium' && (tasksForDay?.mediumTasks?.length || 0) >= 3) {
         throw new Error('Limit reached: Only 3 Medium priority tasks allowed per day.')
       }
-      if (task.priority === 'low' && (tasksForDay?.smallTasks?.length || 0) >= 5) {
+      if (day && task.priority === 'low' && (tasksForDay?.smallTasks?.length || 0) >= 5) {
         throw new Error('Limit reached: Only 5 Small priority tasks allowed per day.')
       }
 
@@ -1054,42 +1064,45 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       set({ currentWeek: { ...currentWeek, days: nextDays, activities }, isSyncing: true })
       await syncToDb()
 
-      const { data: dbTask, error } = await supabase.from('tasks').insert({
-        user_id: user.id,
-        week_id: currentWeek.id,
-        title: task.title,
-        priority: task.priority,
-        day: task.day ?? null,
-        description: task.description ?? null,
-        status: 'pending',
-        start_time: task.startTime ?? null,
-        estimated_duration: task.estimatedTime ?? null,
-        tags: task.tags ?? null,
-      }).select().single()
-
-      if (error) {
-        console.error('[createTask] DB write failed, reverting:', error)
-        set({ currentWeek: snapshot })
-        throw new Error(error.message || 'Failed to create task')
-      } else if (dbTask) {
-        // Update the temp ID with the real ID from DB
-        set(state => {
-          if (!state.currentWeek) return state
-          const realTask = mapDbTask(dbTask)
-          const allTasksForUpdate = state.currentWeek.days.flatMap(d => 
-            [d.highTask, ...d.mediumTasks, ...d.smallTasks].filter(Boolean) as Task[]
-          ).map(t => t.id === newTask.id ? realTask : t)
-          
-          return {
-            currentWeek: {
-              ...state.currentWeek,
-              days: state.currentWeek.days.map(d => processTasksForDay(
-                { ...d, highTask: undefined, mediumTasks: [], smallTasks: [] },
-                allTasksForUpdate
-              ))
-            }
-          }
+      try {
+        const { data: dbTask, wasQueued } = await offlineInsert('tasks', {
+          user_id: user.id,
+          week_id: currentWeek.id,
+          title: task.title,
+          priority: task.priority,
+          day: task.day ?? null,
+          description: task.description ?? null,
+          status: 'pending',
+          start_time: task.startTime ?? null,
+          estimated_duration: task.estimatedTime ?? null,
+          tags: task.tags ?? null,
         })
+
+        if (!wasQueued && dbTask) {
+          // Update the temp ID with the real ID from DB
+          set(state => {
+            if (!state.currentWeek) return state
+            const realTask = mapDbTask(dbTask)
+            const allTasksForUpdate = state.currentWeek.days.flatMap(d => 
+              [d.highTask, ...d.mediumTasks, ...d.smallTasks].filter(Boolean) as Task[]
+            ).map(t => t.id === newTask.id ? realTask : t)
+            
+            return {
+              currentWeek: {
+                ...state.currentWeek,
+                days: state.currentWeek.days.map(d => processTasksForDay(
+                  { ...d, highTask: undefined, mediumTasks: [], smallTasks: [] },
+                  allTasksForUpdate
+                ))
+              }
+            }
+          })
+        }
+      } catch (err) {
+        console.error('[createTask] DB write failed, reverting:', err)
+        set({ currentWeek: snapshot })
+        const message = err instanceof Error ? err.message : 'Failed to create task'
+        throw new Error(message)
       }
     },
 
@@ -1133,14 +1146,20 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         }
       })
 
-      const { data, error } = await supabase.from('tasks').update(payload).eq('id', taskId).select()
+      let updateError: unknown = null
+      try {
+        await offlineUpdate('tasks', taskId, payload)
+      } catch (err) {
+        updateError = err
+      }
 
       // Issue 3: Discard result if a newer mutation has already taken over.
       if (_pendingTaskMutations.get(taskId) !== mutationId) return
       _pendingTaskMutations.delete(taskId)
 
-      if (error) {
-        console.error('[updateTask] DB write failed, reverting. Code:', error.code, '| Message:', error.message)
+      if (updateError) {
+        const errObj = updateError as { code?: string; message?: string }
+        console.error('[updateTask] DB write failed, reverting. Code:', errObj?.code, '| Message:', errObj?.message)
         set({ currentWeek: snapshot })
       }
     },
@@ -1160,9 +1179,10 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         } : null,
       }))
 
-      const { error } = await supabase.from('tasks').delete().eq('id', taskId)
-      if (error) {
-        console.error('[deleteTask] DB write failed, reverting:', error)
+      try {
+        await offlineDelete('tasks', taskId)
+      } catch (err) {
+        console.error('[deleteTask] DB write failed, reverting:', err)
         set({ currentWeek: snapshot })
       }
     },
@@ -1450,12 +1470,10 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }))
 
       // Sync to DB
-      const { error } = await supabase.from('tasks')
-        .update({ actual_duration: currentDuration + secondsToAdd })
-        .eq('id', taskId)
-
-      if (error) {
-        console.error('[updateTaskActualDuration] Failed', error)
+      try {
+        await offlineUpdate('tasks', taskId, { actual_duration: currentDuration + secondsToAdd })
+      } catch (err) {
+        console.error('[updateTaskActualDuration] Failed', err)
         set({ currentWeek: snapshot })
       }
     },

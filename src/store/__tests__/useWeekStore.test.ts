@@ -113,7 +113,7 @@ describe('Week Store - Database Operations', () => {
         challenge_physical: 5,
         challenge_mental: 8,
         challenge_emotional: 7,
-      } as any;
+      };
 
       expect(updatedWeek.challenge_physical).toBe(5);
       expect(updatedWeek.challenge_mental).toBe(8);
@@ -131,7 +131,7 @@ describe('Week Store - Database Operations', () => {
       const updatedWeek = {
         ...week,
         daily_notes: notes,
-      } as any;
+      };
 
       expect(updatedWeek.daily_notes.monday).toBe('Good day');
     });

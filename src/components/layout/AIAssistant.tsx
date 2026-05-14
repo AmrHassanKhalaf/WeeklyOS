@@ -64,8 +64,9 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
 
       const res = await sendMessage('chat', msg, context, undefined, history)
       setChatMessages(prev => [...prev, { role: 'ai', text: res.response, provider: res.providerUsed }])
-    } catch (e: any) {
-      setChatMessages(prev => [...prev, { role: 'system', text: `System Error: ${e.message}` }])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unexpected error'
+      setChatMessages(prev => [...prev, { role: 'system', text: `System Error: ${message}` }])
     } finally {
       setIsAiTyping(false)
     }

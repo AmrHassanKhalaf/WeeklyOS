@@ -4,20 +4,20 @@ import { useWeekStore } from '../store/useWeekStore'
 import type { DayOfWeek, Priority } from '../store/useWeekStore'
 import { useState, useEffect } from 'react'
 import { useAiApi } from '../hooks/useApi'
-import { useBrainDumpStore } from '../store/useBrainDumpStore'
+import { useBrainDumpStore, type BrainDumpItem } from '../store/useBrainDumpStore'
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
 import { Button } from '../components/ui/Button'
 import { Calendar, Brain, Tag, Sparkles, Loader2, X } from 'lucide-react'
 
-function extractJsonFromText(raw: string) {
+function extractJsonFromText(raw: string): unknown {
   const trimmed = raw.trim()
   const direct = JSON.parse(trimmed)
   if (direct) return direct
   return null
 }
 
-function parseScheduleResponse(raw: string) {
+function parseScheduleResponse(raw: string): unknown {
   try {
     return extractJsonFromText(raw)
   } catch {
@@ -35,6 +35,44 @@ function parseScheduleResponse(raw: string) {
 
     throw new Error('AI did not return valid JSON for distribution')
   }
+}
+
+type ScheduleTask = {
+  title: string
+  priority: Priority
+  day: DayOfWeek
+  estimatedTime?: string
+  tags?: string[]
+}
+
+const ALL_DAYS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+
+function isScheduleTask(value: unknown): value is ScheduleTask {
+  if (!value || typeof value !== 'object') return false
+  const task = value as Record<string, unknown>
+  const title = task.title
+  const priority = task.priority
+  const day = task.day
+  const estimatedTime = task.estimatedTime
+  const tags = task.tags
+
+  const priorityOk = priority === 'high' || priority === 'medium' || priority === 'low'
+  const dayOk = typeof day === 'string' && ALL_DAYS.includes(day as DayOfWeek)
+  const tagsOk = tags === undefined || (Array.isArray(tags) && tags.every((t) => typeof t === 'string'))
+  const estimatedOk = estimatedTime === undefined || typeof estimatedTime === 'string'
+
+  return typeof title === 'string' && priorityOk && dayOk && tagsOk && estimatedOk
+}
+
+function normalizeScheduleTasks(parsed: unknown): ScheduleTask[] {
+  if (Array.isArray(parsed)) {
+    return parsed.filter(isScheduleTask)
+  }
+  if (parsed && typeof parsed === 'object' && 'tasks' in parsed) {
+    const tasks = (parsed as { tasks?: unknown }).tasks
+    if (Array.isArray(tasks)) return tasks.filter(isScheduleTask)
+  }
+  return []
 }
 
 function inferPriorityFromTags(tags: string[] = []): Priority {
@@ -74,12 +112,12 @@ export function WeeklyDistribution() {
 
   const openAssignModal = () => {
     if (!currentWeek || brainDumpItems.length === 0) return
-    const selected = brainDumpItems.filter((item: any) => item.selected)
+    const selected = brainDumpItems.filter((item) => item.selected)
     const sourceItems = selected.length > 0 ? selected : brainDumpItems
     const defaultDay = (currentWeek.days.find(d => !(restDays || []).includes(d.day))?.day || currentWeek.days[0]?.day || 'monday') as DayOfWeek
 
     setAssignDrafts(
-      sourceItems.map((item: any) => ({
+      sourceItems.map((item: BrainDumpItem) => ({
         id: item.id,
         title: item.content,
         tags: item.tags || [],
@@ -116,8 +154,9 @@ export function WeeklyDistribution() {
 
       setIsAssignModalOpen(false)
       setAssignDrafts([])
-    } catch (e: any) {
-      alert('Failed to assign braindump items: ' + e.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert('Failed to assign braindump items: ' + message)
     } finally {
       setIsAssigning(false)
     }
@@ -128,7 +167,7 @@ export function WeeklyDistribution() {
     setIsDistributing(true)
 
     const brainDumpForPrompt = brainDumpItems
-      .map((i: any) => `- ${i.content} | tags: ${(i.tags || []).join(', ') || 'none'} | suggestedPriority: ${inferPriorityFromTags(i.tags || [])}`)
+      .map((i) => `- ${i.content} | tags: ${(i.tags || []).join(', ') || 'none'} | suggestedPriority: ${inferPriorityFromTags(i.tags || [])}`)
       .join('\n')
     
     const prompt = `Your job is to convert a brain dump into a structured weekly plan using the 1-3-5 productivity system.
@@ -160,11 +199,9 @@ Make sure:
       const res = await sendMessage('schedule', prompt, { dateRange: currentWeek.dateRange })
 
       const parsed = parseScheduleResponse(res.response)
-
-      const tasksToCreate = parsed.tasks || (Array.isArray(parsed) ? parsed : [])
+      const tasksToCreate = normalizeScheduleTasks(parsed)
 
       for (const t of tasksToCreate) {
-        if (!t.title || !t.priority || !t.day) continue
         await createTask({
           title: t.title,
           priority: t.priority,
@@ -179,8 +216,9 @@ Make sure:
         await removeItem(item.id)
       }
 
-    } catch (e: any) {
-      alert("Failed to auto-distribute: " + e.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert('Failed to auto-distribute: ' + message)
     } finally {
       setIsDistributing(false)
     }

@@ -1,6 +1,9 @@
-import * as LucideIcons from 'lucide-react';
+import type { LucideIcon, LucideProps } from 'lucide-react'
+import * as LucideIcons from 'lucide-react'
 
-export function DynamicIcon({ name, ...props }: { name: string; [key: string]: any }) {
+type DynamicIconProps = LucideProps & { name: string }
+
+export function DynamicIcon({ name, ...props }: DynamicIconProps) {
   // Map some old material names to lucide names
   const iconMap: Record<string, string> = {
     'self_improvement': 'UserCircle',
@@ -22,12 +25,13 @@ export function DynamicIcon({ name, ...props }: { name: string; [key: string]: a
     'check': 'Check',
   };
   
-  const mappedName = iconMap[name] || name;
-  const IconComponent = (LucideIcons as any)[mappedName];
-  
+  const mappedName = iconMap[name] || name
+  const iconRegistry = LucideIcons as Record<string, LucideIcon>
+  const IconComponent = iconRegistry[mappedName]
+
   if (!IconComponent) {
-    return <LucideIcons.HelpCircle {...props} />;
+    return <LucideIcons.HelpCircle {...props} />
   }
-  
-  return <IconComponent {...props} />;
+
+  return <IconComponent {...props} />
 }

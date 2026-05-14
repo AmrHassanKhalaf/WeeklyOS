@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTestDataSet, createTestTask, mockTaskStatuses, mockPriorities, mockDaysOfWeek } from '../../../test/fixtures';
 
 describe('Tasks Table - CRUD Operations', () => {
+  type TaskPriority = 'high' | 'medium' | 'low'
+  type TaskStatus = 'pending' | 'in_progress' | 'completed'
   const { user, week } = createTestDataSet();
 
   beforeEach(() => {
@@ -28,14 +30,14 @@ describe('Tasks Table - CRUD Operations', () => {
 
     it('should validate task priority values', () => {
       mockPriorities.forEach((priority) => {
-        const task = createTestTask(user.id, week.id, { priority: priority as any });
+        const task = createTestTask(user.id, week.id, { priority: priority as TaskPriority });
         expect(mockPriorities).toContain(task.priority);
       });
     });
 
     it('should validate task status values', () => {
       mockTaskStatuses.forEach((status) => {
-        const task = createTestTask(user.id, week.id, { status: status as any });
+        const task = createTestTask(user.id, week.id, { status: status as TaskStatus });
         expect(mockTaskStatuses).toContain(task.status);
       });
     });
@@ -205,8 +207,8 @@ describe('Tasks Table - CRUD Operations', () => {
         createTestTask(user.id, week.id, { priority: 'medium' }),
       ];
 
-      const priorityOrder = { high: 0, medium: 1, low: 2 };
-      const sorted = [...tasks].sort((a, b) => priorityOrder[a.priority as any] - priorityOrder[b.priority as any]);
+      const priorityOrder: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
+      const sorted = [...tasks].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 
       expect(sorted[0].priority).toBe('high');
       expect(sorted[2].priority).toBe('low');

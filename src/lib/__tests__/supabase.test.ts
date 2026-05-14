@@ -19,6 +19,13 @@ vi.mock('../../lib/supabase', () => ({
 }));
 
 describe('Supabase Core Functions', () => {
+  const getSessionMock = vi.mocked(supabase.auth.getSession)
+  const getUserMock = vi.mocked(supabase.auth.getUser)
+  const signOutMock = vi.mocked(supabase.auth.signOut)
+  const fromMock = vi.mocked(supabase.from)
+  const channelMock = vi.mocked(supabase.channel)
+  const invokeMock = vi.mocked(supabase.functions.invoke)
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -28,7 +35,7 @@ describe('Supabase Core Functions', () => {
       const mockSession = {
         session: { user: { id: 'test-user' } },
       };
-      (supabase.auth.getSession as any).mockResolvedValueOnce(mockSession);
+      getSessionMock.mockResolvedValueOnce(mockSession);
 
       const result = await supabase.auth.getSession();
 
@@ -40,7 +47,7 @@ describe('Supabase Core Functions', () => {
       const mockUser = {
         user: { id: 'test-user', email: 'test@example.com' },
       };
-      (supabase.auth.getUser as any).mockResolvedValueOnce(mockUser);
+      getUserMock.mockResolvedValueOnce(mockUser);
 
       const result = await supabase.auth.getUser();
 
@@ -49,7 +56,7 @@ describe('Supabase Core Functions', () => {
     });
 
     it('should call signOut', async () => {
-      (supabase.auth.signOut as any).mockResolvedValueOnce({ error: null });
+      signOutMock.mockResolvedValueOnce({ error: null });
 
       await supabase.auth.signOut();
 
@@ -62,7 +69,7 @@ describe('Supabase Core Functions', () => {
       const mockFromResult = {
         select: vi.fn().mockReturnValue({ data: [] }),
       };
-      (supabase.from as any).mockReturnValueOnce(mockFromResult);
+      fromMock.mockReturnValueOnce(mockFromResult as unknown as ReturnType<typeof supabase.from>);
 
       const result = supabase.from('tasks');
 
@@ -76,7 +83,7 @@ describe('Supabase Core Functions', () => {
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValueOnce({ data: { id: '1' } }),
       };
-      (supabase.from as any).mockReturnValueOnce(mockChain);
+      fromMock.mockReturnValueOnce(mockChain as unknown as ReturnType<typeof supabase.from>);
 
       const result = supabase.from('tasks');
 
@@ -92,7 +99,7 @@ describe('Supabase Core Functions', () => {
         on: vi.fn().mockReturnThis(),
         subscribe: vi.fn(),
       };
-      (supabase.channel as any).mockReturnValueOnce(mockChannel);
+      channelMock.mockReturnValueOnce(mockChannel as unknown as ReturnType<typeof supabase.channel>);
 
       const channel = supabase.channel('test-channel');
 
@@ -106,7 +113,7 @@ describe('Supabase Core Functions', () => {
         on: vi.fn().mockReturnThis(),
         subscribe: vi.fn(),
       };
-      (supabase.channel as any).mockReturnValueOnce(mockChannel);
+      channelMock.mockReturnValueOnce(mockChannel as unknown as ReturnType<typeof supabase.channel>);
 
       const channel = supabase.channel('tasks-realtime');
       const result = channel.on('postgres_changes', { event: '*' }, () => {});
@@ -118,7 +125,7 @@ describe('Supabase Core Functions', () => {
   describe('Edge Functions', () => {
     it('should invoke edge functions with parameters', async () => {
       const mockResult = { data: { status: 'success' } };
-      (supabase.functions.invoke as any).mockResolvedValueOnce(mockResult);
+      invokeMock.mockResolvedValueOnce(mockResult as unknown as Awaited<ReturnType<typeof supabase.functions.invoke>>);
 
       const result = await supabase.functions.invoke('ai-handler', {
         body: { prompt: 'test' },
@@ -132,7 +139,7 @@ describe('Supabase Core Functions', () => {
 
     it('should handle edge function errors', async () => {
       const mockError = { error: { message: 'Function error' } };
-      (supabase.functions.invoke as any).mockResolvedValueOnce(mockError);
+      invokeMock.mockResolvedValueOnce(mockError as unknown as Awaited<ReturnType<typeof supabase.functions.invoke>>);
 
       const result = await supabase.functions.invoke('ai-handler', {
         body: {},

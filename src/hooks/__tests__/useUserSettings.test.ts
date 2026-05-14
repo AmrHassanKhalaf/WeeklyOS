@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTestDataSet, createTestUserSettings, mockThemes, mockDaysOfWeek } from '../../../test/fixtures';
 
 describe('User Settings Table - CRUD Operations', () => {
+  type ThemeOption = 'light' | 'dark' | 'system'
   const { user } = createTestDataSet();
 
   beforeEach(() => {
@@ -21,7 +22,7 @@ describe('User Settings Table - CRUD Operations', () => {
 
     it('should validate theme values', () => {
       mockThemes.forEach((theme) => {
-        const settings = createTestUserSettings(user.id, { theme: theme as any });
+        const settings = createTestUserSettings(user.id, { theme: theme as ThemeOption });
         expect(mockThemes).toContain(settings.theme);
       });
     });
