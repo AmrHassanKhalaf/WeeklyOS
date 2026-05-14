@@ -332,7 +332,7 @@ body.light::after {
 
 /* ──────────────────────────────────────────────────────────────────────── */
 /*  Custom scrollbars                                                      */
-/* ─────────────────────────────────────────────────────────��────────────── */
+/* ──────────────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -984,130 +984,6 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
       0 14px 28px -12px rgb(225 29 72 / 0.45),
       0 1px 0 rgb(var(--color-glass-inner) / 0.18) inset;
   }
-}
-
-/* ──────────────────────────────────────────────────────────────────────── */
-/*  Weekly Distribution Page - Premium Overrides                           */
-/* ──────────────────────────────────────────────────────────────────────── */
-
-/* Dramatic oversized typography for background elements */
-.distribution-bg-type {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  line-height: 0.85;
-  letter-spacing: -0.04em;
-}
-
-/* Timeline day selector - custom scrollbar hide */
-.timeline-nav::-webkit-scrollbar {
-  display: none;
-}
-.timeline-nav {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Day card elevation levels */
-.day-card-elevated {
-  transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.day-card-elevated:hover {
-  transform: translateY(-4px) scale(1.01);
-}
-
-/* Today highlight ring animation */
-@keyframes today-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgb(var(--color-primary) / 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgb(var(--color-primary) / 0);
-  }
-}
-
-.today-pulse-ring {
-  animation: today-pulse 3s ease-in-out infinite;
-}
-
-/* Priority section indicators */
-.priority-indicator-high {
-  background: linear-gradient(135deg, rgb(var(--color-secondary)) 0%, rgb(var(--color-secondary) / 0.6) 100%);
-}
-
-.priority-indicator-medium {
-  background: linear-gradient(135deg, rgb(var(--color-primary)) 0%, rgb(var(--color-primary) / 0.6) 100%);
-}
-
-.priority-indicator-low {
-  background: rgb(var(--color-on-surface-variant) / 0.4);
-}
-
-/* Task card micro-interactions */
-.task-card-interactive {
-  transition: 
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.25s ease,
-    border-color 0.2s ease;
-}
-
-.task-card-interactive:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px -8px rgb(var(--color-primary) / 0.2);
-}
-
-.task-card-interactive:active {
-  transform: scale(0.99);
-}
-
-/* Modal backdrop blur enhancement */
-.modal-backdrop {
-  backdrop-filter: blur(12px) saturate(1.5);
-  -webkit-backdrop-filter: blur(12px) saturate(1.5);
-}
-
-/* Week number oversized display */
-.week-number-display {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  background: linear-gradient(180deg, 
-    rgb(var(--color-on-surface) / 0.04) 0%, 
-    rgb(var(--color-on-surface) / 0.01) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Stat card glass effect */
-.stat-card-glass {
-  background: rgb(var(--color-surface-container) / 0.6);
-  border: 1px solid rgb(var(--color-outline-variant) / 0.2);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-/* Progress bar shimmer effect */
-@keyframes progress-shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(200%);
-  }
-}
-
-.progress-bar-shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgb(255 255 255 / 0.15) 50%,
-    transparent 100%
-  );
-  animation: progress-shimmer 2s ease-in-out infinite;
 }
 
 /* ──────────────────────────────────────────────────────────────────────── */
