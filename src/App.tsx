@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense, useRef } from 'react'
 import { MonitorDown, Sparkles, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useWeekStore } from './store/useWeekStore'
 import { useSettingsStore } from './store/useSettingsStore'
@@ -164,6 +165,7 @@ export default function App() {
       </ErrorBoundary>
       {/* PWA update banner — outside AuthProvider so it shows even on /signin */}
       <PWAUpdateBanner />
+      <SpeedInsights />
     </BrowserRouter>
   )
 }
