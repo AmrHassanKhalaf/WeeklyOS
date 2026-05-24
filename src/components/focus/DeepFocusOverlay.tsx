@@ -50,80 +50,274 @@ function pickEntryMessage() {
   return ENTRY_MESSAGES[Math.floor(Math.random() * ENTRY_MESSAGES.length)]
 }
 
-// ── Animated SVG ring ─────────────────────────────────────────────────────────
-function FocusRing({
-  progress,
+// ── Neon typewriter effect ────────────────────────────────────────────────────
+function NeonTypewriter({
+  text,
   phase,
-  size = 380,
-  isPulsing,
+  isExiting = false,
+  onComplete,
 }: {
-  progress: number
+  text: string
   phase: 'focus' | 'break'
-  size?: number
-  isPulsing: boolean
+  isExiting?: boolean
+  onComplete?: () => void
 }) {
-  const strokeW = 8
-  const r = (size - strokeW * 2) / 2
-  const circumference = 2 * Math.PI * r
-  const offset = circumference * (1 - Math.max(0, Math.min(1, progress)))
-  const color = phase === 'focus' ? '#8b5cf6' : '#0ea5e9'
-  const glowColor = phase === 'focus' ? 'rgba(139,92,246,0.5)' : 'rgba(14,165,233,0.5)'
+  const [charCount, setCharCount] = useState(0)
+  const [showCursor, setShowCursor] = useState(true)
+  const [exitedCount, setExitedCount] = useState(0)
+  const isFocus = phase === 'focus'
+
+  // Type one character every 65ms
+  useEffect(() => {
+    if (isExiting) return
+    setCharCount(0)
+    const interval = setInterval(() => {
+      setCharCount(prev => {
+        if (prev >= text.length) {
+          clearInterval(interval)
+          onComplete?.()
+          return prev
+        }
+        return prev + 1
+      })
+    }, 65)
+    return () => clearInterval(interval)
+  }, [text, onComplete, isExiting])
+
+  // Exit: fade letters away from end to start
+  useEffect(() => {
+    if (!isExiting) { setExitedCount(0); return }
+    setExitedCount(0)
+    const interval = setInterval(() => {
+      setExitedCount(prev => {
+        if (prev >= text.length) {
+          clearInterval(interval)
+          return prev
+        }
+        return prev + 1
+      })
+    }, 30)
+    return () => clearInterval(interval)
+  }, [isExiting, text.length])
+
+  // Blinking cursor
+  useEffect(() => {
+    const blink = setInterval(() => setShowCursor(c => !c), 530)
+    return () => clearInterval(blink)
+  }, [])
+
+  // Hide cursor 1s after typing completes
+  const [cursorVisible, setCursorVisible] = useState(true)
+  useEffect(() => {
+    if (isExiting) { setCursorVisible(false); return }
+    if (charCount >= text.length) {
+      const t = setTimeout(() => setCursorVisible(false), 1200)
+      return () => clearTimeout(t)
+    }
+  }, [charCount, text.length, isExiting])
+
+  const neonColor = isFocus ? '#a78bfa' : '#38bdf8'
+  const glowShadow = isFocus
+    ? '0 0 7px rgba(167,139,250,0.8), 0 0 20px rgba(139,92,246,0.4), 0 0 40px rgba(139,92,246,0.15)'
+    : '0 0 7px rgba(56,189,248,0.8), 0 0 20px rgba(14,165,233,0.4), 0 0 40px rgba(14,165,233,0.15)'
+  const dimGlow = isFocus
+    ? '0 0 4px rgba(167,139,250,0.3), 0 0 12px rgba(139,92,246,0.15)'
+    : '0 0 4px rgba(56,189,248,0.3), 0 0 12px rgba(14,165,233,0.15)'
+
+  // During exit: letters fade from end to start
+  const getLetterStyle = (i: number) => {
+    if (isExiting) {
+      const reverseIdx = text.length - 1 - i
+      const isGone = reverseIdx < exitedCount
+      return {
+        opacity: isGone ? 0 : 1,
+        color: neonColor,
+        textShadow: isGone ? 'none' : dimGlow,
+        transition: 'opacity 0.25s ease-out, text-shadow 0.25s ease-out',
+      }
+    }
+    return {
+      opacity: i < charCount ? 1 : 0,
+      color: neonColor,
+      textShadow: i === charCount - 1 ? glowShadow : dimGlow,
+      transition: 'opacity 0.08s ease-out, text-shadow 0.5s ease-out',
+    }
+  }
 
   return (
-    <svg
-      width={size}
-      height={size}
-      style={{ transform: 'rotate(-90deg)' }}
-      aria-hidden="true"
+    <span
+      className="mt-[2.5em] mb-8 text-center text-sm font-medium tracking-[0.25em] uppercase pointer-events-none inline-flex items-center"
+      style={{ whiteSpace: 'pre' }}
+      aria-label={text}
     >
-      {/* Outermost ambient ring */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r + 22}
-        fill="none"
-        stroke={color}
-        strokeWidth={1}
-        strokeOpacity={isPulsing ? 0.06 : 0.04}
-        style={{ transition: 'stroke-opacity 1s' }}
-      />
+      {text.split('').map((char, i) => (
+        <span key={i} style={getLetterStyle(i)}>
+          {char}
+        </span>
+      ))}
+      {cursorVisible && (
+        <span
+          style={{
+            opacity: showCursor ? 0.7 : 0,
+            color: neonColor,
+            textShadow: glowShadow,
+            transition: 'opacity 0.15s',
+            marginLeft: '1px',
+            fontWeight: 300,
+          }}
+        >
+          |
+        </span>
+      )}
+    </span>
+  )
+}
+
+// ── Animated SVG ring (matching main page clock design) ───────────────────────
+function FocusRing({
+  pomodoroTime,
+  totalSecs,
+  isRunning,
+  phase,
+  size = 380,
+}: {
+  pomodoroTime: number
+  totalSecs: number
+  isRunning: boolean
+  phase: 'focus' | 'break'
+  size?: number
+}) {
+  const stroke = 5
+  const r = (size - stroke * 2) / 2
+  const circumference = 2 * Math.PI * r
+  const color = phase === 'focus' ? '#8b5cf6' : '#0ea5e9'
+  const glowColor = phase === 'focus' ? '#a78bfa' : '#38bdf8'
+  const cx = size / 2
+  const cy = size / 2
+
+  // Discrete progress (used for ticks — whole seconds only)
+  const tickProgress = pomodoroTime / totalSecs
+
+  // ── Continuous RAF loop ──────────────────────────────────────────────────────
+  const arcRef = useRef<SVGCircleElement>(null)
+  const rafRef = useRef<number>(0)
+  const lastTickTimeRef = useRef<number>(performance.now())
+  const pomodoroTimeRef = useRef<number>(pomodoroTime)
+  const totalSecsRef = useRef<number>(totalSecs)
+  const isRunningRef = useRef<boolean>(isRunning)
+
+  useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
+  useEffect(() => { totalSecsRef.current = totalSecs }, [totalSecs])
+
+  useEffect(() => {
+    lastTickTimeRef.current = performance.now()
+    pomodoroTimeRef.current = pomodoroTime
+  }, [pomodoroTime])
+
+  useEffect(() => {
+    const loop = (now: number) => {
+      if (arcRef.current) {
+        let p: number
+        if (isRunningRef.current) {
+          const subSec = Math.min((now - lastTickTimeRef.current) / 1000, 1)
+          const continuousTime = pomodoroTimeRef.current - subSec
+          p = Math.max(0, continuousTime) / totalSecsRef.current
+        } else {
+          p = pomodoroTimeRef.current / totalSecsRef.current
+        }
+        arcRef.current.style.strokeDashoffset = String(circumference * (1 - p))
+      }
+      rafRef.current = requestAnimationFrame(loop)
+    }
+    rafRef.current = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [circumference])
+
+  // Clock tick marks
+  const TICK_COUNT = 60
+  const tickOuter = r - stroke / 2 - 3
+  const tickInnerMajor = tickOuter - 12
+  const tickInnerMinor = tickOuter - 6
+  const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
+    const angle = (i / TICK_COUNT) * 2 * Math.PI
+    const isMajor = i % 5 === 0
+    const tickInner = isMajor ? tickInnerMajor : tickInnerMinor
+    const cos = Math.cos(angle)
+    const sin = Math.sin(angle)
+    return {
+      x1: cx + tickOuter * cos,
+      y1: cy + tickOuter * sin,
+      x2: cx + tickInner * cos,
+      y2: cy + tickInner * sin,
+      isMajor,
+      isLit: (i / TICK_COUNT) < tickProgress,
+    }
+  })
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
+      <defs>
+        <filter id="deep-tick-glow" x="-50%" y="-50%" width="200%" height="200%" filterUnits="userSpaceOnUse">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="deep-tick-glow-major" x="-100%" y="-100%" width="300%" height="300%" filterUnits="userSpaceOnUse">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Outer ambient ring */}
+      <circle cx={cx} cy={cy} r={r + 22} fill="none" stroke={color} strokeWidth={1} strokeOpacity={0.06} />
+
       {/* Track */}
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={stroke} />
+
+      {/* Progress arc — driven by RAF */}
       <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="rgba(255,255,255,0.04)"
-        strokeWidth={strokeW}
-      />
-      {/* Dashed secondary ring (depth) */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
+        ref={arcRef}
+        cx={cx} cy={cy} r={r}
         fill="none"
         stroke={color}
-        strokeWidth={strokeW - 2}
-        strokeOpacity={0.07}
-        strokeDasharray="3 12"
-        strokeLinecap="round"
-      />
-      {/* Progress arc */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeW}
+        strokeWidth={stroke}
         strokeLinecap="round"
         strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        style={{
-          transition: 'stroke-dashoffset 0.9s linear, stroke 0.4s ease',
-          filter: `drop-shadow(0 0 18px ${glowColor})`,
-        }}
+        strokeDashoffset={circumference * (1 - tickProgress)}
+        style={{ transition: 'stroke 0.4s' }}
+        filter={`drop-shadow(0 0 18px ${color}cc)`}
       />
+
+      {/* Clock tick marks */}
+      {ticks.map((tick, i) =>
+        tick.isLit ? (
+          <line
+            key={i}
+            x1={tick.x1} y1={tick.y1}
+            x2={tick.x2} y2={tick.y2}
+            stroke={glowColor}
+            strokeWidth={tick.isMajor ? 2.5 : 1.5}
+            strokeLinecap="round"
+            filter={tick.isMajor ? 'url(#deep-tick-glow-major)' : 'url(#deep-tick-glow)'}
+            opacity={tick.isMajor ? 1 : 0.85}
+          />
+        ) : (
+          <line
+            key={i}
+            x1={tick.x1} y1={tick.y1}
+            x2={tick.x2} y2={tick.y2}
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={tick.isMajor ? 2 : 1}
+            strokeLinecap="round"
+            opacity={tick.isMajor ? 0.5 : 0.25}
+          />
+        )
+      )}
     </svg>
   )
 }
@@ -178,12 +372,20 @@ export function DeepFocusOverlay({
 
   // ── Entry message ──────────────────────────────────────────────────────────
   const [entryMsg] = useState(pickEntryMessage)
-  const [showEntry, setShowEntry] = useState(true)
+  const [showEntry, setShowEntry] = useState(true)        // controls isExiting
+  const [showEntryMounted, setShowEntryMounted] = useState(true) // controls mount/unmount
   useEffect(() => {
-    if (!isDeep) { setShowEntry(true); return }
+    if (!isDeep) { setShowEntry(true); setShowEntryMounted(true); return }
     const t = setTimeout(() => setShowEntry(false), 4000)
     return () => clearTimeout(t)
   }, [isDeep])
+  // Delayed unmount: keep mounted long enough for per-letter exit to finish
+  useEffect(() => {
+    if (showEntry) { setShowEntryMounted(true); return }
+    const exitDuration = entryMsg.length * 30 + 400 // 30ms/letter + buffer
+    const t = setTimeout(() => setShowEntryMounted(false), exitDuration)
+    return () => clearTimeout(t)
+  }, [showEntry, entryMsg.length])
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -198,7 +400,6 @@ export function DeepFocusOverlay({
   }, [isDeep, setFocusMode, onToggle])
 
   // ── Derived display ────────────────────────────────────────────────────────
-  const progress = totalPhaseSecs > 0 ? pomodoroTime / totalPhaseSecs : 0
   const mm = Math.floor(pomodoroTime / 60).toString().padStart(2, '0')
   const ss = (pomodoroTime % 60).toString().padStart(2, '0')
   const isFocus = pomodoroPhase === 'focus'
@@ -216,9 +417,8 @@ export function DeepFocusOverlay({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#020204] overflow-hidden select-none ${
-            isIdle ? 'cursor-none' : ''
-          }`}
+          className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#020204] overflow-hidden select-none ${isIdle ? 'cursor-none' : ''
+            }`}
         >
           {/* ── Ambient breathing glow ──────────────────────────────────────── */}
           <motion.div
@@ -227,9 +427,8 @@ export function DeepFocusOverlay({
               opacity: isPomodoroRunning ? [0.25, 0.45, 0.25] : [0.1, 0.2, 0.1],
             }}
             transition={{ duration: isFocus ? 7 : 5, repeat: Infinity, ease: 'easeInOut' }}
-            className={`absolute w-[700px] h-[700px] rounded-full blur-[160px] pointer-events-none ${
-              isFocus ? 'bg-violet-600' : 'bg-sky-500'
-            }`}
+            className={`absolute w-[700px] h-[700px] rounded-full blur-[160px] pointer-events-none ${isFocus ? 'bg-violet-600' : 'bg-sky-500'
+              }`}
           />
 
           {/* ── Radial vignette ─────────────────────────────────────────────── */}
@@ -294,38 +493,35 @@ export function DeepFocusOverlay({
             </div>
           </motion.div>
 
-          {/* ── Entry message ───────────────────────────────────────────────── */}
-          <AnimatePresence>
-            {showEntry && (
-              <motion.p
-                key="entry-msg"
-                initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
-                animate={{ opacity: 0.45, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
-                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute top-24 left-0 right-0 text-center text-sm font-medium tracking-[0.25em] uppercase text-violet-300/60 pointer-events-none z-10"
-              >
-                {entryMsg}
-              </motion.p>
-            )}
-          </AnimatePresence>
 
           {/* ── Core: ring + timer ──────────────────────────────────────────── */}
           <div className="relative z-10 flex flex-col items-center">
+            {/* Entry message — neon typewriter above the ring */}
+            {showEntryMounted && (
+              <motion.div
+                key="entry-msg"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="flex justify-center"
+              >
+                <NeonTypewriter text={entryMsg} phase={pomodoroPhase} isExiting={!showEntry} />
+              </motion.div>
+            )}
             {/* Ring */}
             <div className="relative flex items-center justify-center">
               <FocusRing
-                progress={progress}
+                pomodoroTime={pomodoroTime}
+                totalSecs={totalPhaseSecs}
+                isRunning={isPomodoroRunning}
                 phase={pomodoroPhase}
                 size={380}
-                isPulsing={isPomodoroRunning}
               />
 
               {/* Timer inside ring */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className={`text-[11px] font-bold uppercase tracking-[0.35em] mb-4 ${
-                  isFocus ? 'text-violet-400/70' : 'text-sky-400/70'
-                }`}>
+                <span className={`text-[11px] font-bold uppercase tracking-[0.35em] mb-4 ${isFocus ? 'text-violet-400/70' : 'text-sky-400/70'
+                  }`}>
                   {isFocus ? 'Focus' : 'Break'}
                 </span>
                 <motion.span
@@ -354,9 +550,8 @@ export function DeepFocusOverlay({
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="mt-10 text-center px-8 max-w-lg"
             >
-              <h2 className={`text-xl md:text-2xl font-bold tracking-tight leading-snug ${
-                activeTaskTitle ? 'text-white' : 'text-neutral-500'
-              }`}>
+              <h2 className={`text-xl md:text-2xl font-bold tracking-tight leading-snug ${activeTaskTitle ? 'text-white' : 'text-neutral-500'
+                }`}>
                 {displayTask}
               </h2>
               {/* Contextual session awareness message */}
@@ -402,14 +597,14 @@ export function DeepFocusOverlay({
                 onClick={onToggle}
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
-                className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-2xl ${
-                  isFocus
-                    ? 'bg-violet-600 hover:bg-violet-500 shadow-violet-600/30 hover:shadow-violet-500/40'
-                    : 'bg-sky-500 hover:bg-sky-400 shadow-sky-500/30'
-                }`}
-                style={{ boxShadow: isFocus
-                  ? `0 0 40px rgba(139,92,246,${isPomodoroRunning ? 0.35 : 0.2})`
-                  : `0 0 30px rgba(14,165,233,${isPomodoroRunning ? 0.35 : 0.2})`
+                className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-2xl ${isFocus
+                  ? 'bg-violet-600 hover:bg-violet-500 shadow-violet-600/30 hover:shadow-violet-500/40'
+                  : 'bg-sky-500 hover:bg-sky-400 shadow-sky-500/30'
+                  }`}
+                style={{
+                  boxShadow: isFocus
+                    ? `0 0 40px rgba(139,92,246,${isPomodoroRunning ? 0.35 : 0.2})`
+                    : `0 0 30px rgba(14,165,233,${isPomodoroRunning ? 0.35 : 0.2})`
                 }}
                 title={isPomodoroRunning ? 'Pause (Space)' : 'Resume (Space)'}
               >
