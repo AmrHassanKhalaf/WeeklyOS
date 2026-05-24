@@ -1,11 +1,20 @@
+<<<<<<< Updated upstream
 import { useState } from 'react'
+=======
+import { useState, useEffect } from 'react'
+>>>>>>> Stashed changes
 import { Brain, Sparkles, Send, PlusCircle, Tag, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { TaskCard } from '../components/TaskCard'
 import { useBrainDumpStore } from '../store/useBrainDumpStore'
+<<<<<<< Updated upstream
 import { useEffect } from 'react'
 import { Button } from '../components/ui/Button'
+=======
+import { useWeekStore } from '../store/useWeekStore'
+import { cn } from '../lib/cn'
+>>>>>>> Stashed changes
 
 export function BrainDump() {
   const { brainDumpItems, isLoading, loadItems, addItem, updateItem, deleteSelected } = useBrainDumpStore()
@@ -20,6 +29,8 @@ export function BrainDump() {
   const [showQuickInput, setShowQuickInput] = useState(false)
   const navigate = useNavigate()
   const selectedCount = brainDumpItems.filter(i => i.selected).length
+
+  const weekLabel = currentWeek ? `Week ${currentWeek.weekNumber}` : ''
 
   const handleStructure = async () => {
     setIsStructuring(true)
@@ -45,6 +56,7 @@ export function BrainDump() {
 
   return (
     <AppLayout>
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
       <div className="max-w-4xl mx-auto container-responsive py-responsive pb-32 sm:pb-16">
         {/* Header */}
@@ -105,6 +117,16 @@ export function BrainDump() {
           style={{ mixBlendMode: 'screen' }}
         />
         {/* Multi-layer gradient veil */}
+=======
+      {/* ── Cinematic background (Stitch design) ─────────────────────────── */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <img
+          alt=""
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNpOcJi0wqLOCjUCEeROqt2t4lGxGaOnV-88qHEVEqLj3nh0u2FHZ4q_ueqJ6LUlacgu5L2m_sKna6PAvEiodGv6sgJMSIrK-q-DlXHjUpYmoOYP8xpei8n5QaHXJywjvIj_AWdJV3YDxz4118mCSFOgu8Grgg9oYdP5xIsT2xyfoSl6O11-zs1z2eRApTY2d8ddLnpmFYCa2jRArnGkmNLbyuaOLirTOK1A5-hKfUcDFeMvSAWM0Zye0m8hWzXcVyjRRcc2n7lio"
+          className="absolute inset-0 w-full h-full object-cover object-center blur-[2px] opacity-50"
+          style={{ mixBlendMode: 'screen' }}
+        />
+>>>>>>> Stashed changes
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background/95" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgb(79_70_229/0.12),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-10%,rgb(109_40_217/0.08),transparent)]" />
@@ -133,6 +155,7 @@ export function BrainDump() {
             )}
           </div>
 
+<<<<<<< Updated upstream
           {/* Title row */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
@@ -148,6 +171,19 @@ export function BrainDump() {
           </div>
         </motion.div>
 
+=======
+          {/* Title */}
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-background mb-2">
+              Prep &amp; Brain Dump
+            </h1>
+            <p className="text-base leading-relaxed max-w-md" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Empty your mind. Don't worry about order or priority yet — just get it all out.
+            </p>
+          </div>
+        </motion.div>
+
+>>>>>>> Stashed changes
         {/* ── Input area ──────────────────────────────────────────────────── */}
         <motion.section
           className="flex flex-col gap-4"
@@ -158,8 +194,12 @@ export function BrainDump() {
           {/* Glass textarea panel */}
           <div
             className={cn(
+<<<<<<< Updated upstream
               'relative rounded-2xl p-6 transition-all duration-300',
               'backdrop-blur-xl border shadow-2xl',
+=======
+              'relative rounded-2xl p-6 transition-all duration-300 backdrop-blur-xl border shadow-2xl',
+>>>>>>> Stashed changes
               isInputFocused
                 ? 'border-primary/30 shadow-[0_0_0_1px_rgb(109_40_217/0.15),0_24px_60px_-22px_rgb(109_40_217/0.35)]'
                 : 'border-white/5 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)]',
@@ -207,11 +247,18 @@ export function BrainDump() {
               onClick={handleStructure}
               disabled={isStructuring || !inputValue.trim()}
               className={cn(
+<<<<<<< Updated upstream
                 'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm',
                 'backdrop-blur-md border border-white/10',
                 isStructuring || !inputValue.trim()
                   ? 'opacity-40 cursor-not-allowed text-on-surface-variant bg-white/5'
                   : 'text-on-surface-variant hover:text-white hover:border-white/20 bg-white/5 hover:bg-white/10',
+=======
+                'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm border border-white/10',
+                isStructuring || !inputValue.trim()
+                  ? 'opacity-40 cursor-not-allowed text-on-surface-variant'
+                  : 'text-on-surface-variant hover:text-white hover:border-white/20',
+>>>>>>> Stashed changes
               )}
               style={{ backdropFilter: 'blur(12px)', background: 'rgba(30,30,36,0.4)' }}
             >
@@ -245,11 +292,19 @@ export function BrainDump() {
               </span>
             </div>
 
+<<<<<<< Updated upstream
             {/* Send to Distribution — gradient button (matches Stitch) */}
             <button
               type="button"
               onClick={() => navigate('/weekly-distribution')}
               className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg"
+=======
+            {/* Send to Distribution */}
+            <button
+              type="button"
+              onClick={() => navigate('/weekly-distribution')}
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
+>>>>>>> Stashed changes
               style={{
                 background: 'linear-gradient(135deg,#4f46e5,#6366f1)',
                 boxShadow: '0 8px 24px -6px rgba(99,102,241,0.4)',
@@ -260,6 +315,9 @@ export function BrainDump() {
               onMouseLeave={e => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,#4f46e5,#6366f1)'
               }}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
             >
               <Send className="w-4 h-4" strokeWidth={1.5} />
@@ -426,6 +484,9 @@ export function BrainDump() {
               backdropFilter: 'blur(20px)',
               borderColor: 'rgba(255,255,255,0.08)',
             }}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
           >
             <Tag className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
