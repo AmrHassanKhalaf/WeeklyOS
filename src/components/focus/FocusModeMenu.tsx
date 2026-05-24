@@ -204,7 +204,10 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
                                 ? 'ring-1 ring-white/15'
                                 : 'hover:border-white/20'
                               }`}
-                            style={isActive ? { boxShadow: `0 0 35px ${mode.glowColor}, 0 4px 20px rgba(0,0,0,0.4)` } : { boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
+                            style={{
+                              ...(isActive ? { boxShadow: `0 0 35px ${mode.glowColor}, 0 4px 20px rgba(0,0,0,0.4)` } : { boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }),
+                              '--mode-glow': mode.glowColor
+                            } as React.CSSProperties}
                           >
                             {/* Hover glow overlay */}
                             <div
@@ -227,7 +230,7 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
 
                             <div className="relative flex items-start gap-4">
                               {/* Icon */}
-                              <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${mode.iconGradient} border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] group-hover:border-white/20 group-hover:shadow-[0_0_16px_${mode.glowColor}] transition-all duration-300`}>
+                              <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${mode.iconGradient} border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] group-hover:border-white/20 group-hover:shadow-[0_0_16px_var(--mode-glow)] transition-all duration-300`}>
                                 <Icon className="w-5 h-5" strokeWidth={1.5} style={{ width: 20, height: 20 }} />
                               </div>
 
