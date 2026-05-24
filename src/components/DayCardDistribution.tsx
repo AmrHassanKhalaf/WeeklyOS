@@ -3,6 +3,7 @@ import type { DayPlan, Task, DayOfWeek, Priority } from '../data/mockData'
 import { useWeekStore } from '../store/useWeekStore'
 import { Button } from './ui/Button'
 import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus } from 'lucide-react'
+import { getTagStyle } from '../lib/tagColors'
 
 interface DayCardDistributionProps {
   day: DayPlan
@@ -173,11 +174,22 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             </div>
             {showTags && task.tags && task.tags.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                {task.tags.map(tag => (
-                  <span key={tag} className="px-1.5 py-0.5 bg-surface-container-low text-[9px] text-on-surface-variant rounded uppercase tracking-wider">
-                    {tag}
-                  </span>
-                ))}
+                {task.tags.map(tag => {
+                  const tagStyle = getTagStyle(tag);
+                  return (
+                    <span
+                      key={tag}
+                      className="px-1.5 py-0.5 border rounded text-[9px] font-bold uppercase tracking-wider"
+                      style={{
+                        backgroundColor: tagStyle.backgroundColor,
+                        borderColor: tagStyle.borderColor,
+                        color: tagStyle.color,
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  )
+                })}
               </div>
             )}
             {task.description && <div className="text-xs text-on-surface-variant mt-1 line-clamp-2">{task.description}</div>}

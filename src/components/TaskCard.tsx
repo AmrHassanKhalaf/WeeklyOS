@@ -1,6 +1,7 @@
 import { useBrainDumpStore, BrainDumpItem } from '../store/useBrainDumpStore'
 import { Check, X, Plus, Edit3, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { getTagStyle } from '../lib/tagColors'
 
 interface TaskCardProps {
   item: BrainDumpItem
@@ -97,27 +98,42 @@ export function TaskCard({ item }: TaskCardProps) {
               className="w-full bg-transparent border-b border-primary text-sm font-medium text-on-surface outline-none py-0.5"
             />
             <div className="flex flex-wrap gap-2 items-center">
-               {editTags.map(tag => (
-                 <span key={tag} className="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 group/tag">
-                   {tag}
-                   <button onClick={() => handleRemoveTag(tag)} className="text-on-surface-variant/50 hover:text-error">
-                     <X className="text-[10px]" strokeWidth={1.5} />
-                   </button>
-                 </span>
-               ))}
-               <div className="flex items-center gap-1">
-                 <input
-                   ref={tagInputRef}
-                   value={newTag}
-                   onChange={e => setNewTag(e.target.value)}
-                   onKeyDown={handleTagKeyDown}
-                   placeholder="Add tag..."
-                   className="bg-surface-container-low text-[10px] px-2 py-0.5 rounded outline-none w-24 text-on-surface placeholder:text-neutral-500"
-                 />
-                 <button onClick={handleAddTag} className="text-[10px] bg-primary/20 text-primary p-0.5 rounded hover:bg-primary/30">
-                   <Plus className="text-[12px]" strokeWidth={1.5} />
-                 </button>
-               </div>
+              {editTags.map(tag => {
+                const tagStyle = getTagStyle(tag);
+                return (
+                  <span
+                    key={tag}
+                    className="px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 group/tag"
+                    style={{
+                      backgroundColor: tagStyle.backgroundColor,
+                      borderColor: tagStyle.borderColor,
+                      color: tagStyle.color,
+                    }}
+                  >
+                    {tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                      style={{ color: tagStyle.color }}
+                    >
+                      <X className="text-[10px] w-3 h-3" strokeWidth={2} />
+                    </button>
+                  </span>
+                )
+              })}
+              <div className="flex items-center gap-1">
+                <input
+                  ref={tagInputRef}
+                  value={newTag}
+                  onChange={e => setNewTag(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  placeholder="Add tag..."
+                  className="bg-surface-container-low text-[10px] px-2 py-0.5 rounded outline-none w-24 text-on-surface placeholder:text-neutral-500"
+                />
+                <button onClick={handleAddTag} className="text-[10px] bg-primary/20 text-primary p-0.5 rounded hover:bg-primary/30">
+                  <Plus className="text-[12px]" strokeWidth={1.5} />
+                </button>
+              </div>
             </div>
             <div className="flex justify-end pt-1">
               <button onClick={commitEdit} className="text-[10px] bg-primary/20 text-primary font-bold px-3 py-1 rounded hover:bg-primary/30 transition-colors">Done</button>
@@ -128,11 +144,22 @@ export function TaskCard({ item }: TaskCardProps) {
         )}
         {!isEditing && item.tags && item.tags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap mt-1">
-            {item.tags.map(tag => (
-              <span key={tag} className="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded text-[10px] font-bold uppercase tracking-wider">
-                {tag}
-              </span>
-            ))}
+            {item.tags.map(tag => {
+              const tagStyle = getTagStyle(tag);
+              return (
+                <span
+                  key={tag}
+                  className="px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider"
+                  style={{
+                    backgroundColor: tagStyle.backgroundColor,
+                    borderColor: tagStyle.borderColor,
+                    color: tagStyle.color,
+                  }}
+                >
+                  {tag}
+                </span>
+              )
+            })}
           </div>
         )}
       </div>
