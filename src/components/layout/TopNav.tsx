@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Bell, Sparkles } from 'lucide-react'
+import { Bell, Sparkles } from 'lucide-react'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
 import { RippleContainer } from '../ui/Ripple'
@@ -42,14 +42,7 @@ export function TopNav() {
     toggleLeftSidebar,
     toggleRightSidebar,
   } = useLayoutStore()
-  const {
-    currentWeek,
-    goToPreviousWeek,
-    goToNextWeek,
-    goToCurrentWeek,
-    canGoPreviousWeek,
-    canGoNextWeek,
-  } = useWeekStore()
+  const { currentWeek } = useWeekStore()
   const location = useLocation()
   const { ripples: menuRipples, onPointerDown: onMenuDown } = useRipple()
   const { ripples: aiRipples, onPointerDown: onAiDown } = useRipple()
@@ -95,38 +88,6 @@ export function TopNav() {
           {currentWeek && (
             <span className="hidden sm:inline text-[11px] font-medium text-neutral-500">
               / Week {currentWeek.weekNumber}
-            </span>
-          )}
-        </div>
-
-        {/* Week navigator — condensed on mobile */}
-        <div className="flex items-center gap-1 sm:gap-1.5 ml-2 sm:ml-4">
-          <button
-            onClick={() => void goToPreviousWeek()}
-            disabled={!canGoPreviousWeek}
-            className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed focus-ring transition-colors"
-            title="Previous Week"
-          >
-            <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={1.5} />
-          </button>
-          <button
-            onClick={() => void goToCurrentWeek()}
-            className="hidden sm:block text-[11px] font-medium px-3 h-7 rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border border-white/10 focus-ring transition-colors"
-            title="Go to Current Week"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => void goToNextWeek()}
-            disabled={!canGoNextWeek}
-            className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed focus-ring transition-colors"
-            title="Next Week"
-          >
-            <ChevronRight className="w-[18px] h-[18px]" strokeWidth={1.5} />
-          </button>
-          {currentWeek && (
-            <span className="hidden lg:inline text-[11px] font-medium text-neutral-500 ml-3">
-              {currentWeek.dateRange}
             </span>
           )}
         </div>
