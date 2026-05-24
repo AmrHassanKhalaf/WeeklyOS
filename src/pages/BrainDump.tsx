@@ -48,7 +48,6 @@ export function BrainDump() {
   }
 
   const weekLabel = currentWeek ? `Week ${currentWeek.weekNumber}` : ''
-  const dateRange = currentWeek?.dateRange ?? ''
 
   return (
     <AppLayout>

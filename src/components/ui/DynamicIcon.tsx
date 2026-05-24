@@ -26,7 +26,7 @@ export function DynamicIcon({ name, ...props }: DynamicIconProps) {
   };
   
   const mappedName = iconMap[name] || name
-  const iconRegistry = LucideIcons as Record<string, LucideIcon>
+  const iconRegistry = LucideIcons as unknown as Record<string, LucideIcon>
   const IconComponent = iconRegistry[mappedName]
 
   if (!IconComponent) {

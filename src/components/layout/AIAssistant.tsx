@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Bot, Zap, CheckCircle2, Sparkles, AlertTriangle, Send, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useAiApi } from '../../hooks/useApi'
+import { useAiApi, type AiHistoryMessage } from '../../hooks/useApi'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
 
@@ -57,9 +57,9 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
       const { currentWeek } = useWeekStore.getState()
       const context = currentWeek ? { weekTitle: currentWeek.title, score: currentWeek.score, days: currentWeek.days } : {}
       
-      const history = chatMessages.filter(m => m.role !== 'system').map(m => ({ 
-        role: m.role === 'ai' ? 'assistant' : m.role, 
-        content: m.text 
+      const history: AiHistoryMessage[] = chatMessages.filter(m => m.role !== 'system').map(m => ({
+        role: (m.role === 'ai' ? 'assistant' : m.role) as AiHistoryMessage['role'],
+        content: m.text,
       }))
 
       const res = await sendMessage('chat', msg, context, undefined, history)

@@ -70,9 +70,15 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
   const [currentTextIndex, setCurrentTextIndex] = useState<number>(0)
 
   const splitIntoCharacters = (text: string): string[] => {
-    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
-      const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' })
-      return Array.from(segmenter.segment(text), segment => segment.segment)
+    // Intl.Segmenter is ES2022+ — guard with a runtime check so the fallback
+    // path works in older environments. Cast through unknown to satisfy the
+    // ES2020 type lib which does not include Segmenter.
+    const SegmenterCtor = (Intl as unknown as Record<string, unknown>)['Segmenter'] as
+      | (new (locale: string, opts: { granularity: string }) => { segment(t: string): Iterable<{ segment: string }> })
+      | undefined
+    if (typeof SegmenterCtor === 'function') {
+      const segmenter = new SegmenterCtor('en', { granularity: 'grapheme' })
+      return Array.from(segmenter.segment(text), (s) => s.segment)
     }
     return Array.from(text)
   }

@@ -8,7 +8,6 @@ import { HabitFormModal } from '../components/habittracker/HabitFormModal'
 import { HabitDetailModal } from '../components/habittracker/HabitDetailModal'
 import { HabitSummaryBar } from '../components/habittracker/HabitSummaryBar'
 import { Skeleton } from '../components/ui/Skeleton'
-import { useLayoutStore } from '../store/useLayoutStore'
 import { Plus, CheckCircle2, Ban, Flame, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -38,7 +37,6 @@ function EmptyHabits({ tab, onAdd }: { tab: 'build' | 'break'; onAdd: () => void
 
 export function HabitTracker() {
   const { habits, currentMonth, currentYear, viewMode, isLoading, error, loadData, goToPrevMonth, goToNextMonth, setViewMode } = useHabitStore()
-  const { isMobile } = useLayoutStore()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null)

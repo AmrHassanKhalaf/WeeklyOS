@@ -207,7 +207,7 @@ export function FocusModeMenu({ isOpen, onClose }: FocusModeMenuProps) {
                             style={{
                               ...(isActive ? { boxShadow: `0 0 35px ${mode.glowColor}, 0 4px 20px rgba(0,0,0,0.4)` } : { boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }),
                               '--mode-glow': mode.glowColor
-                            } as React.CSSProperties}
+                            } as unknown as React.CSSProperties}
                           >
                             {/* Hover glow overlay */}
                             <div

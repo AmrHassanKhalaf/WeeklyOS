@@ -92,13 +92,14 @@ async function replayMutation(mutation: QueuedMutation): Promise<{ success: bool
     // Conflict check — only relevant when record has an updated_at.
     if (localUpdatedAt) {
       const { data: serverRow } = await supabase
-        .from(table as 'tasks')
-        .select('updated_at')
+        .from(table as 'weeks')  // cast for type inference
+        .select('*')
         .eq('id', id)
         .maybeSingle()
 
-      if (serverRow && serverRow.updated_at) {
-        const serverTs = new Date(serverRow.updated_at as string).getTime()
+      const serverRowData = serverRow as { updated_at?: string } | null
+      if (serverRowData && serverRowData.updated_at) {
+        const serverTs = new Date(serverRowData.updated_at).getTime()
         const localTs = new Date(localUpdatedAt as string).getTime()
         if (serverTs > localTs) {
           // Server is newer — skip update, prefer server version.

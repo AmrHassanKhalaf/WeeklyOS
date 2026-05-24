@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { LineChart } from 'lucide-react'
+import { LineChart, LayoutDashboard } from 'lucide-react'
 import { useWeekStore } from '../store/useWeekStore'
 import { DayCardDistribution } from './DayCardDistribution'
 import type { WeekData } from '../store/useWeekStore'

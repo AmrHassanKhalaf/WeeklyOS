@@ -10,6 +10,7 @@ import { useScrollLock } from '../hooks/useScrollLock'
 import BorderGlow from '../components/effects/BorderGlow'
 import { Button } from '../components/ui/Button'
 import { Calendar, Brain, Tag, Sparkles, Loader2, X } from 'lucide-react'
+import { cn } from '../lib/cn'
 
 function extractJsonFromText(raw: string): unknown {
   const trimmed = raw.trim()

@@ -54,7 +54,7 @@ export async function getHabits(userId: string, month: number, year: number): Pr
     .order('created_at', { ascending: true })
 
   if (error) throw error
-  return (data ?? []) as Habit[]
+  return (data ?? []) as unknown as Habit[]
 }
 
 /** Insert a new habit and return the persisted row. */
@@ -66,7 +66,7 @@ export async function createHabit(input: CreateHabitInput): Promise<Habit> {
     .single()
 
   if (error) throw error
-  return data as Habit
+  return data as unknown as Habit
 }
 
 /** Update specific fields of an existing habit. */
@@ -89,7 +89,7 @@ export async function updateHabit(habitId: string, input: UpdateHabitInput): Pro
     .single()
 
   if (error) throw error
-  return data as Habit
+  return data as unknown as Habit
 }
 
 /** Soft-delete: sets is_active = false so history is preserved. */

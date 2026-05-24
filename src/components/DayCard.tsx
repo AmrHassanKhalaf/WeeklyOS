@@ -1,4 +1,4 @@
-import type { DayPlan, DayOfWeek } from '../data/mockData'
+import type { DayPlan, DayOfWeek } from '../store/useWeekStore'
 import { useWeekStore } from '../store/useWeekStore'
 import { useState, useEffect } from 'react'
 import { CheckCircle2, CircleDashed, Trash2, Edit3 } from 'lucide-react'

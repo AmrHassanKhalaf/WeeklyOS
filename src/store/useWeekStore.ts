@@ -59,12 +59,6 @@ export interface ChallengeDay {
   status: ChallengeDayStatus
 }
 
-export interface BrainDumpItem {
-  id: string
-  title: string
-  selected?: boolean
-  tags?: string[]
-}
 
 export interface DayPlan {
   day: DayOfWeek
@@ -184,7 +178,6 @@ interface WeekStore {
   resetPomodoro: () => void
   setPomodoroPreset: (focusMin: number, breakMin: number) => void
   updateTaskActualDuration: (taskId: string, secondsToAdd: number) => Promise<void>
-  setFocusedDay: (_index: number) => void
 
   // Focus Sessions
   focusSessions: FocusSession[]
@@ -621,7 +614,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
-      .eq('week_id', week.id)
+      .eq('week_id', week.id as string)
 
     if (tasksErr) throw tasksErr
     return buildWeekData(week as Record<string, unknown>, (tasks ?? []) as Record<string, unknown>[])
@@ -660,7 +653,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
-      .eq('week_id', week.id)
+      .eq('week_id', week.id as string)
 
     if (tasksErr) throw tasksErr
     return buildWeekData(week as Record<string, unknown>, (tasks ?? []) as Record<string, unknown>[])
@@ -737,57 +730,6 @@ export const useWeekStore = create<WeekStore>((set, get) => {
           }
         })()
 
-        // 3. Real-time subscription for tasks (DISABLED - causing WebSocket connection issues)
-        // TODO: Re-enable when network connectivity is stable
-        /*
-        try {
-          if (_realtimeChannel) {
-            await supabase.removeChannel(_realtimeChannel)
-          }
-
-          _realtimeChannel = supabase
-            .channel(`tasks-week-${week.id}`)
-            .on(
-              'postgres_changes',
-              { event: '*', schema: 'public', table: 'tasks', filter: `week_id=eq.${week.id}` },
-              async () => {
-                try {
-                  // Re-fetch tasks on any change
-                  const { data: refreshedTasks } = await supabase
-                    .from('tasks')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .eq('week_id', week!.id)
-
-                  const { data: refreshedWeek } = await supabase
-                    .from('weeks')
-                    .select('*')
-                    .eq('id', week!.id)
-                    .single()
-
-                  if (refreshedTasks && refreshedWeek) {
-                    set(_state => ({
-                      currentWeek: buildWeekData(refreshedWeek as Record<string, unknown>, refreshedTasks as Record<string, unknown>[]),
-                    }))
-                  }
-                } catch (realtimeErr) {
-                  console.warn('Realtime update failed:', realtimeErr)
-                  // Don't throw - realtime failures shouldn't break the app
-                }
-              },
-            )
-            .subscribe((status) => {
-              if (status === 'SUBSCRIBED') {
-                console.log('Realtime subscription active')
-              } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                console.warn('Realtime subscription failed:', status)
-              }
-            })
-        } catch (realtimeSetupErr) {
-          console.warn('Failed to setup realtime subscription:', realtimeSetupErr)
-          // Continue without realtime - app still works
-        }
-        */
       } catch (err) {
         set({
           weekError: (err as Error).message,
@@ -1224,7 +1166,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       const week = get().currentWeek
       if (!week) return
       
-      const { error } = await supabase.from('tasks').delete().eq('week_id', week.id).eq('day', day)
+      const { error } = await supabase.from('tasks').delete().eq('week_id', week.id as string).eq('day', day)
       if (error) console.error('[deleteDayData]', error)
       
       set(state => ({
@@ -1247,7 +1189,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       const week = get().currentWeek
       if (!week) return
       
-      const { error } = await supabase.from('tasks').delete().eq('week_id', week.id)
+      const { error } = await supabase.from('tasks').delete().eq('week_id', week.id as string)
       if (error) console.error('[deleteWeekData]', error)
       
       await supabase.from('weeks').update({ score: 0, activities: '[]', daily_notes: '{}', challenge_completed: false }).eq('id', week.id)
@@ -1524,8 +1466,5 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
     },
 
-    setFocusedDay: (_index: number) => {
-      // Kept for API compat, day selection is now automatic (isToday)
-    },
   }
 })

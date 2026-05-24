@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown, Pin, Star } from 'lucide-react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -519,7 +519,6 @@ export function FocusedDay() {
   }
 
   const totalSecs = pomodoroPhase === 'focus' ? pomodoroFocusMin * 60 : pomodoroBreakMin * 60
-  const progress = pomodoroTime / totalSecs
 
   const handleToggle = useCallback(() => {
     if (isPomodoroRunning) {

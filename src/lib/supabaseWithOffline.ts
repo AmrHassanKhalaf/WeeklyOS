@@ -48,7 +48,7 @@ export async function offlineInsert<T extends Record<string, unknown>>(
       .single()
 
     if (error) throw error
-    return { data: data as T | null, error: null, wasQueued: false }
+    return { data: data as unknown as T | null, error: null, wasQueued: false }
   } catch (err) {
     if (isNetworkError(err)) {
       enqueueIfOffline(table, 'INSERT', row as Record<string, unknown>)

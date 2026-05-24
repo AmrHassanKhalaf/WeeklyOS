@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import type { DayPlan, Task, DayOfWeek, Priority } from '../data/mockData'
+import type { DayPlan, Task, DayOfWeek, Priority } from '../store/useWeekStore'
 import { useWeekStore } from '../store/useWeekStore'
 import { Button } from './ui/Button'
 import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus } from 'lucide-react'
@@ -169,7 +169,7 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             <div className="flex items-center gap-2">
               <div className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}>{task.title}</div>
               {task.type === 'pinned' && (
-                <Pin className="w-3.5 h-3.5 text-primary" strokeWidth={2} title="Pinned Task" />
+                <Pin className="w-3.5 h-3.5 text-primary" strokeWidth={2} aria-label="Pinned Task" />
               )}
             </div>
             {showTags && task.tags && task.tags.length > 0 && (
@@ -451,12 +451,13 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
               <span className="tracking-widest">High Impact</span>
               <div className="flex items-center gap-2">
                 <span>{highFilled}/{highSlots}</span>
-                <Plus
-                  className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${highFilled >= highSlots ? 'opacity-20 pointer-events-none' : ''}`}
-                  onClick={() => highFilled < highSlots && startAdd('high')}
-                  title={highFilled >= highSlots ? "Limit reached (1 High task)" : "Add High Impact Task"}
-                  strokeWidth={2}
-                />
+                <span title={highFilled >= highSlots ? 'Limit reached (1 High task)' : 'Add High Impact Task'}>
+                  <Plus
+                    className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${highFilled >= highSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                    onClick={() => highFilled < highSlots && startAdd('high')}
+                    strokeWidth={2}
+                  />
+                </span>
               </div>
             </div>
             <TaskItem task={day.highTask} emptyHeight="h-24" onEmptyClick={() => startAdd('high')} showTags={showTags} />
@@ -469,12 +470,13 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
               <span className="tracking-widest">Medium Priority</span>
               <div className="flex items-center gap-2">
                 <span>{medFilled}/{medSlots}</span>
-                <Plus
-                  className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${medFilled >= medSlots ? 'opacity-20 pointer-events-none' : ''}`}
-                  onClick={() => medFilled < medSlots && startAdd('medium')}
-                  title={medFilled >= medSlots ? "Limit reached (3 Medium tasks)" : "Add Medium Priority Task"}
-                  strokeWidth={2}
-                />
+                <span title={medFilled >= medSlots ? 'Limit reached (3 Medium tasks)' : 'Add Medium Priority Task'}>
+                  <Plus
+                    className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${medFilled >= medSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                    onClick={() => medFilled < medSlots && startAdd('medium')}
+                    strokeWidth={2}
+                  />
+                </span>
               </div>
             </div>
             {Array.from({ length: medSlots }).map((_, i) => (
@@ -489,12 +491,13 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
               <span className="tracking-widest">Small Tasks</span>
               <div className="flex items-center gap-2">
                 <span>{smallFilled}/{smallSlots}</span>
-                <Plus
-                  className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${smallFilled >= smallSlots ? 'opacity-20 pointer-events-none' : ''}`}
-                  onClick={() => smallFilled < smallSlots && startAdd('low')}
-                  title={smallFilled >= smallSlots ? "Limit reached (5 Small tasks)" : "Add Small Task"}
-                  strokeWidth={2}
-                />
+                <span title={smallFilled >= smallSlots ? 'Limit reached (5 Small tasks)' : 'Add Small Task'}>
+                  <Plus
+                    className={`w-4 h-4 cursor-pointer hover:text-white transition-colors ${smallFilled >= smallSlots ? 'opacity-20 pointer-events-none' : ''}`}
+                    onClick={() => smallFilled < smallSlots && startAdd('low')}
+                    strokeWidth={2}
+                  />
+                </span>
               </div>
             </div>
             <div className="space-y-2">
