@@ -227,27 +227,10 @@ body {
   overflow-x: hidden;
 }
 
-/* ── Global wave background image ────────────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -2;
-  background-image: url('/bg-wave.png');
-  background-size: cover;
-  background-position: center bottom;
-  background-repeat: no-repeat;
-  opacity: 0.65;
-}
+/* ── body::before is handled by <AnimatedBackground /> component ── */
 
 body.light { color-scheme: light; }
 
-/* ──────────────────────────────────────────────────────────────────────── */
-/*  Premium background — Subtle grid + corner aurora glows                 */
-/*  These two pseudo-layers sit behind everything, fixed to the viewport.  */
-/* ──────────────────────────────────────────────────────────────────────── */
-/* body::before is now defined above as the wave image layer */
 
 body::after {
   content: '';
@@ -269,9 +252,32 @@ body.light::after {
     radial-gradient(48vmax 38vmax at 96% -4%,  rgb(var(--glow-tr-color) / 0.18), transparent 60%);
 }
 
-@keyframes grid-drift {
-  0%   { background-position: 0 0; }
-  100% { background-position: -40px 80px; }
+@keyframes waveFloat {
+  0%, 100% { transform: translate3d(0,   0px, 0) scale(1.00); }
+  30%      { transform: translate3d(0,  -7px, 0) scale(1.005); }
+  65%      { transform: translate3d(0,   4px, 0) scale(0.998); }
+}
+
+@keyframes breatheGlow {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1.00; }
+}
+
+@keyframes hazeDrift {
+  0%        { transform: translate3d(0, 0, 0);       opacity: 0.6; }
+  33%       { transform: translate3d(18px, -6px, 0); opacity: 1.0; }
+  66%       { transform: translate3d(-10px, 4px, 0); opacity: 0.7; }
+  100%      { transform: translate3d(0, 0, 0);       opacity: 0.6; }
+}
+
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+
+@keyframes edgePulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.90; }
 }
 
 @keyframes aurora-shift {
