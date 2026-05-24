@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Sparkles, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { signIn, signInWithGoogle, signUp } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
@@ -10,15 +11,30 @@ export function SignIn() {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isOAuthLoading, setIsOAuthLoading] = useState(false)
 
+  const switchMode = (nextMode: Mode) => {
+    if (nextMode === mode) return
+    setMode(nextMode)
+    setConfirmPassword('')
+    setError(null)
+    setMessage(null)
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     setMessage(null)
+
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -97,16 +113,82 @@ export function SignIn() {
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-md glass-panel rounded-3xl p-8 sm:p-10 animate-scale-in relative z-10">
-        <div className="mb-7">
-          <h2 className="text-2xl font-bold text-on-surface mb-1.5">
-            {mode === 'signin' ? 'Welcome back' : 'Create account'}
-          </h2>
-          <p className="text-sm text-on-surface-variant">
-            {mode === 'signin'
-              ? 'Sign in to access your productivity system.'
-              : 'Start planning your best weeks.'}
-          </p>
+      <motion.div
+        layout
+        transition={{ layout: { type: 'spring', stiffness: 190, damping: 31, mass: 0.9 } }}
+        className="w-full max-w-md glass-panel rounded-3xl p-8 sm:p-10 animate-scale-in relative z-10 overflow-hidden"
+      >
+        <motion.div
+          aria-hidden
+          className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-primary/80 to-transparent"
+          animate={{ opacity: mode === 'signin' ? 0.55 : 0.9, scaleX: mode === 'signin' ? 0.64 : 1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        />
+
+        <div className="mb-7 relative">
+          <div className="mb-5 grid grid-cols-2 rounded-2xl bg-surface-container-low/60 p-1 border border-outline-variant/30">
+            <motion.div
+              layout
+              role="button"
+              tabIndex={0}
+              onClick={() => switchMode('signin')}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') switchMode('signin')
+              }}
+              className={`relative rounded-xl px-3 py-2 text-center text-[11px] font-bold uppercase tracking-widest ${
+                mode === 'signin' ? 'text-on-surface' : 'text-on-surface-variant'
+              } cursor-pointer transition-colors`}
+            >
+              {mode === 'signin' && (
+                <motion.span
+                  layoutId="auth-mode-pill"
+                  className="absolute inset-0 rounded-xl bg-primary/15 border border-primary/20 shadow-[0_8px_24px_rgb(124_58_237_/_0.14)]"
+                  transition={{ type: 'spring', stiffness: 330, damping: 32, mass: 0.75 }}
+                />
+              )}
+              <span className="relative">Sign in</span>
+            </motion.div>
+            <motion.div
+              layout
+              role="button"
+              tabIndex={0}
+              onClick={() => switchMode('signup')}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') switchMode('signup')
+              }}
+              className={`relative rounded-xl px-3 py-2 text-center text-[11px] font-bold uppercase tracking-widest ${
+                mode === 'signup' ? 'text-on-surface' : 'text-on-surface-variant'
+              } cursor-pointer transition-colors`}
+            >
+              {mode === 'signup' && (
+                <motion.span
+                  layoutId="auth-mode-pill"
+                  className="absolute inset-0 rounded-xl bg-primary/15 border border-primary/20 shadow-[0_8px_24px_rgb(124_58_237_/_0.14)]"
+                  transition={{ type: 'spring', stiffness: 330, damping: 32, mass: 0.75 }}
+                />
+              )}
+              <span className="relative">Sign up</span>
+            </motion.div>
+          </div>
+
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`heading-${mode}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <h2 className="text-2xl font-bold text-on-surface mb-1.5">
+                {mode === 'signin' ? 'Welcome back' : 'Create account'}
+              </h2>
+              <p className="text-sm text-on-surface-variant">
+                {mode === 'signin'
+                  ? 'Sign in to access your productivity system.'
+                  : 'Start planning your best weeks.'}
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <div className="space-y-4">
@@ -166,6 +248,33 @@ export function SignIn() {
             />
           </div>
 
+          <AnimatePresence initial={false}>
+            {mode === 'signup' && (
+              <motion.div
+                key="confirm-password"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{
+                  height: { type: 'spring', stiffness: 180, damping: 29, mass: 0.88 },
+                  opacity: { duration: 0.2, ease: 'easeOut' },
+                }}
+                className="space-y-1.5 overflow-hidden"
+              >
+                <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Confirm Password</label>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  className="focus-ring text-base sm:text-sm"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Error / Message */}
           {error && (
             <div className="p-3 bg-error/10 border border-error/25 rounded-xl text-error text-sm animate-shake flex items-start gap-2">
@@ -192,19 +301,7 @@ export function SignIn() {
           </Button>
         </form>
 
-        {/* Toggle mode */}
-        <div className="mt-7 text-center">
-          <p className="text-sm text-on-surface-variant">
-            {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-            <button
-              onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); setMessage(null) }}
-              className="text-primary font-semibold hover:text-on-surface transition-colors underline-grow"
-            >
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
-            </button>
-          </p>
-        </div>
-      </div>
+      </motion.div>
 
       <p className="mt-8 text-[11px] uppercase tracking-[0.22em] text-on-surface-variant/70 relative z-10">
         Plan your week. Focus better.
