@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Brain, Sparkles, Send, PlusCircle, Tag, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Brain, Sparkles, Send, PlusCircle, Tag, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
@@ -77,32 +77,13 @@ export function BrainDump() {
             )}
           </div>
 
-          {/* Title row */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-background mb-2">
-                Prep &amp; Brain Dump
-              </h1>
-              <p className="text-on-surface-variant text-base leading-relaxed max-w-md">
-                Empty your mind. Don't worry about order or priority yet — just get it all out.
-              </p>
-            </div>
-
-            {/* Week nav + date range */}
-            {dateRange && (
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                <button className="w-7 h-7 rounded-lg bg-surface-container-low border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">
-                  <ChevronLeft className="w-3.5 h-3.5" strokeWidth={2} />
-                </button>
-                <span className="text-sm font-medium text-on-surface-variant whitespace-nowrap px-1">
-                  {dateRange}
-                </span>
-                <button className="w-7 h-7 rounded-lg bg-surface-container-low border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} />
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Title */}
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-background mb-2">
+            Prep &amp; Brain Dump
+          </h1>
+          <p className="text-on-surface-variant text-base leading-relaxed max-w-md">
+            Empty your mind. Don't worry about order or priority yet — just get it all out.
+          </p>
         </div>
 
         {/* ── Input area ─────────────────────────────────────────────── */}
