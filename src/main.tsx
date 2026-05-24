@@ -4,8 +4,11 @@ import { clarity } from 'react-microsoft-clarity'
 import App from './App.tsx'
 import './index.css'
 
-// Initialize Microsoft Clarity for analytics
-clarity.init('wrqbfro5dx')
+const clarityProjectId = import.meta.env.VITE_CLARITY_PROJECT_ID as string | undefined
+
+if (import.meta.env.PROD && clarityProjectId) {
+  clarity.init(clarityProjectId)
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
