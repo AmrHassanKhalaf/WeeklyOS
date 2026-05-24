@@ -227,26 +227,27 @@ body {
   overflow-x: hidden;
 }
 
-body.light { color-scheme: light; }
-
-/* ──────────────────────────────────────────────────────────────────────── */
-/*  Premium background — Subtle grid + corner aurora glows                 */
-/*  These two pseudo-layers sit behind everything, fixed to the viewport.  */
-/* ──────────────────────────────────────────────────────────────────────── */
+/* ── Global wave background image ────────────────────────────────────────── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: -2;
-  background-image:
-    linear-gradient(rgb(var(--grid-color) / var(--grid-alpha)) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--grid-color) / var(--grid-alpha)) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
-  animation: grid-drift 90s linear infinite;
+  background-image: url('/bg-wave.png');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  opacity: 0.65;
 }
+
+body.light { color-scheme: light; }
+
+/* ──────────────────────────────────────────────────────────────────────── */
+/*  Premium background — Subtle grid + corner aurora glows                 */
+/*  These two pseudo-layers sit behind everything, fixed to the viewport.  */
+/* ──────────────────────────────────────────────────────────────────────── */
+/* body::before is now defined above as the wave image layer */
 
 body::after {
   content: '';

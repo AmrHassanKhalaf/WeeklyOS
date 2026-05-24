@@ -52,10 +52,11 @@ export function BrainDump() {
 
   return (
     <AppLayout>
-      {/* ── Decorative background layer ───────────────────────────────── */}
+      {/* ── Gradient depth layers (wave bg is now global) ────────────────── */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-10%,rgb(109_40_217/0.10),transparent)]" />
-        <div className="absolute top-0 right-0 w-[55vw] h-[50vh] rounded-full bg-indigo-900/5 blur-3xl -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/50 to-background/90" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgb(79_70_229/0.10),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-10%,rgb(109_40_217/0.06),transparent)]" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-10 pb-32 sm:pb-16">
