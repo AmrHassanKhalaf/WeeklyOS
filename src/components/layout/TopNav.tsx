@@ -39,6 +39,7 @@ export function TopNav() {
     sidebarMode,
     isLeftSidebarOpen,
     isFocusMode,
+    focusLevel,
     toggleLeftSidebar,
     toggleRightSidebar,
   } = useLayoutStore()
@@ -54,7 +55,7 @@ export function TopNav() {
   const { ripples: menuRipples, onPointerDown: onMenuDown } = useRipple()
   const { ripples: aiRipples, onPointerDown: onAiDown } = useRipple()
 
-  if (isFocusMode) return null
+  if (isFocusMode && focusLevel === 'deep') return null
 
   const offsetLeft = isMobile ? 0 : sidebarMode === 'rail' ? 80 : sidebarMode === 'hidden' ? 0 : 256
 

@@ -119,12 +119,12 @@ function NavItem({
 export function Sidebar() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { sidebarMode, isMobile, isFocusMode, cycleSidebarMode, toggleLeftSidebar, closeSidebarsOnMobile } =
+  const { sidebarMode, isMobile, isFocusMode, focusLevel, cycleSidebarMode, toggleLeftSidebar, closeSidebarsOnMobile } =
     useLayoutStore()
   const currentWeek = useWeekStore((s) => s.currentWeek)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
-  const isHidden = sidebarMode === 'hidden' || isFocusMode
+  const isHidden = sidebarMode === 'hidden' || (isFocusMode && focusLevel === 'deep')
   const isRail = sidebarMode === 'rail' && !isMobile
   const width = isRail ? 'w-20' : 'w-64'
 

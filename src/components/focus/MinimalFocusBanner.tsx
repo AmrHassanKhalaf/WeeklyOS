@@ -7,7 +7,7 @@
  */
 
 import { motion } from 'framer-motion'
-import { Play, Pause, X, Layers } from 'lucide-react'
+import { Play, Pause, ChevronsLeftRight } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
 
@@ -17,7 +17,6 @@ interface MinimalFocusBannerProps {
   isPomodoroRunning: boolean
   activeTaskTitle?: string | null
   onToggle: () => void
-  onOpenPicker: () => void
 }
 
 export function MinimalFocusBanner({
@@ -26,7 +25,6 @@ export function MinimalFocusBanner({
   isPomodoroRunning,
   activeTaskTitle,
   onToggle,
-  onOpenPicker,
 }: MinimalFocusBannerProps) {
   const { isFocusMode, focusLevel, setFocusMode } = useLayoutStore()
   const isMinimal = isFocusMode && focusLevel === 'minimal'
@@ -90,20 +88,13 @@ export function MinimalFocusBanner({
         </button>
 
         <button
-          onClick={onOpenPicker}
+          onClick={() => setFocusMode(true, 'deep')}
           className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-500 hover:text-neutral-300 hover:bg-white/5 transition-colors"
-          title="Switch focus mode"
+          title="Enter deep focus"
         >
-          <Layers className="w-3.5 h-3.5" strokeWidth={1.5} />
+          <ChevronsLeftRight className="w-3.5 h-3.5" strokeWidth={1.8} />
         </button>
 
-        <button
-          onClick={() => setFocusMode(false)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-600 hover:text-neutral-300 hover:bg-white/5 transition-colors"
-          title="Exit focus mode"
-        >
-          <X className="w-3.5 h-3.5" strokeWidth={1.5} />
-        </button>
       </div>
     </motion.div>,
     document.body

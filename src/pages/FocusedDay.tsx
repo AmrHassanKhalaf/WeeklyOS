@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown } from 'lucide-react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Focus, ChevronUp, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -9,8 +9,6 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { DeepFocusOverlay } from '../components/focus/DeepFocusOverlay'
-import { MinimalFocusBanner } from '../components/focus/MinimalFocusBanner'
-import { FocusModeMenu } from '../components/focus/FocusModeMenu'
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 const PRESETS = [
@@ -188,6 +186,7 @@ function TaskRow({
   unsavedSeconds = 0,
   isDimmed,
   accentColor = 'teal',
+  isRunning,
 }: {
   task: Task
   onToggle: () => void
@@ -195,7 +194,8 @@ function TaskRow({
   onMakeActive?: () => void
   unsavedSeconds?: number
   isDimmed?: boolean
-  accentColor?: 'purple' | 'teal' | 'orange'
+  accentColor?: 'purple' | 'teal' | 'yellow'
+  isRunning?: boolean
 }) {
   const [isHovered, setIsHovered] = useState(false)
   const done = task.status === 'done'
@@ -205,44 +205,53 @@ function TaskRow({
   // ── Per-section color palette (full class strings for Tailwind JIT) ──────────
   const C = accentColor === 'purple'
     ? {
-      containerActive: 'border-violet-500/50 bg-gradient-to-br from-violet-500/10 to-transparent shadow-[0_0_20px_rgba(139,92,246,0.22)]',
+      containerActive: 'border-violet-300/55 bg-gradient-to-br from-violet-500/[0.18] via-violet-500/[0.075] to-transparent shadow-[0_0_34px_rgba(139,92,246,0.28),inset_0_1px_0_rgba(255,255,255,0.08)]',
       containerHover: 'border-violet-500/40 bg-gradient-to-br from-violet-500/[0.08] to-transparent shadow-[0_0_16px_rgba(139,92,246,0.16)]',
       containerIdle: 'border-violet-500/10 bg-transparent',
-      stripe: 'bg-violet-500 shadow-[0_0_10px_#7c3aed]',
-      titleActive: 'text-violet-200 font-semibold',
+      stripe: 'bg-violet-300 shadow-[0_0_16px_rgba(167,139,250,0.95)]',
+      titleActive: 'text-violet-100 font-black drop-shadow-[0_0_10px_rgba(167,139,250,0.35)]',
       titleHover: 'text-neutral-100 font-semibold',
-      pill: 'border-violet-500/25 bg-violet-500/10 text-violet-300',
-      btnActive: 'border-violet-500/40 bg-violet-500/10 text-violet-300',
+      pill: 'border-violet-300/30 bg-violet-500/14 text-violet-200',
+      btnActive: 'border-violet-300/42 bg-violet-500/14 text-violet-200 shadow-[0_0_20px_rgba(139,92,246,0.18)]',
       btnHover: 'border-violet-500/60 bg-violet-500/20 text-violet-200',
       btnIdle: 'border-violet-500/30 bg-transparent text-violet-400 hover:bg-violet-500/10',
       dot: 'bg-violet-400',
+      activeGlow: 'shadow-[0_0_42px_rgba(139,92,246,0.36)] ring-1 ring-violet-200/24',
+      runningGlow: 'shadow-[0_0_54px_rgba(139,92,246,0.46)] ring-1 ring-violet-100/35',
+      wash: 'bg-[radial-gradient(circle_at_18%_8%,rgba(196,181,253,0.16),transparent_34%),linear-gradient(90deg,rgba(139,92,246,0.10),transparent_58%)]',
     }
-    : accentColor === 'orange'
+    : accentColor === 'yellow'
       ? {
-        containerActive: 'border-orange-500/45 bg-gradient-to-br from-orange-500/[0.08] to-transparent shadow-[0_0_18px_rgba(249,115,22,0.2)]',
-        containerHover: 'border-orange-500/35 bg-gradient-to-br from-orange-500/[0.07] to-transparent shadow-[0_0_14px_rgba(249,115,22,0.15)]',
-        containerIdle: 'border-orange-500/10 bg-transparent',
-        stripe: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]',
-        titleActive: 'text-orange-200 font-semibold',
+        containerActive: 'border-amber-200/48 bg-gradient-to-br from-amber-400/[0.16] via-amber-400/[0.06] to-transparent shadow-[0_0_32px_rgba(251,191,36,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]',
+        containerHover: 'border-amber-400/35 bg-gradient-to-br from-amber-400/[0.07] to-transparent shadow-[0_0_14px_rgba(251,191,36,0.15)]',
+        containerIdle: 'border-amber-400/10 bg-transparent',
+        stripe: 'bg-amber-200 shadow-[0_0_16px_rgba(251,191,36,0.9)]',
+        titleActive: 'text-amber-100 font-black drop-shadow-[0_0_10px_rgba(251,191,36,0.32)]',
         titleHover: 'text-neutral-100 font-semibold',
-        pill: 'border-orange-500/25 bg-orange-500/10 text-orange-300',
-        btnActive: 'border-orange-500/40 bg-orange-500/10 text-orange-300',
-        btnHover: 'border-orange-500/60 bg-orange-500/20 text-orange-200',
-        btnIdle: 'border-orange-500/35 bg-transparent text-orange-400 hover:bg-orange-500/10',
-        dot: 'bg-orange-400',
+        pill: 'border-amber-200/28 bg-amber-400/12 text-amber-200',
+        btnActive: 'border-amber-200/40 bg-amber-400/12 text-amber-200 shadow-[0_0_18px_rgba(251,191,36,0.16)]',
+        btnHover: 'border-amber-400/60 bg-amber-400/20 text-amber-200',
+        btnIdle: 'border-amber-400/35 bg-transparent text-amber-300 hover:bg-amber-400/10',
+        dot: 'bg-amber-300',
+        activeGlow: 'shadow-[0_0_40px_rgba(251,191,36,0.28)] ring-1 ring-amber-100/22',
+        runningGlow: 'shadow-[0_0_52px_rgba(251,191,36,0.38)] ring-1 ring-amber-100/32',
+        wash: 'bg-[radial-gradient(circle_at_18%_8%,rgba(253,230,138,0.14),transparent_34%),linear-gradient(90deg,rgba(251,191,36,0.08),transparent_58%)]',
       }
       : {
-        containerActive: 'border-teal-500/45 bg-gradient-to-br from-teal-500/[0.08] to-transparent shadow-[0_0_18px_rgba(20,184,166,0.18)]',
+        containerActive: 'border-teal-200/52 bg-gradient-to-br from-teal-500/[0.16] via-teal-500/[0.065] to-transparent shadow-[0_0_34px_rgba(45,212,191,0.26),inset_0_1px_0_rgba(255,255,255,0.08)]',
         containerHover: 'border-teal-500/35 bg-gradient-to-br from-teal-500/[0.07] to-transparent shadow-[0_0_14px_rgba(20,184,166,0.14)]',
         containerIdle: 'border-teal-500/10 bg-transparent',
-        stripe: 'bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.6)]',
-        titleActive: 'text-teal-200 font-semibold',
+        stripe: 'bg-teal-200 shadow-[0_0_16px_rgba(45,212,191,0.95)]',
+        titleActive: 'text-teal-100 font-black drop-shadow-[0_0_10px_rgba(45,212,191,0.35)]',
         titleHover: 'text-neutral-100 font-semibold',
-        pill: 'border-teal-500/25 bg-teal-500/10 text-teal-300',
-        btnActive: 'border-teal-500/40 bg-teal-500/10 text-teal-300',
+        pill: 'border-teal-200/28 bg-teal-500/12 text-teal-200',
+        btnActive: 'border-teal-200/42 bg-teal-500/12 text-teal-200 shadow-[0_0_20px_rgba(45,212,191,0.18)]',
         btnHover: 'border-teal-500/60 bg-teal-500/20 text-teal-200',
         btnIdle: 'border-teal-500/35 bg-transparent text-teal-400 hover:bg-teal-500/10',
         dot: 'bg-teal-400',
+        activeGlow: 'shadow-[0_0_42px_rgba(45,212,191,0.32)] ring-1 ring-teal-100/24',
+        runningGlow: 'shadow-[0_0_54px_rgba(45,212,191,0.44)] ring-1 ring-teal-100/34',
+        wash: 'bg-[radial-gradient(circle_at_18%_8%,rgba(153,246,228,0.15),transparent_34%),linear-gradient(90deg,rgba(45,212,191,0.09),transparent_58%)]',
       }
 
   // ── Derived display state ─────────────────────────────────────────────────────
@@ -254,7 +263,7 @@ function TaskRow({
     : done
       ? 'border-white/[0.06] bg-transparent opacity-45 grayscale'
       : isActive
-        ? C.containerActive
+        ? `${C.containerActive} ${isRunning ? C.runningGlow : C.activeGlow}`
         : isHovered
           ? `${C.containerHover} scale-[1.007]`
           : C.containerIdle
@@ -271,35 +280,58 @@ function TaskRow({
       onMouseLeave={() => setIsHovered(false)}
       className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${containerCls}`}
     >
+      {isActive && (
+        <div className={`pointer-events-none absolute inset-0 ${C.wash} ${isRunning ? 'opacity-100' : 'opacity-75'}`} />
+      )}
       {/* Left accent stripe — visible when hovered or active */}
       {showStripe && (
         <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-all duration-300 ${C.stripe}`} />
       )}
 
-      <div className={`transition-all duration-300 ${showExpanded ? 'px-4 pt-3.5 pb-3 pl-5' : 'px-4 py-2.5'}`}>
+      <div className="px-4 py-3 transition-all duration-300">
 
         {/* ── Main row (always visible) ──────────────────────────────────────── */}
         <div className="flex items-center gap-3">
           {/* Checkbox */}
           <button
             onClick={(e) => { e.stopPropagation(); onToggle() }}
-            className={`shrink-0 w-2.5 h-2.5 touch-target rounded-full border flex items-center justify-center transition-all duration-200
-              ${done ? 'border-neutral-600 bg-neutral-700' : 'border-neutral-500 hover:border-neutral-300'}`}
+            className="group/check -ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-ring"
+            aria-label={done ? 'Mark task incomplete' : 'Mark task complete'}
           >
-            {done && <Check className="text-[11px] text-neutral-400" strokeWidth={2} />}
+            <span
+              className={`flex items-center justify-center rounded-full border transition-all duration-200 ${
+                done
+                  ? 'border-neutral-500 bg-neutral-700 text-neutral-300'
+                  : 'border-neutral-500 text-transparent group-hover/check:border-neutral-300 group-hover/check:bg-white/[0.03]'
+              }`}
+              style={{ width: 22, height: 22 }}
+            >
+              {done && <Check className="w-3.5 h-3.5" strokeWidth={2} />}
+            </span>
           </button>
 
-          {/* Title + tracked duration inline */}
-          <span className={`flex-1 min-w-0 text-base font-bold truncate transition-all duration-200 ${titleCls}`}>
-            {task.title}
-          </span>
-          {!done && (
-            <span className={`hidden sm:inline-flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 transition-all duration-200
-              ${isActive || isHovered ? C.pill + ' border' : 'text-neutral-600'}`}>
-              <Timer className="w-3 h-3" strokeWidth={1.5} />
-              {taskDuration}
+          {/* Title + metadata */}
+          <div className="min-w-0 flex-1">
+            <span className={`block truncate text-base font-bold transition-all duration-200 ${titleCls}`}>
+              {task.title}
             </span>
-          )}
+            <div
+              className={`mt-1 flex flex-wrap items-center gap-2 overflow-hidden text-[10px] font-mono uppercase tracking-wider transition-all duration-300 ${
+                isDimmed || done ? 'max-h-0 opacity-0' : 'max-h-7 opacity-100'
+              } ${isActive || isHovered ? 'text-neutral-400' : 'text-neutral-600'}`}
+            >
+              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-all duration-300 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
+                <Timer className="w-3 h-3" strokeWidth={1.5} />
+                {taskDuration}
+              </span>
+              {task.estimatedTime && (
+                <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-all duration-300 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
+                  <Clock className="w-3 h-3" strokeWidth={1.5} />
+                  Est: {task.estimatedTime}
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* Action button */}
           {isActive ? (
@@ -307,8 +339,8 @@ function TaskRow({
               onClick={(e) => { e.stopPropagation(); onMakeActive?.() }}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 touch-target rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all ${C.btnActive}`}
             >
-              <span className={`w-3 h-3 rounded-full ${C.dot} animate-pulse`} />
-              Active
+              <span className={`w-3 h-3 rounded-full ${C.dot} ${isRunning ? 'animate-pulse' : ''}`} />
+              {isRunning ? 'Running' : 'Active'}
             </button>
           ) : !done ? (
             <button
@@ -322,14 +354,6 @@ function TaskRow({
         </div>
 
         {/* ── Expanded details row (hover / active only) ────────────────────── */}
-        {showExpanded && task.estimatedTime && (
-          <div className="mt-2 flex flex-wrap gap-2 pl-7">
-            <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border uppercase tracking-wider whitespace-nowrap ${C.pill}`}>
-              <Clock className="w-3 h-3" strokeWidth={1.5} />
-              Est: {task.estimatedTime}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -338,6 +362,175 @@ function TaskRow({
 
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+type TaskGateSection = {
+  label: string
+  tone: 'purple' | 'teal' | 'yellow'
+  tasks: Task[]
+}
+
+function TaskPickerGate({
+  sections,
+  onChooseTask,
+  onStartWithoutTask,
+  onCancel,
+}: {
+  sections: TaskGateSection[]
+  onChooseTask: (taskId: string) => void
+  onStartWithoutTask: () => void
+  onCancel: () => void
+}) {
+  const toneClass = {
+    purple: {
+      dot: 'bg-violet-400 shadow-[0_0_12px_rgba(167,139,250,0.85)]',
+      label: 'text-violet-300',
+      border: 'border-violet-400/20 hover:border-violet-300/45 hover:bg-violet-500/[0.08]',
+      chip: 'border-violet-400/20 bg-violet-500/10 text-violet-300',
+    },
+    teal: {
+      dot: 'bg-teal-300 shadow-[0_0_12px_rgba(45,212,191,0.8)]',
+      label: 'text-teal-300',
+      border: 'border-teal-400/18 hover:border-teal-300/42 hover:bg-teal-500/[0.07]',
+      chip: 'border-teal-400/20 bg-teal-500/10 text-teal-300',
+    },
+    yellow: {
+      dot: 'bg-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.8)]',
+      label: 'text-amber-300',
+      border: 'border-amber-300/18 hover:border-amber-300/42 hover:bg-amber-400/[0.07]',
+      chip: 'border-amber-300/20 bg-amber-400/10 text-amber-300',
+    },
+  } as const
+
+  const visibleSections = sections.filter((section) => section.tasks.length > 0)
+  const taskCount = visibleSections.reduce((total, section) => total + section.tasks.length, 0)
+
+  return (
+    <>
+      <motion.button
+        type="button"
+        aria-label="Close task picker"
+        onClick={onCancel}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+        className="fixed inset-0 z-[120] cursor-default bg-black/45 backdrop-blur-[2px]"
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.985 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed inset-x-3 top-[calc(var(--safe-top,0px)+4.75rem)] z-[130] mx-auto flex max-h-[calc(100dvh-6rem)] max-w-[960px] flex-col overflow-hidden rounded-[1.65rem] border border-primary/30 bg-surface-container-lowest/95 shadow-[0_28px_90px_-28px_rgba(0,0,0,0.95),0_0_46px_rgba(124,58,237,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl sm:top-[calc(var(--safe-top,0px)+5.75rem)] sm:max-h-[min(70dvh,620px)] sm:rounded-[1.75rem]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="focus-target-title"
+      >
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-200/45 to-transparent" />
+        <div className="flex items-start gap-3 border-b border-primary/10 bg-primary/[0.035] px-4 py-3.5 sm:px-5 sm:py-4">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-primary/30 bg-primary/15 text-primary shadow-[0_0_24px_rgba(139,92,246,0.16)]">
+            <Target className="w-5 h-5" strokeWidth={1.65} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p id="focus-target-title" className="text-sm font-black text-on-surface sm:text-base">Choose focus target</p>
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-primary/80">
+                {taskCount} tasks
+              </span>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-on-surface-variant/70">
+              Attach this session to today's work, or run a loose session.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-outline-variant/25 bg-surface-container-low/60 text-on-surface-variant transition-all hover:border-primary/35 hover:text-primary"
+            aria-label="Close task picker"
+          >
+            <span className="text-lg leading-none">&times;</span>
+          </button>
+        </div>
+
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3.5 sm:px-5 sm:py-4">
+          {visibleSections.length > 0 ? (
+            <div className="space-y-4">
+              {visibleSections.map((section) => {
+                const tone = toneClass[section.tone]
+                return (
+                  <section key={section.label} className="space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
+                      <h3 className={`text-[10px] font-black uppercase tracking-[0.22em] ${tone.label}`}>
+                        {section.label}
+                      </h3>
+                      <span className="ml-auto text-[10px] font-mono text-neutral-600">{section.tasks.length}</span>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      {section.tasks.map((task) => {
+                        const secs = task.actualDuration || 0
+                        const duration = `${Math.floor(secs / 60)}m`
+                        return (
+                          <button
+                            key={task.id}
+                            type="button"
+                            onClick={() => onChooseTask(task.id)}
+                            className={`group/task rounded-2xl border bg-black/18 px-3 py-3 text-left transition-all duration-200 ${tone.border}`}
+                          >
+                            <span className="block truncate text-sm font-black text-neutral-200 group-hover/task:text-white">{task.title}</span>
+                            <span className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <span className={`inline-flex items-center gap-1 rounded-lg border px-1.5 py-0.5 text-[10px] font-mono uppercase ${tone.chip}`}>
+                                <Timer className="h-3 w-3" strokeWidth={1.5} />
+                                {duration}
+                              </span>
+                              {task.estimatedTime && (
+                                <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[10px] font-mono uppercase text-neutral-500">
+                                  <Clock className="h-3 w-3" strokeWidth={1.5} />
+                                  Est: {task.estimatedTime}
+                                </span>
+                              )}
+                            </span>
+                            <span className="mt-2 block text-[9px] font-black uppercase tracking-[0.18em] text-neutral-600 transition-colors group-hover/task:text-neutral-400">
+                              Make active and start
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-6 text-center text-sm text-neutral-500">
+              No pending tasks for today.
+            </div>
+          )}
+        </div>
+
+        <div className="shrink-0 grid grid-cols-[1fr_auto] gap-2 border-t border-primary/10 bg-surface-container-lowest/98 px-4 py-3 shadow-[0_-16px_32px_-26px_rgba(0,0,0,0.95)] sm:flex sm:items-center sm:px-5">
+          <button
+            type="button"
+            onClick={onStartWithoutTask}
+            className="group/no-task relative overflow-hidden rounded-2xl border border-violet-300/42 bg-violet-500/18 px-4 py-3 text-left text-violet-100 shadow-[0_0_28px_rgba(139,92,246,0.22)] transition-all hover:border-violet-200/60 hover:bg-violet-500/24 sm:min-w-[240px]"
+          >
+            <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/16 to-transparent transition-transform duration-700 group-hover/no-task:translate-x-[120%]" />
+            <span className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-violet-100/55 to-transparent" />
+            <span className="relative block text-sm font-black">Start without task</span>
+            <span className="relative mt-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-violet-200/62">Loose focus session</span>
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-2xl px-3 py-3 text-xs font-bold text-neutral-600 transition-colors hover:text-neutral-300 sm:ml-auto"
+          >
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </>
+  )
+}
+
 export function FocusedDay() {
   const {
     currentWeek,
@@ -362,10 +555,8 @@ export function FocusedDay() {
     isFocusMode,
     focusLevel,
     setFocusMode,
-    isFocusPickerOpen,
-    openFocusPicker,
-    closeFocusPicker,
     autoEnterFocusOnStart,
+    setTaskPickerOpen,
   } = useLayoutStore()
 
   const workerRef = useRef<Worker | null>(null)
@@ -375,31 +566,46 @@ export function FocusedDay() {
   const [customBreak, setCustomBreak] = useState(String(pomodoroBreakMin))
   const [showPresets, setShowPresets] = useState(false)
   const [sessionCount, setSessionCount] = useState(0)
+  const [timerSelection, setTimerSelection] = useState<'preset' | 'custom'>('preset')
+  const [showTaskPrompt, setShowTaskPrompt] = useState(false)
+  const [isLooseSession, setIsLooseSession] = useState(false)
+  const [showTodayTasksList, setShowTodayTasksList] = useState(true)
+  const [showFocusRecordsList, setShowFocusRecordsList] = useState(true)
+
+  useEffect(() => {
+    setTaskPickerOpen(showTaskPrompt)
+    return () => setTaskPickerOpen(false)
+  }, [setTaskPickerOpen, showTaskPrompt])
+
+  useEffect(() => {
+    const matchesPreset = PRESETS.some((p) => p.focus === pomodoroFocusMin && p.brk === pomodoroBreakMin)
+    if (!matchesPreset) setTimerSelection('custom')
+  }, [pomodoroFocusMin, pomodoroBreakMin])
 
   // ── Global keyboard shortcut: F toggles focus picker ─────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key.toLowerCase() === 'f' && !isFocusPickerOpen) {
+      if (e.key.toLowerCase() === 'f') {
         if (isFocusMode) {
           setFocusMode(false)
         } else {
-          openFocusPicker()
+          setFocusMode(true, 'deep')
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFocusMode, isFocusPickerOpen, setFocusMode, openFocusPicker])
+  }, [isFocusMode, setFocusMode])
 
   // ── Auto-enter focus on session start ─────────────────────────────────────
   const prevRunning = useRef(isPomodoroRunning)
   useEffect(() => {
     if (!prevRunning.current && isPomodoroRunning && autoEnterFocusOnStart && !isFocusMode) {
-      setFocusMode(true, focusLevel)
+      setFocusMode(true, 'deep')
     }
     prevRunning.current = isPomodoroRunning
-  }, [isPomodoroRunning, autoEnterFocusOnStart, isFocusMode, focusLevel, setFocusMode])
+  }, [isPomodoroRunning, autoEnterFocusOnStart, isFocusMode, setFocusMode])
 
   // ── Active Task Logic ───────────────────────────────────────────────────────
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
@@ -424,7 +630,12 @@ export function FocusedDay() {
     }
     setSessionSeconds(0)
     setActiveTaskId(taskId)
-  }, [updateTaskActualDuration, saveFocusSession])
+    setIsLooseSession(false)
+    setShowTaskPrompt(false)
+    if (taskId && !isPomodoroRunningRef.current) {
+      startPomodoro()
+    }
+  }, [updateTaskActualDuration, saveFocusSession, startPomodoro])
 
   const handlePomodoroTick = useCallback(() => {
     tickPomodoro()
@@ -452,7 +663,9 @@ export function FocusedDay() {
         workerRef.current?.terminate()
         workerRef.current = null
       }
-    } catch { }
+    } catch {
+      // The interval fallback below keeps the timer running if workers are unavailable.
+    }
 
     return () => {
       if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
@@ -520,6 +733,21 @@ export function FocusedDay() {
 
   const totalSecs = pomodoroPhase === 'focus' ? pomodoroFocusMin * 60 : pomodoroBreakMin * 60
 
+  const startTimerNow = useCallback(() => {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      void Notification.requestPermission()
+    }
+    startPomodoro()
+    if (workerRef.current) workerRef.current.postMessage('start')
+    else if (!fallbackIntervalRef.current) fallbackIntervalRef.current = setInterval(handlePomodoroTick, 1000)
+  }, [handlePomodoroTick, startPomodoro])
+
+  const handleReset = useCallback(() => {
+    resetPomodoro()
+    setShowTaskPrompt(false)
+    setIsLooseSession(false)
+  }, [resetPomodoro])
+
   const handleToggle = useCallback(() => {
     if (isPomodoroRunning) {
       stopPomodoro()
@@ -532,21 +760,21 @@ export function FocusedDay() {
         setSessionSeconds(0)
       }
     } else {
-      if ('Notification' in window && Notification.permission !== 'granted') {
-        void Notification.requestPermission()
+      if (pomodoroPhaseRef.current === 'focus' && !activeTaskIdRef.current && !isLooseSession) {
+        setShowTaskPrompt(true)
+        return
       }
-      startPomodoro()
-      if (workerRef.current) workerRef.current.postMessage('start')
-      else fallbackIntervalRef.current = setInterval(handlePomodoroTick, 1000)
+      setShowTaskPrompt(false)
+      startTimerNow()
     }
-  }, [isPomodoroRunning, startPomodoro, stopPomodoro, handlePomodoroTick, saveFocusSession, updateTaskActualDuration])
+  }, [isLooseSession, isPomodoroRunning, stopPomodoro, saveFocusSession, startTimerNow, updateTaskActualDuration])
 
   const applyCustomPreset = () => {
     const f = Math.max(1, Math.min(120, Number(customFocus) || 25))
     const b = Math.max(1, Math.min(60, Number(customBreak) || 5))
     setPomodoroPreset(f, b)
+    setTimerSelection('custom')
     setShowCustom(false)
-    setShowPresets(false)
   }
 
   if (isLoadingWeek || !currentWeek) {
@@ -571,6 +799,8 @@ export function FocusedDay() {
   const completedCount = [mainTask, ...mediumTasks, ...quickWins].filter(t => t && t.status === 'done').length
   const totalCount = [mainTask, ...mediumTasks, ...quickWins].filter(Boolean).length
   const dayProgress = totalCount > 0 ? completedCount / totalCount : 0
+  const isLiteFocus = isFocusMode && focusLevel === 'minimal'
+  const isDeepFocus = isFocusMode && focusLevel === 'deep'
 
   const todayFocusSeconds = focusSessions.reduce((acc, curr) => acc + curr.duration_seconds, 0)
 
@@ -587,37 +817,37 @@ export function FocusedDay() {
         activeTaskTitle={
           activeTaskId
             ? [mainTask, ...mediumTasks, ...quickWins].find(t => t?.id === activeTaskId)?.title
-            : mainTask?.title
+            : undefined
         }
         todayFocusSeconds={todayFocusSeconds}
         sessionCount={sessionCount}
         onToggle={handleToggle}
-        onReset={resetPomodoro}
+        onReset={handleReset}
       />
+
+      <AnimatePresence>
+        {showTaskPrompt && (
+          <TaskPickerGate
+            sections={[
+              { label: 'Main Objective', tone: 'purple', tasks: mainTask && mainTask.status !== 'done' ? [mainTask] : [] },
+              { label: 'Supporting Tasks', tone: 'teal', tasks: mediumTasks.filter(task => task.status !== 'done') },
+              { label: 'Quick Wins', tone: 'yellow', tasks: quickWins.filter(task => task.status !== 'done') },
+            ]}
+            onChooseTask={handleMakeActive}
+            onStartWithoutTask={() => {
+              setIsLooseSession(true)
+              setShowTaskPrompt(false)
+              startTimerNow()
+            }}
+            onCancel={() => setShowTaskPrompt(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Minimal Focus Banner (floating timer pill) ──────────────────── */}
-      <MinimalFocusBanner
-        pomodoroTime={pomodoroTime}
-        pomodoroPhase={pomodoroPhase}
-        isPomodoroRunning={isPomodoroRunning}
-        activeTaskTitle={
-          activeTaskId
-            ? [mainTask, ...mediumTasks, ...quickWins].find(t => t?.id === activeTaskId)?.title
-            : mainTask?.title
-        }
-        onToggle={handleToggle}
-        onOpenPicker={openFocusPicker}
-      />
-
-      {/* ── Focus Mode Picker Menu ────────────────────────────────────── */}
-      <FocusModeMenu
-        isOpen={isFocusPickerOpen}
-        onClose={closeFocusPicker}
-      />
-
       {/* ── Minimal Focus: subtle darkening overlay ───────────────────── */}
       <AnimatePresence>
-        {isFocusMode && focusLevel === 'minimal' && (
+        {isLiteFocus && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -630,11 +860,11 @@ export function FocusedDay() {
 
       <motion.div
         layout
-        className={`container-responsive py-responsive mx-auto pb-24 items-start transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-[1200px] ${isFocusMode && focusLevel === 'deep'
+        className={`container-responsive py-responsive mx-auto items-start transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDeepFocus
           ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
-          : isFocusMode && focusLevel === 'minimal'
-            ? 'pt-[var(--safe-top,0px)] sm:pt-16 grid grid-cols-1 gap-10 opacity-100'
-            : 'grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 sm:gap-10 opacity-100'
+          : isLiteFocus
+            ? 'grid grid-cols-1 gap-8 opacity-100 max-w-[1120px] pb-8 sm:pb-12'
+            : 'grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 sm:gap-10 opacity-100 max-w-[1200px] pb-24'
           }`}
       >
 
@@ -729,117 +959,204 @@ export function FocusedDay() {
                   </div>
 
                   {/* Main buttons */}
-                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                  <div className="grid grid-cols-2 lg:grid-cols-[minmax(150px,1.1fr)_minmax(130px,0.9fr)_88px_minmax(150px,1fr)] gap-2.5 sm:gap-3">
                     <Button
                       type="button"
                       onClick={handleToggle}
                       variant="secondary"
                       size="sm"
-                      className="px-4 sm:px-6 py-3 sm:py-2.5 rounded-xl font-bold text-sm min-w-0 sm:min-w-[140px] flex-1 sm:flex-none touch-target"
+                      className="group relative h-14 px-4 sm:px-6 rounded-2xl font-bold text-sm min-w-0 touch-target justify-center overflow-hidden shadow-[0_18px_42px_-18px_rgba(139,92,246,0.95)] hover:shadow-[0_22px_48px_-18px_rgba(139,92,246,1)]"
                     >
-                      {isPomodoroRunning ? <Pause className="w-[18px] h-[18px]" strokeWidth={1.5} /> : <Play className="w-[18px] h-[18px]" strokeWidth={1.5} />}
-                      {isPomodoroRunning ? 'Pause' : 'Start'}
+                      <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/18 to-transparent transition-transform duration-700 group-hover:translate-x-[120%]" />
+                      {isPomodoroRunning
+                        ? <Pause className="relative w-[18px] h-[18px] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.5} />
+                        : <Play className="relative w-[18px] h-[18px] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:scale-110" strokeWidth={1.5} />
+                      }
+                      <span className="relative">{isPomodoroRunning ? 'Pause' : 'Start'}</span>
                     </Button>
 
                     <Button
                       type="button"
-                      onClick={resetPomodoro}
+                      onClick={handleReset}
                       variant="ghost"
                       size="sm"
-                      className="px-4 py-3 sm:py-2.5 rounded-xl font-bold text-sm border border-white/10 hover:border-white/20 flex-1 sm:flex-none touch-target"
+                      className="group relative h-14 px-4 rounded-2xl font-bold text-sm border border-white/10 hover:border-violet-300/25 touch-target justify-center overflow-hidden bg-white/[0.015] hover:bg-violet-500/[0.045] hover:text-violet-100"
                     >
-                      <RotateCcw className="text-[18px]" strokeWidth={1.5} />
-                      Reset
+                      <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-[120%]" />
+                      <span className="absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-violet-200/25 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      <RotateCcw className="relative text-[18px] transition-transform duration-500 group-hover:-rotate-180" strokeWidth={1.7} />
+                      <span className="relative">Reset</span>
                     </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isLiteFocus) {
+                          setFocusMode(false)
+                          return
+                        }
+                        setFocusMode(true, 'minimal')
+                      }}
+                      className={`group relative h-14 rounded-2xl border inline-flex items-center justify-center gap-2 overflow-hidden transition-all touch-target ${
+                        isLiteFocus
+                          ? 'border-teal-300/45 text-teal-200 bg-teal-500/12 shadow-[0_0_28px_rgba(45,212,191,0.18)]'
+                          : 'border-white/10 text-neutral-400 bg-white/[0.015] hover:border-teal-300/35 hover:text-teal-200 hover:bg-teal-500/[0.06]'
+                        }`}
+                      aria-pressed={isLiteFocus}
+                      aria-label={isLiteFocus ? 'Exit lite focus' : 'Enter lite focus'}
+                      title={isLiteFocus ? 'Exit lite focus' : 'Lite focus'}
+                    >
+                      <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(45,212,191,0.18),transparent_58%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      <span className="absolute -inset-10 rotate-12 bg-gradient-to-r from-transparent via-teal-200/10 to-transparent opacity-0 transition-all duration-700 group-hover:translate-x-8 group-hover:opacity-100" />
+                      <span className="relative flex h-9 w-10 items-center justify-center rounded-xl border border-current/20 bg-black/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                        <span className="absolute left-2 top-2 h-2.5 w-2.5 border-l-2 border-t-2 border-current rounded-tl-[3px] transition-transform duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
+                        <span className="absolute right-2 top-2 h-2.5 w-2.5 border-r-2 border-t-2 border-current rounded-tr-[3px] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        <span className="absolute left-2 bottom-2 h-2.5 w-2.5 border-b-2 border-l-2 border-current rounded-bl-[3px] transition-transform duration-300 group-hover:-translate-x-0.5 group-hover:translate-y-0.5" />
+                        <span className="absolute right-2 bottom-2 h-2.5 w-2.5 border-b-2 border-r-2 border-current rounded-br-[3px] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:translate-y-0.5" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-current shadow-[0_0_12px_currentColor]" />
+                      </span>
+                      <span className="relative flex flex-col items-start leading-none lg:hidden">
+                        <span className="text-xs font-black">{isLiteFocus ? 'Exit' : 'Lite'}</span>
+                        <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] opacity-55">Focus</span>
+                      </span>
+                    </button>
 
                     <Button
                       type="button"
-                      onClick={isFocusMode ? () => setFocusMode(false) : openFocusPicker}
+                      onClick={isDeepFocus ? () => setFocusMode(false) : () => setFocusMode(true, 'deep')}
                       variant="ghost"
                       size="sm"
-                      className={`px-4 py-3 sm:py-2.5 rounded-xl font-bold text-sm border transition-all w-full sm:w-auto touch-target ${isFocusMode
-                        ? 'border-violet-500/40 text-violet-300 bg-violet-500/10 hover:bg-violet-500/15'
-                        : 'border-white/10 hover:border-primary/30 hover:text-primary hover:bg-primary/5'
+                      className={`group relative h-14 px-4 rounded-2xl font-bold text-sm border transition-all touch-target justify-center overflow-hidden ${isFocusMode
+                        ? 'border-violet-500/40 text-violet-300 bg-violet-500/10 hover:bg-violet-500/15 shadow-[0_0_28px_rgba(139,92,246,0.16)]'
+                        : 'border-white/10 bg-white/[0.015] hover:border-primary/30 hover:text-primary hover:bg-primary/5'
                         }`}
                     >
-                      <Layers className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                      {isFocusMode
-                        ? `Exit ${focusLevel === 'deep' ? 'Deep' : 'Minimal'} Focus`
-                        : 'Focus Mode'
-                      }
-                      {!isFocusMode && <kbd className="hidden sm:inline-block ml-1 text-[9px] opacity-40 font-mono border border-current/30 rounded px-1">F</kbd>}
+                      <span className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(167,139,250,0.16),transparent_48%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-[120%]" />
+                      <Focus className="relative w-[18px] h-[18px] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.7} />
+                      <span className="relative text-left leading-tight">
+                        {isDeepFocus ? 'Exit Defocus' : 'Defocus'}
+                      </span>
+                      {!isFocusMode && <kbd className="relative hidden sm:inline-block ml-1 text-[9px] opacity-40 font-mono border border-current/30 rounded px-1">F</kbd>}
                     </Button>
                   </div>
 
                   {/* Presets */}
-                  <div>
+                  <div className="rounded-3xl border border-white/[0.07] bg-black/[0.12] p-3.5 sm:p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                     <button
                       onClick={() => setShowPresets(p => !p)}
-                      className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
+                      className="group flex w-full items-center justify-between gap-3 text-left transition-colors"
+                      aria-expanded={showPresets}
                     >
-                      <SlidersHorizontal className="text-[14px]" strokeWidth={1.5} />
-                      Customize Timer
-                      {showPresets ? <ChevronUp className="w-[14px] h-[14px]" strokeWidth={1.5} /> : <ChevronDown className="w-[14px] h-[14px]" strokeWidth={1.5} />}
+                      <span className="flex items-center gap-3 min-w-0">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-neutral-400 transition-all duration-300 group-hover:border-primary/30 group-hover:text-primary group-hover:bg-primary/5">
+                          <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-[11px] uppercase tracking-[0.22em] text-neutral-400 group-hover:text-neutral-200 font-black">Customize Timer</span>
+                          <span className="mt-1 block text-[11px] text-neutral-600 group-hover:text-neutral-500">
+                            Presets or your own rhythm
+                          </span>
+                        </span>
+                      </span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-neutral-500 transition-all duration-300 group-hover:text-neutral-300">
+                        {showPresets ? <ChevronUp className="w-[14px] h-[14px]" strokeWidth={1.8} /> : <ChevronDown className="w-[14px] h-[14px]" strokeWidth={1.8} />}
+                      </span>
                     </button>
 
+                    <AnimatePresence initial={false}>
                     {showPresets && (
-                      <div className="mt-3 space-y-3">
-                        <div className="flex flex-wrap gap-2">
+                      <motion.div
+                        initial={{ opacity: 0, y: -4, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                        exit={{ opacity: 0, y: -4, height: 0 }}
+                        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+                        className="mt-4 space-y-3 overflow-hidden will-change-[height,opacity]"
+                      >
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {PRESETS.map(p => (
                             <button
                               key={p.label}
-                              onClick={() => { setPomodoroPreset(p.focus, p.brk); setShowPresets(false) }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${pomodoroFocusMin === p.focus && pomodoroBreakMin === p.brk
-                                ? 'border-primary bg-primary/15 text-primary'
-                                : 'border-white/10 text-neutral-400 hover:border-white/25 hover:text-white'
+                              onClick={() => {
+                                setTimerSelection('preset')
+                                setShowCustom(false)
+                                setPomodoroPreset(p.focus, p.brk)
+                              }}
+                              className={`group/preset relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all ${timerSelection === 'preset' && pomodoroFocusMin === p.focus && pomodoroBreakMin === p.brk
+                                ? 'border-primary/60 bg-primary/15 text-primary shadow-[0_0_24px_rgba(139,92,246,0.16)]'
+                                : 'border-white/10 bg-white/[0.018] text-neutral-400 hover:border-white/25 hover:text-white hover:bg-white/[0.04]'
                                 }`}
                             >
-                              {p.label}
+                              <span className="absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-20" />
+                              <span className="block text-sm font-black tabular-nums">{p.focus} / {p.brk}</span>
+                              <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.2em] opacity-45">minutes</span>
                             </button>
                           ))}
                           <button
-                            onClick={() => setShowCustom(c => !c)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/10 text-neutral-400 hover:border-white/25 hover:text-white transition-all"
+                            onClick={() => {
+                              setTimerSelection('custom')
+                              setShowCustom(c => !c)
+                            }}
+                            className={`relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all ${timerSelection === 'custom'
+                              ? 'border-teal-300/45 bg-teal-500/10 text-teal-200 shadow-[0_0_22px_rgba(45,212,191,0.12)]'
+                              : 'border-white/10 bg-white/[0.018] text-neutral-400 hover:border-teal-300/30 hover:text-teal-200 hover:bg-teal-500/[0.05]'
+                              }`}
                           >
-                            Custom
+                            <span className="block text-sm font-black">Custom</span>
+                            <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.2em] opacity-45">manual</span>
                           </button>
                         </div>
 
+                        <AnimatePresence initial={false}>
                         {showCustom && (
-                          <div className="flex items-center gap-3 pt-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Focus</span>
+                          <motion.div
+                            initial={{ opacity: 0, y: -6, scale: 0.985, height: 0 }}
+                            animate={{ opacity: 1, y: 0, scale: 1, height: 'auto' }}
+                            exit={{ opacity: 0, y: -6, scale: 0.985, height: 0 }}
+                            transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                            className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto] items-end gap-3 rounded-2xl border border-teal-300/10 bg-teal-500/[0.035] p-3"
+                          >
+                            <label className="space-y-1.5">
+                              <span className="text-[10px] text-neutral-500 uppercase tracking-[0.22em] font-bold">Focus</span>
+                              <div className="relative">
                               <Input
                                 type="number"
                                 min={1} max={120}
                                 value={customFocus}
                                 onChange={e => setCustomFocus(e.target.value)}
-                                className="w-14 px-2 py-1.5 text-sm text-center"
+                                  className="w-full h-11 rounded-2xl border-teal-300/15 bg-black/20 pr-10 text-center text-base font-black tabular-nums"
                               />
-                            </div>
-                            <span className="text-neutral-600">/</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Break</span>
+                                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-neutral-600">min</span>
+                              </div>
+                            </label>
+                            <span className="hidden sm:flex h-11 items-center text-neutral-700 font-black">/</span>
+                            <label className="space-y-1.5">
+                              <span className="text-[10px] text-neutral-500 uppercase tracking-[0.22em] font-bold">Break</span>
+                              <div className="relative">
                               <Input
                                 type="number"
                                 min={1} max={60}
                                 value={customBreak}
                                 onChange={e => setCustomBreak(e.target.value)}
-                                className="w-14 px-2 py-1.5 text-sm text-center"
+                                  className="w-full h-11 rounded-2xl border-teal-300/15 bg-black/20 pr-10 text-center text-base font-black tabular-nums"
                               />
-                            </div>
+                                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-neutral-600">min</span>
+                              </div>
+                            </label>
                             <Button
                               onClick={applyCustomPreset}
                               variant="secondary"
                               size="sm"
-                              className="text-xs uppercase tracking-wider"
+                              className="h-11 rounded-2xl px-5 text-xs uppercase tracking-wider justify-center"
                             >
                               Apply
                             </Button>
-                          </div>
+                          </motion.div>
                         )}
-                      </div>
+                        </AnimatePresence>
+                      </motion.div>
                     )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </div>
@@ -850,7 +1167,7 @@ export function FocusedDay() {
           <div className="space-y-8">
 
             {/* Main Objective */}
-            <section>
+            <section className="rounded-3xl border border-violet-500/15 bg-violet-500/[0.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="w-1 h-4 rounded-full bg-violet-500 inline-block" />
@@ -868,6 +1185,7 @@ export function FocusedDay() {
                   onMakeActive={() => handleMakeActive(activeTaskId === mainTask.id ? null : mainTask.id)}
                   unsavedSeconds={activeTaskId === mainTask.id ? sessionSeconds : 0}
                   accentColor="purple"
+                  isRunning={isPomodoroRunning}
                 />
               ) : (
                 <div className="border-2 border-dashed border-white/10 rounded-2xl p-10 text-center">
@@ -880,7 +1198,7 @@ export function FocusedDay() {
 
             {/* Medium Tasks */}
             {mediumTasks.length > 0 && (
-              <section>
+              <section className="rounded-3xl border border-teal-500/15 bg-teal-500/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="w-1 h-4 rounded-full bg-teal-500 inline-block" />
                   <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-teal-400">Supporting Tasks</h2>
@@ -888,7 +1206,7 @@ export function FocusedDay() {
                     {mediumTasks.filter(t => t.status === 'done').length}/{mediumTasks.length} Done
                   </span>
                 </div>
-                <div className="space-y-1.5">
+                <div className={`grid gap-2 ${mediumTasks.length > 1 ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
                   {mediumTasks.map(task => (
                     <TaskRow
                       key={task.id}
@@ -899,6 +1217,7 @@ export function FocusedDay() {
                       onMakeActive={() => handleMakeActive(activeTaskId === task.id ? null : task.id)}
                       unsavedSeconds={activeTaskId === task.id ? sessionSeconds : 0}
                       accentColor="teal"
+                      isRunning={isPomodoroRunning}
                     />
                   ))}
                 </div>
@@ -907,15 +1226,15 @@ export function FocusedDay() {
 
             {/* Quick Wins */}
             {quickWins.length > 0 && (
-              <section>
+              <section className="rounded-3xl border border-amber-400/15 bg-amber-400/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="w-1 h-4 rounded-full bg-orange-500 inline-block" />
-                  <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-400">Quick Wins</h2>
+                  <span className="w-1 h-4 rounded-full bg-amber-400 inline-block" />
+                  <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-300">Quick Wins</h2>
                   <span className="ml-auto text-[10px] text-neutral-600 uppercase tracking-widest">
                     {quickWins.filter(t => t.status === 'done').length}/{quickWins.length} Done
                   </span>
                 </div>
-                <div className="space-y-1.5">
+                <div className={`grid gap-2 ${quickWins.length > 1 ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
                   {quickWins.map(task => (
                     <TaskRow
                       key={task.id}
@@ -925,7 +1244,8 @@ export function FocusedDay() {
                       isDimmed={activeTaskId !== null && activeTaskId !== task.id}
                       onMakeActive={() => handleMakeActive(activeTaskId === task.id ? null : task.id)}
                       unsavedSeconds={activeTaskId === task.id ? sessionSeconds : 0}
-                      accentColor="orange"
+                      accentColor="yellow"
+                      isRunning={isPomodoroRunning}
                     />
                   ))}
                 </div>
@@ -964,7 +1284,7 @@ export function FocusedDay() {
 
         {/* ── Right Column (Sidebar) ─────────────────────────────────────── */}
         <AnimatePresence>
-          {!(isFocusMode && focusLevel === 'minimal') && (
+          {!isFocusMode && (
             <motion.div
               initial={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
               animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
@@ -991,13 +1311,37 @@ export function FocusedDay() {
               </Card>
 
               {/* 2. TODAY'S TASKS */}
-              <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-5">Today's Tasks</h3>
-                <div className="space-y-4">
+              <Card variant="glass" className="overflow-hidden rounded-3xl border border-white/10 bg-surface-container-lowest/50">
+                <button
+                  type="button"
+                  onClick={() => setShowTodayTasksList(v => !v)}
+                  className="group flex w-full items-center justify-between gap-3 px-6 py-5 text-left transition-colors hover:bg-white/[0.025]"
+                  aria-expanded={showTodayTasksList}
+                >
+                  <span>
+                    <span className="block text-[11px] font-bold uppercase tracking-widest text-neutral-500 group-hover:text-neutral-300">Today's Tasks</span>
+                    <span className="mt-1 block text-[10px] font-mono text-neutral-600">
+                      {[todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).length} items
+                    </span>
+                  </span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-neutral-500 transition-all group-hover:border-primary/30 group-hover:text-primary">
+                    {showTodayTasksList ? <ChevronUp className="w-4 h-4" strokeWidth={1.8} /> : <ChevronDown className="w-4 h-4" strokeWidth={1.8} />}
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {showTodayTasksList && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden border-t border-white/[0.06]"
+                    >
+                      <div className="custom-scrollbar max-h-64 space-y-4 overflow-y-auto overscroll-contain px-6 py-5">
                   {[todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).map(task => (
                     <div key={task!.id} className="flex items-center justify-between group">
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className={`shrink-0 w-2 h-2 rounded-full ${task!.priority === 'high' ? 'bg-primary shadow-[0_0_8px_#7c3aed]' : task!.priority === 'medium' ? 'bg-tertiary shadow-[0_0_8px_#14b8a6]' : 'bg-sky-500 shadow-[0_0_8px_#0ea5e9]'}`} />
+                        <span className={`shrink-0 w-2 h-2 rounded-full ${task!.priority === 'high' ? 'bg-primary shadow-[0_0_8px_#7c3aed]' : task!.priority === 'medium' ? 'bg-tertiary shadow-[0_0_8px_#14b8a6]' : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.75)]'}`} />
                         <span className={`text-sm font-medium truncate ${task!.status === 'done' ? 'line-through text-neutral-500' : 'text-neutral-200'}`}>
                           {task!.title}
                         </span>
@@ -1007,17 +1351,45 @@ export function FocusedDay() {
                       </span>
                     </div>
                   ))}
-                </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Card>
 
               {/* 3. FOCUS TIME RECORDS */}
-              <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Focus Time Records</h3>
-                  <History className="text-neutral-500 text-[18px]" strokeWidth={1.5} />
-                </div>
-                <div className="space-y-5 relative">
-                  <div className="absolute left-2 top-2 bottom-2 w-px bg-white/10" />
+              <Card variant="glass" className="overflow-hidden rounded-3xl border border-white/10 bg-surface-container-lowest/50">
+                <button
+                  type="button"
+                  onClick={() => setShowFocusRecordsList(v => !v)}
+                  className="group flex w-full items-center justify-between gap-3 px-6 py-5 text-left transition-colors hover:bg-white/[0.025]"
+                  aria-expanded={showFocusRecordsList}
+                >
+                  <span className="flex items-center gap-3">
+                    <History className="text-neutral-500 text-[18px] group-hover:text-primary" strokeWidth={1.5} />
+                    <span>
+                      <span className="block text-[11px] font-bold uppercase tracking-widest text-neutral-500 group-hover:text-neutral-300">Focus Time Records</span>
+                      <span className="mt-1 block text-[10px] font-mono text-neutral-600">
+                        {focusSessions.length} records
+                      </span>
+                    </span>
+                  </span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-neutral-500 transition-all group-hover:border-primary/30 group-hover:text-primary">
+                    {showFocusRecordsList ? <ChevronUp className="w-4 h-4" strokeWidth={1.8} /> : <ChevronDown className="w-4 h-4" strokeWidth={1.8} />}
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {showFocusRecordsList && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden border-t border-white/[0.06]"
+                    >
+                      <div className="custom-scrollbar max-h-72 overflow-y-auto overscroll-contain px-6 py-5">
+                        <div className="space-y-5 relative">
+                          <div className="absolute left-2 top-2 bottom-2 w-px bg-white/10" />
                   {focusSessions.map((session, i) => {
                     const task = [todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).find(t => t!.id === session.task_id)
                     const date = new Date(session.start_time)
@@ -1035,7 +1407,11 @@ export function FocusedDay() {
                   {focusSessions.length === 0 && (
                     <p className="text-sm text-neutral-500 italic pl-8">No records yet today.</p>
                   )}
-                </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Card>
 
             </motion.div>

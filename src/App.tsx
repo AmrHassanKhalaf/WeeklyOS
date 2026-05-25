@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense, useRef } from 'react'
+import { useEffect, lazy, Suspense, useRef, useState } from 'react'
 import { MonitorDown, Sparkles, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -40,10 +40,15 @@ function LoadingScreen() {
 // Non-intrusive bottom banner that appears when a new SW version is waiting.
 function PWAUpdateBanner() {
   const { needsRefresh, updateApp } = usePWA()
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    if (needsRefresh) setDismissed(false)
+  }, [needsRefresh])
 
   return (
     <AnimatePresence>
-      {needsRefresh && (
+      {needsRefresh && !dismissed && (
         <motion.div
           key="pwa-update-banner"
           initial={{ y: 80, opacity: 0 }}
@@ -73,7 +78,7 @@ function PWAUpdateBanner() {
             Update
           </button>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => setDismissed(true)}
             aria-label="Dismiss"
             className="shrink-0 text-on-surface-variant hover:text-on-surface transition-colors p-1"
           >

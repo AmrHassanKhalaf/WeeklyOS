@@ -26,6 +26,8 @@ interface LayoutState {
   focusLevel: FocusModeLevel
   /** Transient: whether the focus level picker popover is open */
   isFocusPickerOpen: boolean
+  /** Transient: modal/popup overlay that should hide mobile chrome */
+  isTaskPickerOpen: boolean
   /** User preference: automatically enter Focus Mode when a pomodoro session starts */
   autoEnterFocusOnStart: boolean
 
@@ -41,6 +43,7 @@ interface LayoutState {
   setFocusLevel: (level: FocusModeLevel) => void
   openFocusPicker: () => void
   closeFocusPicker: () => void
+  setTaskPickerOpen: (isOpen: boolean) => void
   setAutoEnterFocus: (value: boolean) => void
   setMobile: (isMobile: boolean) => void
   closeSidebarsOnMobile: () => void
@@ -59,6 +62,7 @@ export const useLayoutStore = create<LayoutState>()(
       isFocusMode: false,
       focusLevel: 'minimal',
       isFocusPickerOpen: false,
+      isTaskPickerOpen: false,
       autoEnterFocusOnStart: false,
 
       toggleLeftSidebar: () =>
@@ -105,6 +109,7 @@ export const useLayoutStore = create<LayoutState>()(
 
       openFocusPicker: () => set({ isFocusPickerOpen: true }),
       closeFocusPicker: () => set({ isFocusPickerOpen: false }),
+      setTaskPickerOpen: (isOpen) => set({ isTaskPickerOpen: isOpen }),
 
       setAutoEnterFocus: (value) => set({ autoEnterFocusOnStart: value }),
 

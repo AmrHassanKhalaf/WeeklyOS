@@ -82,9 +82,11 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
     isRightSidebarOpen,
     isMobile,
     isFocusMode,
+    focusLevel,
     setMobile,
     closeSidebarsOnMobile,
   } = useLayoutStore()
+  const isDeepFocus = isFocusMode && focusLevel === 'deep'
   const assistantPrefetchedRef = useRef(false)
   const registerListeners = useOfflineQueueStore((state) => state.registerListeners)
 
@@ -94,7 +96,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
     void loadAIAssistant()
   }, [])
 
-  const shouldShowAssistant = isRightSidebarOpen && !isFocusMode
+  const shouldShowAssistant = isRightSidebarOpen && !isDeepFocus
 
   // Register the offline queue network listeners once on mount.
   // NOTE: Service worker registration is handled automatically by vite-plugin-pwa
@@ -114,7 +116,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
   // Prefetch AI assistant when idle
   useEffect(() => {
-    if (assistantPrefetchedRef.current || isFocusMode) return
+    if (assistantPrefetchedRef.current || isDeepFocus) return
     let idleId: number | null = null
     if (window.requestIdleCallback) {
       idleId = window.requestIdleCallback(() => warmAIAssistant(), { timeout: 1500 }) as unknown as number
@@ -126,7 +128,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
       if (window.cancelIdleCallback) window.cancelIdleCallback(idleId)
       else window.clearTimeout(idleId)
     }
-  }, [warmAIAssistant, isFocusMode])
+  }, [warmAIAssistant, isDeepFocus])
 
   useEffect(() => {
     if (shouldShowAssistant) warmAIAssistant()
@@ -134,7 +136,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
   // Left padding for <main> reflects the current sidebar mode (desktop/tablet)
   const leftPad =
-    isMobile || sidebarMode === 'hidden' || isFocusMode
+    isMobile || sidebarMode === 'hidden' || isDeepFocus
       ? 'lg:pl-0'
       : sidebarMode === 'rail'
         ? 'lg:pl-20'
@@ -149,7 +151,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
       {/* Mobile / drawer overlay */}
       <AnimatePresence>
-        {isMobile && isLeftSidebarOpen && !isFocusMode && (
+        {isMobile && isLeftSidebarOpen && !isDeepFocus && (
           <motion.div
             key="mobile-overlay"
             initial={{ opacity: 0 }}
@@ -168,9 +170,9 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
       <main
         className={cn(
           'h-screen overflow-y-auto custom-scrollbar transition-[padding] duration-300 w-full',
-          isFocusMode
+          isDeepFocus
             ? 'pl-0 pr-0 pt-0'
-            : cn(leftPad, !isMobile && isRightSidebarOpen ? 'lg:pr-80' : 'pr-0', 'pt-14', isMobile && 'pb-bottom-nav'),
+            : cn(leftPad, !isMobile && isRightSidebarOpen ? 'lg:pr-80' : 'pr-0', 'pt-14', isMobile && !isFocusMode && 'pb-bottom-nav'),
         )}
         style={{ scrollbarGutter: 'stable' }}
       >

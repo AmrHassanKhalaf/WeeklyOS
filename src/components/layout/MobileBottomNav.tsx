@@ -84,12 +84,12 @@ function Tab({
 }
 
 export function MobileBottomNav() {
-  const { isMobile, isFocusMode, toggleLeftSidebar, isLeftSidebarOpen } = useLayoutStore()
+  const { isMobile, isFocusMode, isTaskPickerOpen, toggleLeftSidebar, isLeftSidebarOpen } = useLayoutStore()
   const currentWeek = useWeekStore((s) => s.currentWeek)
   const location = useLocation()
   const { ripples, onPointerDown } = useRipple()
 
-  if (!isMobile || isFocusMode) return null
+  if (!isMobile || isFocusMode || isTaskPickerOpen || isLeftSidebarOpen) return null
 
   // Badge: count of still-pending tasks for today (if any)
   const today = currentWeek?.days.find((d) => d.isToday)

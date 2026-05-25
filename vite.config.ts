@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       // Let vite-plugin-pwa inject the registration script automatically.
       injectRegister: 'auto',
 

@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause, RotateCcw, X, Layers, CloudRain } from 'lucide-react'
+import { Play, Pause, RotateCcw, X, CloudRain } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
 
@@ -346,7 +346,7 @@ export function DeepFocusOverlay({
   onToggle,
   onReset,
 }: DeepFocusOverlayProps) {
-  const { isFocusMode, focusLevel, setFocusMode, openFocusPicker } = useLayoutStore()
+  const { isFocusMode, focusLevel, setFocusMode } = useLayoutStore()
   const isDeep = isFocusMode && focusLevel === 'deep'
 
   // ── Idle tracking ──────────────────────────────────────────────────────────
@@ -466,29 +466,13 @@ export function DeepFocusOverlay({
               )}
             </div>
 
-            {/* Right: mode switcher + exit */}
+            {/* Right: ambient controls */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setFocusMode(false); openFocusPicker() }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] text-neutral-500 hover:text-neutral-300 hover:bg-white/5 transition-colors border border-transparent hover:border-white/8 font-medium"
-                title="Switch focus mode"
-              >
-                <Layers className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Switch Mode
-              </button>
               <button
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] text-neutral-500 hover:text-neutral-300 hover:bg-white/5 transition-colors border border-transparent hover:border-white/8 font-medium"
                 title="Ambient sounds (coming soon)"
               >
                 <CloudRain className="w-3.5 h-3.5" strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={() => setFocusMode(false)}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider text-neutral-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/8 hover:border-white/15 transition-all"
-              >
-                <X className="w-3 h-3" strokeWidth={2} />
-                Exit
-                <span className="opacity-40 text-[9px]">ESC</span>
               </button>
             </div>
           </motion.div>
@@ -624,6 +608,7 @@ export function DeepFocusOverlay({
               >
                 <X className="w-4.5 h-4.5" strokeWidth={1.5} style={{ width: 18, height: 18 }} />
               </motion.button>
+
             </motion.div>
 
             {/* ── Space hint ─────────────────────────────────────────────── */}
