@@ -1,6 +1,6 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { LayoutDashboard, CalendarRange, Flame, BarChart3, Menu } from 'lucide-react'
+import { LayoutDashboard, CalendarRange, Focus, Flame, BarChart3 } from 'lucide-react'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useWeekStore } from '../../store/useWeekStore'
 import { RippleContainer } from '../ui/Ripple'
@@ -8,12 +8,13 @@ import { useRipple } from '../ui/useRipple'
 import { cn } from '../../lib/cn'
 
 /**
- * Five primary tabs for the mobile viewport. The "Menu" tab opens the drawer
- * containing the full sidebar nav for secondary destinations.
+ * Five primary tabs for the mobile viewport, matching the most-used sidebar
+ * destinations directly instead of hiding one behind "More".
  */
 const TABS = [
   { to: '/dashboard',           icon: LayoutDashboard, label: 'Home'    },
   { to: '/weekly-distribution', icon: CalendarRange,   label: 'Plan'    },
+  { to: '/focused-day',         icon: Focus,           label: 'Focus'   },
   { to: '/habit-tracker',       icon: Flame,           label: 'Habits'  },
   { to: '/weekly-evaluation',   icon: BarChart3,       label: 'Stats'   },
 ] as const
@@ -34,14 +35,14 @@ function Tab({
     <NavLink
       to={to}
       onPointerDown={onPointerDown}
-      className="ripple-surface relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 focus-ring"
+      className="ripple-surface relative flex-1 flex flex-col items-center justify-center gap-0.5 pb-2 pt-2.5 focus-ring"
     >
       {({ isActive }) => (
         <>
           {isActive && (
             <motion.span
               layoutId="bottom-nav-indicator"
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full obsidian-gradient shadow-[0_0_12px_rgb(167_139_250_/_0.7)]"
+              className="absolute left-1/2 top-0 h-[3px] w-8 -translate-x-1/2 rounded-b-full bg-primary shadow-[0_0_12px_rgba(167,139,250,0.72)]"
               transition={{ type: 'spring', damping: 30, stiffness: 380 }}
             />
           )}
@@ -51,7 +52,7 @@ function Tab({
               transition={{ type: 'spring', damping: 18, stiffness: 340 }}
               className={cn(
                 'flex items-center justify-center transition-colors',
-                isActive ? 'text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : 'text-neutral-400',
+                isActive ? 'text-neutral-200 drop-shadow-[0_0_7px_rgba(167,139,250,0.28)]' : 'text-neutral-400',
               )}
             >
               <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.5} />
@@ -71,7 +72,7 @@ function Tab({
           <span
             className={cn(
               'text-[10px] font-bold tracking-wide transition-colors',
-              isActive ? 'text-primary' : 'text-neutral-400',
+              isActive ? 'text-neutral-200' : 'text-neutral-400',
             )}
           >
             {label}
@@ -84,10 +85,8 @@ function Tab({
 }
 
 export function MobileBottomNav() {
-  const { isMobile, isFocusMode, isTaskPickerOpen, toggleLeftSidebar, isLeftSidebarOpen } = useLayoutStore()
+  const { isMobile, isFocusMode, isTaskPickerOpen, isLeftSidebarOpen } = useLayoutStore()
   const currentWeek = useWeekStore((s) => s.currentWeek)
-  const location = useLocation()
-  const { ripples, onPointerDown } = useRipple()
 
   if (!isMobile || isFocusMode || isTaskPickerOpen || isLeftSidebarOpen) return null
 
@@ -99,9 +98,6 @@ export function MobileBottomNav() {
     pending += today.mediumTasks.filter((t) => t.status === 'pending').length
     pending += today.smallTasks.filter((t) => t.status === 'pending').length
   }
-
-  // If the user is on a page that isn't in TABS, don't highlight anything
-  const activePath = TABS.find((t) => location.pathname.startsWith(t.to))?.to
 
   return (
     <motion.nav
@@ -128,29 +124,6 @@ export function MobileBottomNav() {
               pendingBadge={t.to === '/dashboard' ? pending : undefined}
             />
           ))}
-          <button
-            type="button"
-            onPointerDown={onPointerDown}
-            onClick={toggleLeftSidebar}
-            className="ripple-surface relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 focus-ring"
-            aria-expanded={isLeftSidebarOpen}
-            aria-label="Open menu"
-          >
-            <motion.div
-              animate={{ rotate: isLeftSidebarOpen ? 90 : 0 }}
-              transition={{ type: 'spring', damping: 18, stiffness: 280 }}
-              className={cn(
-                'flex items-center justify-center transition-colors',
-                !activePath ? 'text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : 'text-neutral-400',
-              )}
-            >
-              <Menu className="w-[22px] h-[22px]" strokeWidth={!activePath ? 2 : 1.5} />
-            </motion.div>
-            <span className="text-[10px] font-bold tracking-wide text-neutral-400">
-              More
-            </span>
-            <RippleContainer ripples={ripples} />
-          </button>
         </div>
       </div>
     </motion.nav>
