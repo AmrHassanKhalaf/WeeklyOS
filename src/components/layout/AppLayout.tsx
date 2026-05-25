@@ -83,6 +83,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
     isMobile,
     isFocusMode,
     focusLevel,
+    setFocusMode,
     setMobile,
     closeSidebarsOnMobile,
   } = useLayoutStore()
@@ -129,6 +130,12 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
       else window.clearTimeout(idleId)
     }
   }, [warmAIAssistant, isDeepFocus])
+
+  useEffect(() => {
+    if (isFocusMode && focusLevel !== 'deep') {
+      setFocusMode(false)
+    }
+  }, [focusLevel, isFocusMode, setFocusMode])
 
   useEffect(() => {
     if (shouldShowAssistant) warmAIAssistant()

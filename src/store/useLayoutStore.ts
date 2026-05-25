@@ -9,7 +9,7 @@ import { persist } from 'zustand/middleware'
  */
 export type SidebarMode = 'expanded' | 'rail' | 'hidden'
 
-export type FocusModeLevel = 'minimal' | 'deep'
+export type FocusModeLevel = 'minimal' | 'deep' // "minimal" is kept only to clean old persisted state.
 
 interface LayoutState {
   /** Primary source of truth for desktop/tablet sidebar */
@@ -24,8 +24,6 @@ interface LayoutState {
   // ── Focus Mode ──────────────────────────────────────────────────────────────
   isFocusMode: boolean
   focusLevel: FocusModeLevel
-  /** Transient: whether the focus level picker popover is open */
-  isFocusPickerOpen: boolean
   /** Transient: modal/popup overlay that should hide mobile chrome */
   isTaskPickerOpen: boolean
   /** User preference: automatically enter Focus Mode when a pomodoro session starts */
@@ -38,11 +36,7 @@ interface LayoutState {
   setSidebarMode: (mode: SidebarMode) => void
 
   toggleRightSidebar: () => void
-  toggleFocusMode: () => void
   setFocusMode: (isActive: boolean, level?: FocusModeLevel) => void
-  setFocusLevel: (level: FocusModeLevel) => void
-  openFocusPicker: () => void
-  closeFocusPicker: () => void
   setTaskPickerOpen: (isOpen: boolean) => void
   setAutoEnterFocus: (value: boolean) => void
   setMobile: (isMobile: boolean) => void
@@ -60,8 +54,7 @@ export const useLayoutStore = create<LayoutState>()(
       isRightSidebarOpen: false,
       isMobile: initialIsMobile,
       isFocusMode: false,
-      focusLevel: 'minimal',
-      isFocusPickerOpen: false,
+      focusLevel: 'deep',
       isTaskPickerOpen: false,
       autoEnterFocusOnStart: false,
 
@@ -94,21 +87,10 @@ export const useLayoutStore = create<LayoutState>()(
 
       toggleRightSidebar: () => set((state) => ({ isRightSidebarOpen: !state.isRightSidebarOpen })),
       
-      toggleFocusMode: () => set((state) => ({
-        isFocusMode: !state.isFocusMode,
-        isFocusPickerOpen: false,
-      })),
-      
       setFocusMode: (isActive, level) => set((state) => ({
         isFocusMode: isActive,
         focusLevel: level !== undefined ? level : state.focusLevel,
-        isFocusPickerOpen: false,
       })),
-
-      setFocusLevel: (level) => set({ focusLevel: level }),
-
-      openFocusPicker: () => set({ isFocusPickerOpen: true }),
-      closeFocusPicker: () => set({ isFocusPickerOpen: false }),
       setTaskPickerOpen: (isOpen) => set({ isTaskPickerOpen: isOpen }),
 
       setAutoEnterFocus: (value) => set({ autoEnterFocusOnStart: value }),

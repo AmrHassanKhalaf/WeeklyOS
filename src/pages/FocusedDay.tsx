@@ -582,6 +582,12 @@ export function FocusedDay() {
     if (!matchesPreset) setTimerSelection('custom')
   }, [pomodoroFocusMin, pomodoroBreakMin])
 
+  useEffect(() => {
+    if (isFocusMode && focusLevel !== 'deep') {
+      setFocusMode(false)
+    }
+  }, [focusLevel, isFocusMode, setFocusMode])
+
   // ── Global keyboard shortcut: F toggles focus picker ─────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -799,7 +805,6 @@ export function FocusedDay() {
   const completedCount = [mainTask, ...mediumTasks, ...quickWins].filter(t => t && t.status === 'done').length
   const totalCount = [mainTask, ...mediumTasks, ...quickWins].filter(Boolean).length
   const dayProgress = totalCount > 0 ? completedCount / totalCount : 0
-  const isLiteFocus = isFocusMode && focusLevel === 'minimal'
   const isDeepFocus = isFocusMode && focusLevel === 'deep'
 
   const todayFocusSeconds = focusSessions.reduce((acc, curr) => acc + curr.duration_seconds, 0)
@@ -844,27 +849,11 @@ export function FocusedDay() {
         )}
       </AnimatePresence>
 
-      {/* ── Minimal Focus Banner (floating timer pill) ──────────────────── */}
-      {/* ── Minimal Focus: subtle darkening overlay ───────────────────── */}
-      <AnimatePresence>
-        {isLiteFocus && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: 'easeInOut' }}
-            className="fixed inset-0 bg-[#050505]/50 pointer-events-none z-[1]"
-          />
-        )}
-      </AnimatePresence>
-
       <motion.div
         layout
         className={`container-responsive py-responsive mx-auto items-start transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDeepFocus
           ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
-          : isLiteFocus
-            ? 'grid grid-cols-1 gap-8 opacity-100 max-w-[1120px] pb-8 sm:pb-12'
-            : 'grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 sm:gap-10 opacity-100 max-w-[1200px] pb-24'
+          : 'grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 sm:gap-10 opacity-100 max-w-[1200px] pb-24'
           }`}
       >
 
@@ -959,7 +948,7 @@ export function FocusedDay() {
                   </div>
 
                   {/* Main buttons */}
-                  <div className="grid grid-cols-2 lg:grid-cols-[minmax(150px,1.1fr)_minmax(130px,0.9fr)_88px_minmax(150px,1fr)] gap-2.5 sm:gap-3">
+                  <div className="grid grid-cols-2 lg:grid-cols-[minmax(150px,1.1fr)_minmax(130px,0.9fr)_minmax(150px,1fr)] gap-2.5 sm:gap-3">
                     <Button
                       type="button"
                       onClick={handleToggle}
@@ -987,39 +976,6 @@ export function FocusedDay() {
                       <RotateCcw className="relative text-[18px] transition-transform duration-500 group-hover:-rotate-180" strokeWidth={1.7} />
                       <span className="relative">Reset</span>
                     </Button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isLiteFocus) {
-                          setFocusMode(false)
-                          return
-                        }
-                        setFocusMode(true, 'minimal')
-                      }}
-                      className={`group relative h-14 rounded-2xl border inline-flex items-center justify-center gap-2 overflow-hidden transition-all touch-target ${
-                        isLiteFocus
-                          ? 'border-teal-300/45 text-teal-200 bg-teal-500/12 shadow-[0_0_28px_rgba(45,212,191,0.18)]'
-                          : 'border-white/10 text-neutral-400 bg-white/[0.015] hover:border-teal-300/35 hover:text-teal-200 hover:bg-teal-500/[0.06]'
-                        }`}
-                      aria-pressed={isLiteFocus}
-                      aria-label={isLiteFocus ? 'Exit lite focus' : 'Enter lite focus'}
-                      title={isLiteFocus ? 'Exit lite focus' : 'Lite focus'}
-                    >
-                      <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(45,212,191,0.18),transparent_58%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                      <span className="absolute -inset-10 rotate-12 bg-gradient-to-r from-transparent via-teal-200/10 to-transparent opacity-0 transition-all duration-700 group-hover:translate-x-8 group-hover:opacity-100" />
-                      <span className="relative flex h-9 w-10 items-center justify-center rounded-xl border border-current/20 bg-black/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                        <span className="absolute left-2 top-2 h-2.5 w-2.5 border-l-2 border-t-2 border-current rounded-tl-[3px] transition-transform duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" />
-                        <span className="absolute right-2 top-2 h-2.5 w-2.5 border-r-2 border-t-2 border-current rounded-tr-[3px] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                        <span className="absolute left-2 bottom-2 h-2.5 w-2.5 border-b-2 border-l-2 border-current rounded-bl-[3px] transition-transform duration-300 group-hover:-translate-x-0.5 group-hover:translate-y-0.5" />
-                        <span className="absolute right-2 bottom-2 h-2.5 w-2.5 border-b-2 border-r-2 border-current rounded-br-[3px] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:translate-y-0.5" />
-                        <span className="h-1.5 w-1.5 rounded-full bg-current shadow-[0_0_12px_currentColor]" />
-                      </span>
-                      <span className="relative flex flex-col items-start leading-none lg:hidden">
-                        <span className="text-xs font-black">{isLiteFocus ? 'Exit' : 'Lite'}</span>
-                        <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] opacity-55">Focus</span>
-                      </span>
-                    </button>
 
                     <Button
                       type="button"
