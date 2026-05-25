@@ -33,12 +33,15 @@ export function AnimatedBackground() {
     const isTouch = window.matchMedia('(hover: none)').matches
     if (prefersReducedMotion || isTouch) return
 
+    const parallaxElement = parallaxRef.current
     let raf = 0
     let targetX = 0
     let targetY = 0
     let currentX = 0
     let currentY = 0
     let running = false
+    let viewportWidth = Math.max(window.innerWidth, 1)
+    let viewportHeight = Math.max(window.innerHeight, 1)
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
@@ -46,8 +49,8 @@ export function AnimatedBackground() {
       currentX = lerp(currentX, targetX, 0.08)
       currentY = lerp(currentY, targetY, 0.08)
 
-      if (parallaxRef.current) {
-        parallaxRef.current.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0)`
+      if (parallaxElement) {
+        parallaxElement.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0)`
       }
 
       // Stop once we've effectively reached the target — avoids burning frames
@@ -58,6 +61,9 @@ export function AnimatedBackground() {
         currentX = targetX
         currentY = targetY
         running = false
+        if (parallaxElement) {
+          parallaxElement.style.willChange = 'auto'
+        }
         return
       }
       raf = requestAnimationFrame(tick)
@@ -66,19 +72,38 @@ export function AnimatedBackground() {
     const startLoop = () => {
       if (running) return
       running = true
+      if (parallaxElement) {
+        parallaxElement.style.willChange = 'transform'
+      }
       raf = requestAnimationFrame(tick)
     }
 
-    const onMouseMove = (e: MouseEvent) => {
-      targetX = (e.clientX / window.innerWidth - 0.5) * 14
-      targetY = (e.clientY / window.innerHeight - 0.5) * 8
+    const onResize = () => {
+      viewportWidth = Math.max(window.innerWidth, 1)
+      viewportHeight = Math.max(window.innerHeight, 1)
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      const nextX = (e.clientX / viewportWidth - 0.5) * 14
+      const nextY = (e.clientY / viewportHeight - 0.5) * 8
+
+      if (Math.abs(nextX - targetX) < 0.2 && Math.abs(nextY - targetY) < 0.2) return
+
+      targetX = nextX
+      targetY = nextY
       startLoop()
     }
 
-    window.addEventListener('mousemove', onMouseMove, { passive: true })
+    window.addEventListener('pointermove', onPointerMove, { passive: true })
+    window.addEventListener('resize', onResize, { passive: true })
+
     return () => {
-      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('resize', onResize)
       if (raf) cancelAnimationFrame(raf)
+      if (parallaxElement) {
+        parallaxElement.style.willChange = 'auto'
+      }
     }
   }, [])
 
@@ -103,7 +128,7 @@ export function AnimatedBackground() {
         style={{
           position: 'absolute',
           inset: '-3% -2%',
-          willChange: 'transform',
+          willChange: 'auto',
         }}
       >
         <div

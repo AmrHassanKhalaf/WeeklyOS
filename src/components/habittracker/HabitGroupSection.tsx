@@ -64,7 +64,7 @@ export function HabitGroupSection({
             className="overflow-hidden"
           >
             <div className="space-y-3 pt-1">
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence initial={false}>
                 {habits.map(habit => (
                   <HabitCard
                     key={habit.id}

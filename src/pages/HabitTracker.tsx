@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useHabitStore, isBadHabit } from '../store/useHabitStore'
@@ -57,23 +57,23 @@ export function HabitTracker() {
   const totalDays = getDaysInMonth(currentMonth, currentYear)
   const maxWeekOffset = Math.floor((totalDays - 1) / 7)
 
-  const buildHabits = habits.filter(h => !isBadHabit(h))
-  const breakHabits = habits.filter(h => isBadHabit(h))
+  const buildHabits = useMemo(() => habits.filter(h => !isBadHabit(h)), [habits])
+  const breakHabits = useMemo(() => habits.filter(h => isBadHabit(h)), [habits])
   const activeHabits = activeTab === 'build' ? buildHabits : breakHabits
-  const morningHabits = activeHabits.filter(h => h.group_label === 'morning')
-  const eveningHabits = activeHabits.filter(h => h.group_label === 'evening')
-  const anytimeHabits = activeHabits.filter(h => h.group_label === 'anytime')
+  const morningHabits = useMemo(() => activeHabits.filter(h => h.group_label === 'morning'), [activeHabits])
+  const eveningHabits = useMemo(() => activeHabits.filter(h => h.group_label === 'evening'), [activeHabits])
+  const anytimeHabits = useMemo(() => activeHabits.filter(h => h.group_label === 'anytime'), [activeHabits])
 
-  const handleOpenAdd = () => { setEditingHabit(null); setIsModalOpen(true) }
-  const handleEdit = (h: Habit) => { setEditingHabit(h); setIsModalOpen(true) }
-  const handleCloseModal = () => { setIsModalOpen(false); setEditingHabit(null) }
+  const handleOpenAdd = useCallback(() => { setEditingHabit(null); setIsModalOpen(true) }, [])
+  const handleEdit = useCallback((h: Habit) => { setEditingHabit(h); setIsModalOpen(true) }, [])
+  const handleCloseModal = useCallback(() => { setIsModalOpen(false); setEditingHabit(null) }, [])
 
   const todayMonth = new Date().getMonth() + 1
   const todayYear = new Date().getFullYear()
   const isCurrentMonth = currentMonth === todayMonth && currentYear === todayYear
   const isNextMonth = new Date(currentYear, currentMonth, 1) > new Date(todayYear, todayMonth, 1)
 
-  const tabBtn = (tab: 'build' | 'break') => {
+  const tabBtn = useCallback((tab: 'build' | 'break') => {
     const active = activeTab === tab
     const isBuild = tab === 'build'
     const color = isBuild ? '#4ade80' : '#f87171'
@@ -97,10 +97,10 @@ export function HabitTracker() {
             {count}
           </span>
         )}
-        {active && <motion.span layoutId="tab-line" className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full" style={{ background: color }} />}
+        {active && <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full" style={{ background: color }} />}
       </button>
     )
-  }
+  }, [activeTab, breakHabits.length, buildHabits.length])
 
   return (
     <AppLayout>
@@ -225,11 +225,11 @@ export function HabitTracker() {
                   {activeHabits.length === 0 ? (
                     <EmptyHabits tab={activeTab} onAdd={handleOpenAdd} />
                   ) : (
-                    <AnimatePresence mode="popLayout">
+                    <>
                       <HabitGroupSection key="morning" groupLabel="morning" habits={morningHabits} totalDays={totalDays} isWeeklyView={viewMode === 'weekly'} weekOffset={weekOffset} onEdit={handleEdit} onViewDetail={h => setDetailHabit(h)} />
                       <HabitGroupSection key="anytime" groupLabel="anytime" habits={anytimeHabits} totalDays={totalDays} isWeeklyView={viewMode === 'weekly'} weekOffset={weekOffset} onEdit={handleEdit} onViewDetail={h => setDetailHabit(h)} />
                       <HabitGroupSection key="evening" groupLabel="evening" habits={eveningHabits} totalDays={totalDays} isWeeklyView={viewMode === 'weekly'} weekOffset={weekOffset} onEdit={handleEdit} onViewDetail={h => setDetailHabit(h)} />
-                    </AnimatePresence>
+                    </>
                   )}
                 </motion.div>
               </AnimatePresence>

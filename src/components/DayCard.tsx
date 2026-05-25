@@ -10,7 +10,8 @@ interface DayCardProps {
 }
 
 export function DayCard({ day, isCompact = false }: DayCardProps) {
-  const { updateDailyNote, deleteDayData } = useWeekStore()
+  const updateDailyNote = useWeekStore(state => state.updateDailyNote)
+  const deleteDayData = useWeekStore(state => state.deleteDayData)
   const [note, setNote] = useState(day.dailyNote || '')
 
   useEffect(() => {

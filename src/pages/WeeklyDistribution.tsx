@@ -97,9 +97,13 @@ type AssignDraft = {
 }
 
 export function WeeklyDistribution() {
-  const { currentWeek, isLoadingWeek, createTask } = useWeekStore()
-  const { brainDumpItems, loadItems, removeItem } = useBrainDumpStore()
-  const { restDays } = useSettingsStore()
+  const currentWeek = useWeekStore(state => state.currentWeek)
+  const isLoadingWeek = useWeekStore(state => state.isLoadingWeek)
+  const createTask = useWeekStore(state => state.createTask)
+  const brainDumpItems = useBrainDumpStore(state => state.brainDumpItems)
+  const loadItems = useBrainDumpStore(state => state.loadItems)
+  const removeItem = useBrainDumpStore(state => state.removeItem)
+  const restDays = useSettingsStore(state => state.restDays)
   
   useEffect(() => {
     loadItems()

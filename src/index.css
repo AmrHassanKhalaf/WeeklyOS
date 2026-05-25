@@ -79,7 +79,7 @@
   --glass-border-alpha: 0.10;
   --glass-inner-alpha: 0.10;
   --glass-border-width: 1px;
-  --glass-blur: 20px;
+  --glass-blur: 12px;
   --glass-saturation: 1.4;
 
   /* ── Brand gradients (logo, primary CTAs, headlines) ─────────────────── */
@@ -180,7 +180,7 @@ body.light {
   --glass-border-alpha: 0.08;
   --glass-inner-alpha: 0.55;
   --glass-border-width: 1px;
-  --glass-blur: 20px;
+  --glass-blur: 12px;
   --glass-saturation: 1.2;
 
   --gradient-primary-start: 109 40 217;
@@ -694,8 +694,8 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
       border-color 0.22s ease,
       box-shadow 0.22s ease,
       background-color 0.22s ease;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
 
   .input-base::placeholder {
@@ -764,8 +764,8 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
       box-shadow 0.25s ease,
       color 0.2s ease,
       filter 0.22s ease;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     overflow: hidden;
     isolation: isolate;
     user-select: none;

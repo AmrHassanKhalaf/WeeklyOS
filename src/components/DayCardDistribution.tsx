@@ -20,7 +20,9 @@ const normalizeInput = (value: unknown): string => {
 }
 
 function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void; showTags?: boolean }) {
-  const { toggleTaskComplete, deleteTask, updateTask } = useWeekStore()
+  const toggleTaskComplete = useWeekStore(state => state.toggleTaskComplete)
+  const deleteTask = useWeekStore(state => state.deleteTask)
+  const updateTask = useWeekStore(state => state.updateTask)
   const [isEditing, setIsEditing] = useState(false)
   const [isToggling, setIsToggling] = useState(false)
   const [editData, setEditData] = useState({
@@ -272,7 +274,8 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
 type AddingFor = { priority: Priority; day: DayOfWeek } | null
 
 export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: DayCardDistributionProps) {
-  const { createTask, markDayComplete } = useWeekStore()
+  const createTask = useWeekStore(state => state.createTask)
+  const markDayComplete = useWeekStore(state => state.markDayComplete)
   const [addingFor, setAddingFor] = useState<AddingFor>(null)
 
   const startAdd = (priority: Priority) => {

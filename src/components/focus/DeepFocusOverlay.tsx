@@ -11,7 +11,7 @@
  * A brief cinematic entry message fades automatically.
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Play, Pause, RotateCcw, X, CloudRain } from 'lucide-react'
 import { createPortal } from 'react-dom'
@@ -196,7 +196,7 @@ function FocusRing({
   const cy = size / 2
 
   // Discrete progress (used for ticks — whole seconds only)
-  const tickProgress = pomodoroTime / totalSecs
+  const tickProgress = totalSecs > 0 ? pomodoroTime / totalSecs : 0
 
   // ── Continuous RAF loop ──────────────────────────────────────────────────────
   const arcRef = useRef<SVGCircleElement>(null)
@@ -215,30 +215,38 @@ function FocusRing({
   }, [pomodoroTime])
 
   useEffect(() => {
+    const updateArc = (now = performance.now()) => {
+      if (!arcRef.current) return
+
+      const safeTotalSecs = Math.max(totalSecsRef.current, 1)
+      const subSec = isRunningRef.current
+        ? Math.min((now - lastTickTimeRef.current) / 1000, 1)
+        : 0
+      const continuousTime = pomodoroTimeRef.current - subSec
+      const p = Math.max(0, continuousTime) / safeTotalSecs
+      arcRef.current.style.strokeDashoffset = String(circumference * (1 - p))
+    }
+
+    if (!isRunning) {
+      updateArc()
+      return
+    }
+
     const loop = (now: number) => {
-      if (arcRef.current) {
-        let p: number
-        if (isRunningRef.current) {
-          const subSec = Math.min((now - lastTickTimeRef.current) / 1000, 1)
-          const continuousTime = pomodoroTimeRef.current - subSec
-          p = Math.max(0, continuousTime) / totalSecsRef.current
-        } else {
-          p = pomodoroTimeRef.current / totalSecsRef.current
-        }
-        arcRef.current.style.strokeDashoffset = String(circumference * (1 - p))
-      }
+      updateArc(now)
       rafRef.current = requestAnimationFrame(loop)
     }
+
     rafRef.current = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [circumference])
+  }, [circumference, isRunning, pomodoroTime, totalSecs])
 
   // Clock tick marks
   const TICK_COUNT = 60
   const tickOuter = r - stroke / 2 - 3
   const tickInnerMajor = tickOuter - 12
   const tickInnerMinor = tickOuter - 6
-  const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
+  const ticks = useMemo(() => Array.from({ length: TICK_COUNT }, (_, i) => {
     const angle = (i / TICK_COUNT) * 2 * Math.PI
     const isMajor = i % 5 === 0
     const tickInner = isMajor ? tickInnerMajor : tickInnerMinor
@@ -252,7 +260,7 @@ function FocusRing({
       isMajor,
       isLit: (i / TICK_COUNT) < tickProgress,
     }
-  })
+  }), [cx, cy, tickInnerMajor, tickInnerMinor, tickOuter, tickProgress])
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
@@ -346,22 +354,42 @@ export function DeepFocusOverlay({
   onToggle,
   onReset,
 }: DeepFocusOverlayProps) {
-  const { isFocusMode, focusLevel, setFocusMode } = useLayoutStore()
+  const isFocusMode = useLayoutStore(state => state.isFocusMode)
+  const focusLevel = useLayoutStore(state => state.focusLevel)
+  const setFocusMode = useLayoutStore(state => state.setFocusMode)
   const isDeep = isFocusMode && focusLevel === 'deep'
 
   // ── Idle tracking ──────────────────────────────────────────────────────────
   const [isIdle, setIsIdle] = useState(false)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isIdleRef = useRef(isIdle)
+
+  useEffect(() => {
+    isIdleRef.current = isIdle
+  }, [isIdle])
 
   const resetIdle = useCallback(() => {
-    setIsIdle(false)
+    if (isIdleRef.current) {
+      isIdleRef.current = false
+      setIsIdle(false)
+    }
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-    idleTimerRef.current = setTimeout(() => setIsIdle(true), 4000)
+    idleTimerRef.current = setTimeout(() => {
+      isIdleRef.current = true
+      setIsIdle(true)
+    }, 4000)
   }, [])
 
   useEffect(() => {
-    if (!isDeep) { setIsIdle(false); return }
-    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll']
+    if (!isDeep) {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      if (isIdleRef.current) {
+        isIdleRef.current = false
+        setIsIdle(false)
+      }
+      return
+    }
+    const events = ['pointermove', 'pointerdown', 'keydown', 'touchstart', 'scroll']
     events.forEach(e => window.addEventListener(e, resetIdle, { passive: true }))
     resetIdle()
     return () => {

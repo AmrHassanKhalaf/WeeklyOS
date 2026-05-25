@@ -23,6 +23,13 @@ const GRADIENT_POSITIONS = ['80% 55%', '69% 34%', '8% 6%', '41% 38%', '86% 85%',
 const GRADIENT_KEYS = ['--gradient-one', '--gradient-two', '--gradient-three', '--gradient-four', '--gradient-five', '--gradient-six', '--gradient-seven']
 const COLOR_MAP = [0, 1, 2, 0, 1, 2, 1]
 
+type CachedRect = {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
 function buildGradientVars(colors: string[]) {
   const vars: Record<string, string> = {}
   for (let i = 0; i < 7; i++) {
@@ -101,50 +108,47 @@ export default function BorderGlow({
   className = '',
 }: BorderGlowProps) {
   const cardRef = useRef<HTMLDivElement | null>(null)
+  const rectRef = useRef<CachedRect | null>(null)
+  const pointerRef = useRef({ x: 0, y: 0 })
+  const pointerFrameRef = useRef<number | null>(null)
 
-  const getCenterOfElement = useCallback((el: HTMLDivElement) => {
-    const { width, height } = el.getBoundingClientRect()
-    return [width / 2, height / 2]
+  const measureCard = useCallback(() => {
+    const card = cardRef.current
+    if (!card) return null
+    const rect = card.getBoundingClientRect()
+    rectRef.current = {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    }
+    return rectRef.current
   }, [])
 
-  const getEdgeProximity = useCallback((el: HTMLDivElement, x: number, y: number) => {
-    const [cx, cy] = getCenterOfElement(el)
+  const flushPointerPosition = useCallback(() => {
+    pointerFrameRef.current = null
+
+    const card = cardRef.current
+    const rect = rectRef.current
+    if (!card || !rect) return
+
+    const { x, y } = pointerRef.current
+    const cx = rect.width / 2
+    const cy = rect.height / 2
     const dx = x - cx
     const dy = y - cy
+
     let kx = Number.POSITIVE_INFINITY
     let ky = Number.POSITIVE_INFINITY
     if (dx !== 0) kx = cx / Math.abs(dx)
     if (dy !== 0) ky = cy / Math.abs(dy)
-    return Math.min(Math.max(1 / Math.min(kx, ky), 0), 1)
-  }, [getCenterOfElement])
+    const edge = Math.min(Math.max(1 / Math.min(kx, ky), 0), 1)
 
-  const getCursorAngle = useCallback((el: HTMLDivElement, x: number, y: number) => {
-    const [cx, cy] = getCenterOfElement(el)
-    const dx = x - cx
-    const dy = y - cy
-    if (dx === 0 && dy === 0) return 0
-    const radians = Math.atan2(dy, dx)
-    let degrees = radians * (180 / Math.PI) + 90
-    if (degrees < 0) degrees += 360
-    return degrees
-  }, [getCenterOfElement])
-
-  const handlePointerEnter = useCallback(() => {
-    const card = cardRef.current
-    if (!card) return
-    card.style.setProperty('--edge-proximity', '35')
-  }, [])
-
-  const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    const card = cardRef.current
-    if (!card) return
-
-    const rect = card.getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
-
-    const edge = getEdgeProximity(card, x, y)
-    const angle = getCursorAngle(card, x, y)
+    let angle = 0
+    if (dx !== 0 || dy !== 0) {
+      angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90
+      if (angle < 0) angle += 360
+    }
 
     // Keep glow visible while pointer is inside, and intensify near the edges.
     const minVisibleWhileInside = 0.35
@@ -152,16 +156,63 @@ export default function BorderGlow({
 
     card.style.setProperty('--edge-proximity', `${(blendedEdge * 100).toFixed(3)}`)
     card.style.setProperty('--cursor-angle', `${angle.toFixed(3)}deg`)
-  }, [getCursorAngle, getEdgeProximity])
+  }, [])
+
+  const schedulePointerUpdate = useCallback(() => {
+    if (pointerFrameRef.current !== null) return
+    pointerFrameRef.current = requestAnimationFrame(flushPointerPosition)
+  }, [flushPointerPosition])
+
+  const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    const rect = rectRef.current ?? measureCard()
+    if (!rect) return
+
+    pointerRef.current = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    }
+    schedulePointerUpdate()
+  }, [measureCard, schedulePointerUpdate])
+
+  const handlePointerEnter = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    const card = cardRef.current
+    if (!card) return
+    measureCard()
+    card.style.setProperty('--edge-proximity', '35')
+    handlePointerMove(event)
+  }, [handlePointerMove, measureCard])
 
   const handlePointerLeave = useCallback(() => {
     const card = cardRef.current
     if (!card) return
+    rectRef.current = null
+    if (pointerFrameRef.current !== null) {
+      cancelAnimationFrame(pointerFrameRef.current)
+      pointerFrameRef.current = null
+    }
     if (!animated) {
       card.style.setProperty('--edge-proximity', '0')
     }
     card.style.setProperty('--cursor-angle', '45deg')
   }, [animated])
+
+  useEffect(() => {
+    const clearCachedRect = () => {
+      rectRef.current = null
+    }
+
+    window.addEventListener('scroll', clearCachedRect, { passive: true, capture: true })
+    window.addEventListener('resize', clearCachedRect)
+
+    return () => {
+      window.removeEventListener('scroll', clearCachedRect, { capture: true })
+      window.removeEventListener('resize', clearCachedRect)
+      if (pointerFrameRef.current !== null) {
+        cancelAnimationFrame(pointerFrameRef.current)
+        pointerFrameRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!animated || !cardRef.current) return

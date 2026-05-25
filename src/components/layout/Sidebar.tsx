@@ -102,8 +102,13 @@ function NavItem({
 export function Sidebar() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { sidebarMode, isMobile, isFocusMode, focusLevel, cycleSidebarMode, toggleLeftSidebar, closeSidebarsOnMobile } =
-    useLayoutStore()
+  const sidebarMode = useLayoutStore(state => state.sidebarMode)
+  const isMobile = useLayoutStore(state => state.isMobile)
+  const isFocusMode = useLayoutStore(state => state.isFocusMode)
+  const focusLevel = useLayoutStore(state => state.focusLevel)
+  const cycleSidebarMode = useLayoutStore(state => state.cycleSidebarMode)
+  const toggleLeftSidebar = useLayoutStore(state => state.toggleLeftSidebar)
+  const closeSidebarsOnMobile = useLayoutStore(state => state.closeSidebarsOnMobile)
   const currentWeek = useWeekStore((s) => s.currentWeek)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
@@ -134,7 +139,7 @@ export function Sidebar() {
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
         className={cn(
           'fixed left-0 top-0 h-screen z-50 flex flex-col border-r border-outline-variant/15',
-          'bg-surface-container-lowest/85 backdrop-blur-2xl backdrop-saturate-150',
+          'bg-surface-container-lowest/85 backdrop-blur-lg backdrop-saturate-150',
           'shadow-[0_30px_80px_-30px_rgba(0,0,0,0.5),inset_-1px_0_0_rgb(255_255_255_/_0.04)]',
           width,
         )}

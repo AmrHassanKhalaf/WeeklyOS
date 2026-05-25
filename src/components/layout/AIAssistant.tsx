@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Bot, Zap, CheckCircle2, Sparkles, AlertTriangle, Send, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAiApi, type AiHistoryMessage } from '../../hooks/useApi'
@@ -23,13 +23,16 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
   ])
   const { sendMessage } = useAiApi()
   const navigate = useNavigate()
-  const { isRightSidebarOpen, isFocusMode, toggleRightSidebar, closeSidebarsOnMobile } = useLayoutStore()
-  const { currentWeek } = useWeekStore()
+  const isRightSidebarOpen = useLayoutStore(state => state.isRightSidebarOpen)
+  const isFocusMode = useLayoutStore(state => state.isFocusMode)
+  const toggleRightSidebar = useLayoutStore(state => state.toggleRightSidebar)
+  const closeSidebarsOnMobile = useLayoutStore(state => state.closeSidebarsOnMobile)
+  const currentWeek = useWeekStore(state => state.currentWeek)
 
   const isActuallyOpen = isRightSidebarOpen && !isFocusMode
 
   // Dynamic Insights calculation
-  const getActivityInsights = () => {
+  const insightsData = useMemo(() => {
     if (!currentWeek) return { peakDay: 'Monday', riskDay: 'None', riskCount: 0 }
     let maxDone = -1
     let peakDay = '...'
@@ -42,8 +45,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
       if(pendingQty > maxPending) { maxPending = pendingQty; riskDay = d.shortName }
     })
     return { peakDay, riskDay, riskCount: maxPending }
-  }
-  const insightsData = getActivityInsights()
+  }, [currentWeek])
 
   const handleSendMessage = async (overrideText?: string) => {
     const msg = (overrideText ?? chatInput).trim()
@@ -119,7 +121,7 @@ export function AIAssistant({ variant = 'default' }: AIAssistantProps) {
 
   return (
     <>
-      <aside className={`fixed right-0 top-0 h-screen w-80 z-50 bg-surface-container-low/85 backdrop-blur-2xl backdrop-saturate-150 border-l border-outline-variant/15 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] flex flex-col font-['Inter'] transition-transform duration-300 ${
+      <aside className={`fixed right-0 top-0 h-screen w-80 z-50 bg-surface-container-low/85 backdrop-blur-lg backdrop-saturate-150 border-l border-outline-variant/15 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] flex flex-col font-['Inter'] transition-transform duration-300 ${
         isActuallyOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
       {/* Header */}

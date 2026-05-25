@@ -76,17 +76,15 @@ function NetworkStatusBadge() {
 
 // ── App Layout ─────────────────────────────────────────────────────────────────
 export function AppLayout({ children, aiVariant = 'default', disableTransition }: AppLayoutProps) {
-  const {
-    sidebarMode,
-    isLeftSidebarOpen,
-    isRightSidebarOpen,
-    isMobile,
-    isFocusMode,
-    focusLevel,
-    setFocusMode,
-    setMobile,
-    closeSidebarsOnMobile,
-  } = useLayoutStore()
+  const sidebarMode = useLayoutStore(state => state.sidebarMode)
+  const isLeftSidebarOpen = useLayoutStore(state => state.isLeftSidebarOpen)
+  const isRightSidebarOpen = useLayoutStore(state => state.isRightSidebarOpen)
+  const isMobile = useLayoutStore(state => state.isMobile)
+  const isFocusMode = useLayoutStore(state => state.isFocusMode)
+  const focusLevel = useLayoutStore(state => state.focusLevel)
+  const setFocusMode = useLayoutStore(state => state.setFocusMode)
+  const setMobile = useLayoutStore(state => state.setMobile)
+  const closeSidebarsOnMobile = useLayoutStore(state => state.closeSidebarsOnMobile)
   const isDeepFocus = isFocusMode && focusLevel === 'deep'
   const assistantPrefetchedRef = useRef(false)
   const registerListeners = useOfflineQueueStore((state) => state.registerListeners)

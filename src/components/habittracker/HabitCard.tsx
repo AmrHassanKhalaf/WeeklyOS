@@ -80,7 +80,7 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
   }, [])
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
       transition={{ type: 'spring', damping: 24, stiffness: 320 }}
       className={`ui-card ui-card--glass glass-hover relative overflow-hidden group ${shaking ? 'animate-shake' : ''}`}
       style={{ borderLeft: `3px solid ${color}` }}
@@ -210,7 +210,7 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
   const progressColor = isStrong ? '#4ade80' : '#f87171'
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
       transition={{ type: 'spring', damping: 24, stiffness: 320 }}
       className={`ui-card ui-card--glass glass-hover relative overflow-hidden group ${shaking ? 'animate-shake' : ''}`}
       style={{ borderLeft: `3px solid ${color}` }}

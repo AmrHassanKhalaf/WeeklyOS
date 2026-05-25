@@ -10,7 +10,12 @@ import { Button } from '../components/ui/Button'
 import { cn } from '../lib/cn'
 
 export function BrainDump() {
-  const { brainDumpItems, isLoading, loadItems, addItem, updateItem, deleteSelected } = useBrainDumpStore()
+  const brainDumpItems = useBrainDumpStore(state => state.brainDumpItems)
+  const isLoading = useBrainDumpStore(state => state.isLoading)
+  const loadItems = useBrainDumpStore(state => state.loadItems)
+  const addItem = useBrainDumpStore(state => state.addItem)
+  const updateItem = useBrainDumpStore(state => state.updateItem)
+  const deleteSelected = useBrainDumpStore(state => state.deleteSelected)
   const currentWeek = useWeekStore(s => s.currentWeek)
 
   useEffect(() => {
@@ -252,7 +257,7 @@ export function BrainDump() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 32, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="fixed bottom-[calc(5rem+var(--safe-bottom,0px))] sm:bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 sm:gap-2 p-2 bg-surface-container-highest/85 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-outline-variant/20 w-[92vw] sm:w-auto"
+            className="fixed bottom-[calc(5rem+var(--safe-bottom,0px))] sm:bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 sm:gap-2 p-2 bg-surface-container-highest/85 backdrop-blur-lg rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-outline-variant/20 w-[92vw] sm:w-auto"
           >
             <span className="text-[10px] text-on-surface-variant px-2 sm:px-4 shrink-0">
               {selectedCount} selected

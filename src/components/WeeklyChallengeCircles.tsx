@@ -1,13 +1,14 @@
-import { useWeekStore, DayOfWeek } from '../store/useWeekStore'
+import { useWeekStore } from '../store/useWeekStore'
+import type { DayOfWeek } from '../store/useWeekStore'
 
 export function WeeklyChallengeCircles() {
-  const { currentWeek, toggleChallengeDayStatus } = useWeekStore()
+  const challengeDays = useWeekStore(state => state.currentWeek?.challengeDays)
+  const toggleChallengeDayStatus = useWeekStore(state => state.toggleChallengeDayStatus)
 
-  if (!currentWeek?.challengeDays || currentWeek.challengeDays.length === 0) {
+  if (!challengeDays || challengeDays.length === 0) {
     return null
   }
 
-  const challengeDays = currentWeek.challengeDays
   const today = new Date()
   const todayDayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][today.getDay()] as DayOfWeek
 

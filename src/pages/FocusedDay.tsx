@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Focus, ChevronUp, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
@@ -42,7 +42,7 @@ function CircularProgress({
   const cy = size / 2
 
   // Discrete progress (used for ticks — whole seconds only)
-  const tickProgress = pomodoroTime / totalSecs
+  const tickProgress = totalSecs > 0 ? pomodoroTime / totalSecs : 0
 
   // ── Continuous RAF loop ──────────────────────────────────────────────────────
   // lastTickTimeRef: wall-clock time when pomodoroTime last changed (each store tick)
@@ -64,34 +64,40 @@ function CircularProgress({
     pomodoroTimeRef.current = pomodoroTime
   }, [pomodoroTime])
 
-  // Single persistent RAF loop — runs the entire time the component is mounted
+  // Interpolate only while the timer is active; idle timers update once.
   useEffect(() => {
+    const updateArc = (now = performance.now()) => {
+      if (!arcRef.current) return
+
+      const safeTotalSecs = Math.max(totalSecsRef.current, 1)
+      const subSec = isRunningRef.current
+        ? Math.min((now - lastTickTimeRef.current) / 1000, 1)
+        : 0
+      const continuousTime = pomodoroTimeRef.current - subSec
+      const p = Math.max(0, continuousTime) / safeTotalSecs
+      arcRef.current.style.strokeDashoffset = String(circumference * (1 - p))
+    }
+
+    if (!isRunning) {
+      updateArc()
+      return
+    }
+
     const loop = (now: number) => {
-      if (arcRef.current) {
-        let p: number
-        if (isRunningRef.current) {
-          // Sub-second interpolation: how many real seconds have passed since last tick?
-          const subSec = Math.min((now - lastTickTimeRef.current) / 1000, 1)
-          const continuousTime = pomodoroTimeRef.current - subSec
-          p = Math.max(0, continuousTime) / totalSecsRef.current
-        } else {
-          p = pomodoroTimeRef.current / totalSecsRef.current
-        }
-        arcRef.current.style.strokeDashoffset = String(circumference * (1 - p))
-      }
+      updateArc(now)
       rafRef.current = requestAnimationFrame(loop)
     }
+
     rafRef.current = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(rafRef.current)
-    // Only needs circumference; everything else reads from refs
-  }, [circumference])
+  }, [circumference, isRunning, pomodoroTime, totalSecs])
 
   // Clock tick marks — drawn inside the ring, update once/second (discrete is fine)
   const TICK_COUNT = 60
   const tickOuter = r - stroke / 2 - 2
   const tickInnerMajor = tickOuter - 9
   const tickInnerMinor = tickOuter - 5
-  const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
+  const ticks = useMemo(() => Array.from({ length: TICK_COUNT }, (_, i) => {
     const angle = (i / TICK_COUNT) * 2 * Math.PI
     const isMajor = i % 5 === 0
     const tickInner = isMajor ? tickInnerMajor : tickInnerMinor
@@ -105,7 +111,7 @@ function CircularProgress({
       isMajor,
       isLit: (i / TICK_COUNT) < tickProgress,
     }
-  })
+  }), [cx, cy, tickInnerMajor, tickInnerMinor, tickOuter, tickProgress])
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" style={{ transform: 'rotate(-90deg)' }}>
@@ -420,7 +426,7 @@ function TaskPickerGate({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.985 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed inset-x-3 top-[calc(var(--safe-top,0px)+4.75rem)] z-[130] mx-auto flex max-h-[calc(100dvh-6rem)] max-w-[960px] flex-col overflow-hidden rounded-[1.65rem] border border-primary/30 bg-surface-container-lowest/95 shadow-[0_28px_90px_-28px_rgba(0,0,0,0.95),0_0_46px_rgba(124,58,237,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl sm:top-[calc(var(--safe-top,0px)+5.75rem)] sm:max-h-[min(70dvh,620px)] sm:rounded-[1.75rem]"
+        className="fixed inset-x-3 top-[calc(var(--safe-top,0px)+4.75rem)] z-[130] mx-auto flex max-h-[calc(100dvh-6rem)] max-w-[960px] flex-col overflow-hidden rounded-[1.65rem] border border-primary/30 bg-surface-container-lowest/95 shadow-[0_28px_90px_-28px_rgba(0,0,0,0.95),0_0_46px_rgba(124,58,237,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-lg sm:top-[calc(var(--safe-top,0px)+5.75rem)] sm:max-h-[min(70dvh,620px)] sm:rounded-[1.75rem]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="focus-target-title"
@@ -532,32 +538,28 @@ function TaskPickerGate({
 }
 
 export function FocusedDay() {
-  const {
-    currentWeek,
-    isLoadingWeek,
-    pomodoroTime,
-    isPomodoroRunning,
-    pomodoroPhase,
-    pomodoroFocusMin,
-    pomodoroBreakMin,
-    startPomodoro,
-    stopPomodoro,
-    tickPomodoro,
-    resetPomodoro,
-    setPomodoroPreset,
-    toggleTaskComplete,
-    markDayComplete,
-    updateTaskActualDuration,
-    focusSessions,
-    saveFocusSession
-  } = useWeekStore()
-  const {
-    isFocusMode,
-    focusLevel,
-    setFocusMode,
-    autoEnterFocusOnStart,
-    setTaskPickerOpen,
-  } = useLayoutStore()
+  const currentWeek = useWeekStore(state => state.currentWeek)
+  const isLoadingWeek = useWeekStore(state => state.isLoadingWeek)
+  const pomodoroTime = useWeekStore(state => state.pomodoroTime)
+  const isPomodoroRunning = useWeekStore(state => state.isPomodoroRunning)
+  const pomodoroPhase = useWeekStore(state => state.pomodoroPhase)
+  const pomodoroFocusMin = useWeekStore(state => state.pomodoroFocusMin)
+  const pomodoroBreakMin = useWeekStore(state => state.pomodoroBreakMin)
+  const startPomodoro = useWeekStore(state => state.startPomodoro)
+  const stopPomodoro = useWeekStore(state => state.stopPomodoro)
+  const tickPomodoro = useWeekStore(state => state.tickPomodoro)
+  const resetPomodoro = useWeekStore(state => state.resetPomodoro)
+  const setPomodoroPreset = useWeekStore(state => state.setPomodoroPreset)
+  const toggleTaskComplete = useWeekStore(state => state.toggleTaskComplete)
+  const markDayComplete = useWeekStore(state => state.markDayComplete)
+  const updateTaskActualDuration = useWeekStore(state => state.updateTaskActualDuration)
+  const focusSessions = useWeekStore(state => state.focusSessions)
+  const saveFocusSession = useWeekStore(state => state.saveFocusSession)
+  const isFocusMode = useLayoutStore(state => state.isFocusMode)
+  const focusLevel = useLayoutStore(state => state.focusLevel)
+  const setFocusMode = useLayoutStore(state => state.setFocusMode)
+  const autoEnterFocusOnStart = useLayoutStore(state => state.autoEnterFocusOnStart)
+  const setTaskPickerOpen = useLayoutStore(state => state.setTaskPickerOpen)
 
   const workerRef = useRef<Worker | null>(null)
   const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -949,7 +951,7 @@ export function FocusedDay() {
 
                   {/* Main buttons */}
                   <div className="rounded-[1.65rem] border border-white/[0.08] bg-black/[0.14] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]">
-                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[minmax(150px,1.1fr)_minmax(130px,0.85fr)_minmax(150px,1fr)] sm:gap-3">
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
                     <Button
                       type="button"
                       onClick={handleToggle}
@@ -983,7 +985,7 @@ export function FocusedDay() {
                       onClick={isDeepFocus ? () => setFocusMode(false) : () => setFocusMode(true, 'deep')}
                       variant="ghost"
                       size="sm"
-                      className={`group relative h-14 px-4 rounded-2xl font-bold text-sm border transition-all touch-target justify-center overflow-hidden ${isFocusMode
+                      className={`group relative h-14 px-4 rounded-2xl font-bold text-sm border transition-all touch-target justify-center overflow-hidden sm:col-span-2 ${isFocusMode
                         ? 'border-violet-500/40 text-violet-300 bg-violet-500/10 hover:bg-violet-500/15 shadow-[0_0_28px_rgba(139,92,246,0.16)]'
                         : 'border-white/10 bg-white/[0.015] hover:border-primary/30 hover:text-primary hover:bg-primary/5'
                         }`}

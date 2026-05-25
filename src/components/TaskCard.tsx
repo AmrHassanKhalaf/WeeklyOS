@@ -1,4 +1,5 @@
-import { useBrainDumpStore, BrainDumpItem } from '../store/useBrainDumpStore'
+import { useBrainDumpStore } from '../store/useBrainDumpStore'
+import type { BrainDumpItem } from '../store/useBrainDumpStore'
 import { Check, X, Plus, Edit3, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { getTagStyle } from '../lib/tagColors'
@@ -8,7 +9,9 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ item }: TaskCardProps) {
-  const { toggleSelection, removeItem, updateItem } = useBrainDumpStore()
+  const toggleSelection = useBrainDumpStore(state => state.toggleSelection)
+  const removeItem = useBrainDumpStore(state => state.removeItem)
+  const updateItem = useBrainDumpStore(state => state.updateItem)
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(item.content)
   const [editTags, setEditTags] = useState<string[]>(item.tags || [])

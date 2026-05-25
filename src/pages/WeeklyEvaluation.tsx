@@ -5,7 +5,8 @@ import { useAiApi } from '../hooks/useApi'
 import { useState, useEffect } from 'react'
 
 export function WeeklyEvaluation() {
-  const { currentWeek, isLoadingWeek } = useWeekStore()
+  const currentWeek = useWeekStore(state => state.currentWeek)
+  const isLoadingWeek = useWeekStore(state => state.isLoadingWeek)
   const { sendMessage } = useAiApi()
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({})
   const [aiError, setAiError] = useState<string | null>(null)

@@ -34,15 +34,13 @@ function HamburgerIcon({ open }: { open: boolean }) {
 }
 
 export function TopNav() {
-  const {
-    isMobile,
-    sidebarMode,
-    isLeftSidebarOpen,
-    isFocusMode,
-    focusLevel,
-    toggleLeftSidebar,
-    toggleRightSidebar,
-  } = useLayoutStore()
+  const isMobile = useLayoutStore(state => state.isMobile)
+  const sidebarMode = useLayoutStore(state => state.sidebarMode)
+  const isLeftSidebarOpen = useLayoutStore(state => state.isLeftSidebarOpen)
+  const isFocusMode = useLayoutStore(state => state.isFocusMode)
+  const focusLevel = useLayoutStore(state => state.focusLevel)
+  const toggleLeftSidebar = useLayoutStore(state => state.toggleLeftSidebar)
+  const toggleRightSidebar = useLayoutStore(state => state.toggleRightSidebar)
   const currentWeek = useWeekStore((state) => state.currentWeek)
   const goToPreviousWeek = useWeekStore((state) => state.goToPreviousWeek)
   const goToNextWeek = useWeekStore((state) => state.goToNextWeek)
@@ -66,7 +64,7 @@ export function TopNav() {
       initial={false}
       animate={{ left: offsetLeft }}
       transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-      className="fixed top-0 right-0 h-14 z-40 bg-background/60 backdrop-blur-2xl backdrop-saturate-150 flex items-center justify-between px-2 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
+      className="fixed top-0 right-0 h-14 z-40 bg-background/60 backdrop-blur-lg backdrop-saturate-150 flex items-center justify-between px-2 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
     >
       {/* Left: hamburger + page title */}
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
