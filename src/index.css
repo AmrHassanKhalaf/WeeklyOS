@@ -227,34 +227,7 @@ body {
   overflow-x: hidden;
 }
 
-/* The animated wave + glow background is handled entirely by the
-   <AnimatedBackground /> React component (mounted in AppLayout). Avoid a
-   second always-running gradient layer on the body — it doubled paint cost
-   for no visible gain. The light theme keeps a single static highlight. */
-
 body.light { color-scheme: light; }
-
-body.light::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  background:
-    radial-gradient(60vmax 50vmax at 6% -8%,  rgb(var(--glow-tl-color) / 0.18), transparent 60%),
-    radial-gradient(55vmax 50vmax at 94% 108%, rgb(var(--glow-br-color) / 0.14), transparent 60%);
-}
-
-@keyframes waveFloat {
-  0%, 100% { transform: translate3d(0,   0px, 0) scale(1.00); }
-  30%      { transform: translate3d(0,  -7px, 0) scale(1.005); }
-  65%      { transform: translate3d(0,   4px, 0) scale(0.998); }
-}
-
-@keyframes breatheGlow {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 1.00; }
-}
 
 /* ──────────────────────────────────────────────────────────────────────── */
 /*  Brand gradients (utility classes used by logo, headlines, primary CTAs)*/

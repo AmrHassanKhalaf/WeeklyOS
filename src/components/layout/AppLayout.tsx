@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
 import { MobileBottomNav } from './MobileBottomNav'
-import { AnimatedBackground } from './AnimatedBackground'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useOfflineQueueStore } from '../../store/offlineQueueStore'
 import { PageTransition } from '../ui/PageTransition'
@@ -149,8 +148,6 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
   return (
     <div className="min-h-screen bg-background text-on-background font-body relative overflow-hidden">
-      {/* ── Animated purple-wave background ── */}
-      <AnimatedBackground />
       {/* Offline / syncing indicator */}
       <NetworkStatusBadge />
 

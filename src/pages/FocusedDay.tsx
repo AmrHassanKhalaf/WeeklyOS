@@ -162,7 +162,7 @@ function CircularProgress({
             stroke={glowColor}
             strokeWidth={tick.isMajor ? 2.5 : 1.5}
             strokeLinecap="round"
-            filter={tick.isMajor ? 'url(#tick-glow-major)' : 'url(#tick-glow)'}
+            filter={tick.isMajor ? 'url(#tick-glow-major)' : undefined}
             opacity={tick.isMajor ? 1 : 0.85}
           />
         ) : (
@@ -557,6 +557,9 @@ export function FocusedDay() {
   const saveFocusSession = useWeekStore(state => state.saveFocusSession)
   const isFocusMode = useLayoutStore(state => state.isFocusMode)
   const focusLevel = useLayoutStore(state => state.focusLevel)
+  const sidebarMode = useLayoutStore(state => state.sidebarMode)
+  const isRightSidebarOpen = useLayoutStore(state => state.isRightSidebarOpen)
+  const isMobile = useLayoutStore(state => state.isMobile)
   const setFocusMode = useLayoutStore(state => state.setFocusMode)
   const autoEnterFocusOnStart = useLayoutStore(state => state.autoEnterFocusOnStart)
   const setTaskPickerOpen = useLayoutStore(state => state.setTaskPickerOpen)
@@ -808,6 +811,13 @@ export function FocusedDay() {
   const totalCount = [mainTask, ...mediumTasks, ...quickWins].filter(Boolean).length
   const dayProgress = totalCount > 0 ? completedCount / totalCount : 0
   const isDeepFocus = isFocusMode && focusLevel === 'deep'
+  const hasWideAppChrome = !isMobile && sidebarMode === 'expanded' && isRightSidebarOpen
+  const pageGridClass = hasWideAppChrome
+    ? 'min-[1680px]:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] min-[1680px]:gap-10'
+    : 'xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:gap-10'
+  const sideColumnClass = hasWideAppChrome
+    ? 'min-[1680px]:sticky min-[1680px]:top-8'
+    : 'xl:sticky xl:top-8'
 
   const todayFocusSeconds = focusSessions.reduce((acc, curr) => acc + curr.duration_seconds, 0)
 
@@ -852,15 +862,14 @@ export function FocusedDay() {
       </AnimatePresence>
 
       <motion.div
-        layout
         className={`container-responsive py-responsive mx-auto max-w-full overflow-x-hidden items-start transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDeepFocus
           ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
-          : 'grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 sm:gap-10 opacity-100 max-w-[1200px] pb-24'
+          : `grid grid-cols-1 gap-6 sm:gap-8 opacity-100 max-w-[1200px] pb-24 ${pageGridClass}`
           }`}
       >
 
         {/* ── Left Column (Main Content) ─────────────────────────────────── */}
-        <motion.div layout className="min-w-0 space-y-10">
+        <motion.div className="min-w-0 space-y-10">
 
           {/* ── Header ─────────────────────────────────────────────────────── */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6">
@@ -917,9 +926,9 @@ export function FocusedDay() {
                     </span>
                     <div className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-sm shadow-[0_0_25px_rgba(124,58,237,0.2)] ${pomodoroPhase === 'focus' ? 'bg-violet-500/10 border-violet-300/30' : 'bg-sky-500/10 border-sky-300/30'
                       }`}>
-                      <motion.span layoutId="pomodoro-time-text" className="text-2xl sm:text-3xl md:text-4xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
+                      <span className="text-2xl sm:text-3xl md:text-4xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
                         {formatTime(pomodoroTime)}
-                      </motion.span>
+                      </span>
                     </div>
                     {sessionCount > 0 && (
                       <span className="mt-2 text-[10px] text-neutral-500 tracking-widest uppercase">
@@ -1250,7 +1259,7 @@ export function FocusedDay() {
               animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
               exit={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="min-w-0 space-y-6 xl:sticky xl:top-8 self-start"
+              className={`min-w-0 space-y-6 self-start ${sideColumnClass}`}
             >
               {/* 1. FOCUS TIME TODAY */}
               <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">
