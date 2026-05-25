@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown, Pin, Star, Maximize, Minimize, BrainCircuit } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, ChevronUp, ChevronDown, Maximize, Minimize, BrainCircuit } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -539,7 +539,6 @@ function TaskPickerGate({
 
 export function FocusedDay() {
   const currentWeek = useWeekStore(state => state.currentWeek)
-  const isLoadingWeek = useWeekStore(state => state.isLoadingWeek)
   const pomodoroTime = useWeekStore(state => state.pomodoroTime)
   const isPomodoroRunning = useWeekStore(state => state.isPomodoroRunning)
   const pomodoroPhase = useWeekStore(state => state.pomodoroPhase)
@@ -817,7 +816,6 @@ export function FocusedDay() {
   const completedCount = [mainTask, ...mediumTasks, ...quickWins].filter(t => t && t.status === 'done').length
   const totalCount = [mainTask, ...mediumTasks, ...quickWins].filter(Boolean).length
   const dayProgress = totalCount > 0 ? completedCount / totalCount : 0
-  const isDeepFocus = isFocusMode && focusLevel === 'deep'
   const pageGridClass = 'xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:gap-10'
   const sideColumnClass = 'xl:sticky xl:top-8'
 
@@ -1068,6 +1066,7 @@ export function FocusedDay() {
                         )}
                       </div>
                     </motion.button>
+                  </div>
                   </div>
 
                   {/* Presets */}
