@@ -851,14 +851,14 @@ export function FocusedDay() {
 
       <motion.div
         layout
-        className={`container-responsive py-responsive mx-auto items-start transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDeepFocus
+        className={`container-responsive py-responsive mx-auto max-w-full overflow-x-hidden items-start transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDeepFocus
           ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
           : 'grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 sm:gap-10 opacity-100 max-w-[1200px] pb-24'
           }`}
       >
 
         {/* ── Left Column (Main Content) ─────────────────────────────────── */}
-        <motion.div layout className="space-y-10">
+        <motion.div layout className="min-w-0 space-y-10">
 
           {/* ── Header ─────────────────────────────────────────────────────── */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6">
@@ -928,7 +928,7 @@ export function FocusedDay() {
                 </div>
 
                 {/* Controls panel */}
-                <div className="flex-1 space-y-5 w-full">
+                <div className="flex-1 w-full min-w-0 space-y-4">
                   {/* Phase label + session dots */}
                   {pomodoroPhase === 'focus' && (
                     <div className="flex items-center gap-2">
@@ -948,7 +948,8 @@ export function FocusedDay() {
                   </div>
 
                   {/* Main buttons */}
-                  <div className="grid grid-cols-2 lg:grid-cols-[minmax(150px,1.1fr)_minmax(130px,0.9fr)_minmax(150px,1fr)] gap-2.5 sm:gap-3">
+                  <div className="rounded-[1.65rem] border border-white/[0.08] bg-black/[0.14] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]">
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[minmax(150px,1.1fr)_minmax(130px,0.85fr)_minmax(150px,1fr)] sm:gap-3">
                     <Button
                       type="button"
                       onClick={handleToggle}
@@ -995,6 +996,7 @@ export function FocusedDay() {
                       </span>
                       {!isFocusMode && <kbd className="relative hidden sm:inline-block ml-1 text-[9px] opacity-40 font-mono border border-current/30 rounded px-1">F</kbd>}
                     </Button>
+                    </div>
                   </div>
 
                   {/* Presets */}
@@ -1246,7 +1248,7 @@ export function FocusedDay() {
               animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
               exit={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-6 xl:sticky xl:top-8 self-start"
+              className="min-w-0 space-y-6 xl:sticky xl:top-8 self-start"
             >
               {/* 1. FOCUS TIME TODAY */}
               <Card variant="glass" className="p-6 rounded-3xl border border-white/10 bg-surface-container-lowest/50">

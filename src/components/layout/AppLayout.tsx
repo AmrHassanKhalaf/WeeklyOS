@@ -176,7 +176,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
       <main
         className={cn(
-          'h-screen overflow-y-auto custom-scrollbar transition-[padding] duration-300 w-full',
+          'h-screen w-full max-w-full box-border overflow-y-auto overflow-x-hidden custom-scrollbar transition-[padding] duration-300',
           isDeepFocus
             ? 'pl-0 pr-0 pt-0'
             : cn(leftPad, !isMobile && isRightSidebarOpen ? 'lg:pr-80' : 'pr-0', 'pt-14', isMobile && !isFocusMode && 'pb-bottom-nav'),
