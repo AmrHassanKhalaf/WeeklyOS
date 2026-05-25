@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown, Pin, Star } from 'lucide-react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, Layers, ChevronUp, ChevronDown, Pin, Star, Maximize, Minimize, BrainCircuit } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -376,21 +376,28 @@ export function FocusedDay() {
   const [showPresets, setShowPresets] = useState(false)
   const [sessionCount, setSessionCount] = useState(0)
 
-  // ── Global keyboard shortcut: F toggles focus picker ─────────────────────
+  // Keep a cached copy of the last good week data so the page never flashes a
+  // loading skeleton when returning to this tab (the store briefly sets
+  // currentWeek → null during background re-initialisation).
+  const lastKnownWeekRef = useRef(currentWeek)
+  if (currentWeek) lastKnownWeekRef.current = currentWeek
+  const displayWeek = currentWeek ?? lastKnownWeekRef.current
+
+  // ── Global keyboard shortcut: F toggles Deep Focus ───────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key.toLowerCase() === 'f' && !isFocusPickerOpen) {
-        if (isFocusMode) {
+      if (e.key.toLowerCase() === 'f') {
+        if (isFocusMode && focusLevel === 'deep') {
           setFocusMode(false)
         } else {
-          openFocusPicker()
+          setFocusMode(true, 'deep')
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFocusMode, isFocusPickerOpen, setFocusMode, openFocusPicker])
+  }, [isFocusMode, focusLevel, setFocusMode])
 
   // ── Auto-enter focus on session start ─────────────────────────────────────
   const prevRunning = useRef(isPomodoroRunning)
@@ -550,7 +557,10 @@ export function FocusedDay() {
     setShowPresets(false)
   }
 
-  if (isLoadingWeek || !currentWeek) {
+  // Only show the skeleton on the very first load (no cached data yet).
+  // On subsequent re-initialisation (e.g. tab visibility change) we keep
+  // rendering the last-known data so the page never "refreshes" visually.
+  if (!displayWeek) {
     return (
       <AppLayout>
         <div className="container-responsive py-responsive mx-auto space-y-8 max-w-[780px]">
@@ -562,9 +572,9 @@ export function FocusedDay() {
   }
 
   const todayPlan =
-    currentWeek.days.find(d => d.isToday) ??
-    currentWeek.days.find(d => d.highTask || d.mediumTasks.length > 0) ??
-    currentWeek.days[0]
+    displayWeek.days.find(d => d.isToday) ??
+    displayWeek.days.find(d => d.highTask || d.mediumTasks.length > 0) ??
+    displayWeek.days[0]
 
   const mainTask = todayPlan.highTask
   const mediumTasks = todayPlan.mediumTasks
@@ -631,7 +641,7 @@ export function FocusedDay() {
 
       <motion.div
         layout
-        className={`container-responsive py-responsive mx-auto pb-24 items-start transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-[1200px] ${isFocusMode && focusLevel === 'deep'
+        className={`container-responsive py-responsive mx-auto pb-24 items-start transition-all duration-[2500ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-w-[1200px] ${isFocusMode && focusLevel === 'deep'
           ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
           : isFocusMode && focusLevel === 'minimal'
             ? 'pt-[var(--safe-top,0px)] sm:pt-16 grid grid-cols-1 gap-10 opacity-100'
@@ -682,6 +692,21 @@ export function FocusedDay() {
             {/* Ambient glow blob */}
             <div className={`absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-20 transition-colors duration-500 ${pomodoroPhase === 'focus' ? 'bg-violet-600' : 'bg-sky-500'
               }`} />
+
+            {/* ── Minimal Focus toggle — top-right corner ────────────────── */}
+            <button
+              onClick={() => isFocusMode && focusLevel === 'minimal' ? setFocusMode(false) : setFocusMode(true, 'minimal')}
+              title={isFocusMode && focusLevel === 'minimal' ? 'Exit Minimal Focus' : 'Minimal Focus'}
+              className={`absolute top-4 right-4 z-20 p-2 rounded-xl border transition-all duration-200 group ${
+                isFocusMode && focusLevel === 'minimal'
+                  ? 'border-teal-500/50 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
+                  : 'border-white/10 bg-transparent text-neutral-500 hover:border-white/25 hover:text-neutral-300 hover:bg-white/5'
+              }`}
+            >
+              {isFocusMode && focusLevel === 'minimal'
+                ? <Minimize className="w-4 h-4" strokeWidth={1.5} />
+                : <Maximize className="w-4 h-4" strokeWidth={1.5} />}
+            </button>
 
             <div className="relative z-10 p-6 md:p-8">
               <div className="flex flex-col lg:flex-row items-center gap-8">
@@ -753,23 +778,67 @@ export function FocusedDay() {
                       Reset
                     </Button>
 
-                    <Button
+                    {/* Deep Focus button — rich card style from FocusModeMenu */}
+                    <motion.button
                       type="button"
-                      onClick={isFocusMode ? () => setFocusMode(false) : openFocusPicker}
-                      variant="ghost"
-                      size="sm"
-                      className={`px-4 py-3 sm:py-2.5 rounded-xl font-bold text-sm border transition-all w-full sm:w-auto touch-target ${isFocusMode
-                        ? 'border-violet-500/40 text-violet-300 bg-violet-500/10 hover:bg-violet-500/15'
-                        : 'border-white/10 hover:border-primary/30 hover:text-primary hover:bg-primary/5'
-                        }`}
-                    >
-                      <Layers className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                      {isFocusMode
-                        ? `Exit ${focusLevel === 'deep' ? 'Deep' : 'Minimal'} Focus`
-                        : 'Focus Mode'
+                      onClick={isFocusMode && focusLevel === 'deep' ? () => setFocusMode(false) : () => setFocusMode(true, 'deep')}
+                      whileTap={{ scale: 0.97 }}
+                      className={`group relative w-full sm:w-auto overflow-hidden rounded-xl border text-left p-3 sm:px-4 sm:py-2.5 flex items-center gap-2.5 touch-target transition-all duration-300 ${
+                        isFocusMode && focusLevel === 'deep'
+                          ? 'from-violet-500/15 via-violet-900/10 to-black/80 bg-gradient-to-br border-violet-500/40 ring-1 ring-white/10'
+                          : 'bg-transparent border-white/10 hover:border-violet-500/30'
+                      }`}
+                      style={isFocusMode && focusLevel === 'deep'
+                        ? { boxShadow: '0 0 35px rgba(139,92,246,0.28), 0 4px 20px rgba(0,0,0,0.4)' }
+                        : { boxShadow: '0 2px 12px rgba(0,0,0,0.25)' }
                       }
-                      {!isFocusMode && <kbd className="hidden sm:inline-block ml-1 text-[9px] opacity-40 font-mono border border-current/30 rounded px-1">F</kbd>}
-                    </Button>
+                    >
+                      {/* Radial hover glow overlay */}
+                      <div
+                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                        style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(139,92,246,0.22), transparent 70%)' }}
+                      />
+
+                      {/* Active breathing shimmer */}
+                      {isFocusMode && focusLevel === 'deep' && (
+                        <motion.div
+                          className="absolute inset-0 rounded-xl pointer-events-none"
+                          style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(139,92,246,0.25), transparent 60%)' }}
+                          animate={{ opacity: [0.4, 0.75, 0.4] }}
+                          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      )}
+
+                      {/* Icon */}
+                      <div className={`relative shrink-0 w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br transition-all duration-300 border ${
+                        isFocusMode && focusLevel === 'deep'
+                          ? 'from-violet-500/30 to-violet-700/20 border-violet-500/30 shadow-[0_0_14px_rgba(139,92,246,0.35)]'
+                          : 'from-violet-500/10 to-violet-700/5 border-white/10 group-hover:border-violet-500/25 group-hover:shadow-[0_0_10px_rgba(139,92,246,0.2)]'
+                      }`}>
+                        <BrainCircuit className="w-3.5 h-3.5 text-violet-400" strokeWidth={1.5} />
+                      </div>
+
+                      {/* Label + active badge */}
+                      <div className="relative flex items-center gap-2">
+                        <span className={`text-sm font-bold ${
+                          isFocusMode && focusLevel === 'deep' ? 'text-violet-200' : 'text-neutral-300 group-hover:text-white'
+                        } transition-colors duration-200`}>
+                          {isFocusMode && focusLevel === 'deep' ? 'Exit Deep Focus' : 'Deep Focus'}
+                        </span>
+                        {!(isFocusMode && focusLevel === 'deep') && (
+                          <kbd className="hidden sm:inline-block text-[9px] opacity-40 font-mono border border-current/30 rounded px-1">F</kbd>
+                        )}
+                        {isFocusMode && focusLevel === 'deep' && (
+                          <motion.span
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full text-violet-300 bg-white/[0.08] border border-white/10"
+                          >
+                            Active
+                          </motion.span>
+                        )}
+                      </div>
+                    </motion.button>
                   </div>
 
                   {/* Presets */}
