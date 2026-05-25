@@ -1347,8 +1347,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }))
 
       const { error } = await supabase.from('weeks').update({
-        [dbKey]: text
-      }).eq('id', currentWeek.id)
+        [dbKey]: text,
+      } as never).eq('id', currentWeek.id)
 
       if (error) console.error('updateEvaluation error', error)
     },

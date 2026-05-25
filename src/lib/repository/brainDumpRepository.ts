@@ -66,7 +66,7 @@ export async function updateBrainDumpItem(id: string, input: UpdateBrainDumpInpu
 
   if (Object.keys(payload).length === 0) return
 
-  const { error } = await supabase.from('brain_dump').update(payload).eq('id', id)
+  const { error } = await supabase.from('brain_dump').update(payload as never).eq('id', id)
   if (error) throw error
 }
 

@@ -6,7 +6,7 @@ import { useWeekStore } from '../../store/useWeekStore'
 import { RippleContainer } from '../ui/Ripple'
 import { useRipple } from '../ui/useRipple'
 import { cn } from '../../lib/cn'
-import { NAV_ITEMS } from './Sidebar'
+import { NAV_ITEMS } from './navItems'
 
 /**
  * Animated hamburger (3 bars ↔ X) — purely CSS/transform, no extra deps.

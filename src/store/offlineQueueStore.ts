@@ -109,7 +109,7 @@ async function replayMutation(mutation: QueuedMutation): Promise<{ success: bool
       }
     }
 
-    const { error } = await supabase.from(table as 'tasks').update(fields).eq('id', id)
+    const { error } = await supabase.from(table as 'tasks').update(fields as never).eq('id', id)
     if (error) return { success: false, conflicted: false }
     return { success: true, conflicted: false }
   }

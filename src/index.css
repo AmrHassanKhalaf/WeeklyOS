@@ -227,29 +227,22 @@ body {
   overflow-x: hidden;
 }
 
-/* ── body::before is handled by <AnimatedBackground /> component ── */
+/* The animated wave + glow background is handled entirely by the
+   <AnimatedBackground /> React component (mounted in AppLayout). Avoid a
+   second always-running gradient layer on the body — it doubled paint cost
+   for no visible gain. The light theme keeps a single static highlight. */
 
 body.light { color-scheme: light; }
 
-
-body::after {
+body.light::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: -1;
   background:
-    radial-gradient(60vmax 50vmax at 6% -8%,  rgb(var(--glow-tl-color) / 0.22), transparent 60%),
-    radial-gradient(55vmax 50vmax at 94% 108%, rgb(var(--glow-br-color) / 0.18), transparent 60%),
-    radial-gradient(48vmax 38vmax at 96% -4%,  rgb(var(--glow-tr-color) / 0.14), transparent 60%);
-  animation: aurora-shift 28s ease-in-out infinite alternate;
-}
-
-body.light::after {
-  background:
-    radial-gradient(60vmax 50vmax at 6% -8%,  rgb(var(--glow-tl-color) / 0.30), transparent 60%),
-    radial-gradient(55vmax 50vmax at 94% 108%, rgb(var(--glow-br-color) / 0.24), transparent 60%),
-    radial-gradient(48vmax 38vmax at 96% -4%,  rgb(var(--glow-tr-color) / 0.18), transparent 60%);
+    radial-gradient(60vmax 50vmax at 6% -8%,  rgb(var(--glow-tl-color) / 0.18), transparent 60%),
+    radial-gradient(55vmax 50vmax at 94% 108%, rgb(var(--glow-br-color) / 0.14), transparent 60%);
 }
 
 @keyframes waveFloat {
@@ -261,29 +254,6 @@ body.light::after {
 @keyframes breatheGlow {
   0%, 100% { opacity: 0.55; }
   50%      { opacity: 1.00; }
-}
-
-@keyframes hazeDrift {
-  0%        { transform: translate3d(0, 0, 0);       opacity: 0.6; }
-  33%       { transform: translate3d(18px, -6px, 0); opacity: 1.0; }
-  66%       { transform: translate3d(-10px, 4px, 0); opacity: 0.7; }
-  100%      { transform: translate3d(0, 0, 0);       opacity: 0.6; }
-}
-
-@keyframes shimmerSweep {
-  0%   { transform: translateX(-120%); }
-  100% { transform: translateX(220%); }
-}
-
-@keyframes edgePulse {
-  0%, 100% { opacity: 0.45; }
-  50%      { opacity: 0.90; }
-}
-
-@keyframes aurora-shift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(2vw, 1vh, 0) scale(1.03); }
-  100% { transform: translate3d(-1.5vw, -1vh, 0) scale(0.99); }
 }
 
 /* ──────────────────────────────────────────────────────────────────────── */

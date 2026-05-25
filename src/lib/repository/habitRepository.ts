@@ -61,7 +61,7 @@ export async function getHabits(userId: string, month: number, year: number): Pr
 export async function createHabit(input: CreateHabitInput): Promise<Habit> {
   const { data, error } = await supabase
     .from('habits')
-    .insert(input)
+    .insert(input as never)
     .select()
     .single()
 
@@ -83,7 +83,7 @@ export async function updateHabit(habitId: string, input: UpdateHabitInput): Pro
 
   const { data, error } = await supabase
     .from('habits')
-    .update(payload)
+    .update(payload as never)
     .eq('id', habitId)
     .select()
     .single()

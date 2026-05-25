@@ -1,19 +1,12 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  CalendarRange,
-  Focus,
-  Brain,
-  BarChart3,
-  Flame,
-  Settings,
   Sparkles,
   Plus,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Lightbulb
+  Lightbulb,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signOut } from '../../lib/supabase'
@@ -27,17 +20,7 @@ import { useRipple } from '../ui/useRipple'
 import { StatusDot } from '../ui/StatusDot'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { cn } from '../../lib/cn'
-
-/** Nav items — share structure with mobile bottom nav (primary first). */
-export const NAV_ITEMS = [
-  { to: '/dashboard',           icon: LayoutDashboard, label: 'Dashboard',    short: 'Home' },
-  { to: '/weekly-distribution', icon: CalendarRange,   label: 'Plan Week',    short: 'Plan' },
-  { to: '/focused-day',         icon: Focus,           label: 'Focused Day',  short: 'Focus' },
-  { to: '/brain-dump',          icon: Brain,           label: 'Brain Dump',   short: 'Dump' },
-  { to: '/weekly-evaluation',   icon: BarChart3,       label: 'Evaluation',   short: 'Stats' },
-  { to: '/habit-tracker',       icon: Flame,           label: 'Habits',       short: 'Habits' },
-  { to: '/settings',            icon: Settings,        label: 'Settings',     short: 'Settings' },
-] as const
+import { NAV_ITEMS } from './navItems'
 
 function NavItem({
   to,
