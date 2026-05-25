@@ -557,9 +557,6 @@ export function FocusedDay() {
   const saveFocusSession = useWeekStore(state => state.saveFocusSession)
   const isFocusMode = useLayoutStore(state => state.isFocusMode)
   const focusLevel = useLayoutStore(state => state.focusLevel)
-  const sidebarMode = useLayoutStore(state => state.sidebarMode)
-  const isRightSidebarOpen = useLayoutStore(state => state.isRightSidebarOpen)
-  const isMobile = useLayoutStore(state => state.isMobile)
   const setFocusMode = useLayoutStore(state => state.setFocusMode)
   const autoEnterFocusOnStart = useLayoutStore(state => state.autoEnterFocusOnStart)
   const setTaskPickerOpen = useLayoutStore(state => state.setTaskPickerOpen)
@@ -811,13 +808,8 @@ export function FocusedDay() {
   const totalCount = [mainTask, ...mediumTasks, ...quickWins].filter(Boolean).length
   const dayProgress = totalCount > 0 ? completedCount / totalCount : 0
   const isDeepFocus = isFocusMode && focusLevel === 'deep'
-  const hasWideAppChrome = !isMobile && sidebarMode === 'expanded' && isRightSidebarOpen
-  const pageGridClass = hasWideAppChrome
-    ? 'min-[1680px]:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] min-[1680px]:gap-10'
-    : 'xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:gap-10'
-  const sideColumnClass = hasWideAppChrome
-    ? 'min-[1680px]:sticky min-[1680px]:top-8'
-    : 'xl:sticky xl:top-8'
+  const pageGridClass = 'xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:gap-10'
+  const sideColumnClass = 'xl:sticky xl:top-8'
 
   const todayFocusSeconds = focusSessions.reduce((acc, curr) => acc + curr.duration_seconds, 0)
 

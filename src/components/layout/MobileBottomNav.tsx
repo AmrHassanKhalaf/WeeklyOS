@@ -89,9 +89,10 @@ export function MobileBottomNav() {
   const isFocusMode = useLayoutStore(state => state.isFocusMode)
   const isTaskPickerOpen = useLayoutStore(state => state.isTaskPickerOpen)
   const isLeftSidebarOpen = useLayoutStore(state => state.isLeftSidebarOpen)
+  const isAIWorkspaceOpen = useLayoutStore(state => state.isRightSidebarOpen)
   const currentWeek = useWeekStore((s) => s.currentWeek)
 
-  if (!isMobile || isFocusMode || isTaskPickerOpen || isLeftSidebarOpen) return null
+  if (!isMobile || isFocusMode || isTaskPickerOpen || isLeftSidebarOpen || isAIWorkspaceOpen) return null
 
   // Badge: count of still-pending tasks for today (if any)
   const today = currentWeek?.days.find((d) => d.isToday)

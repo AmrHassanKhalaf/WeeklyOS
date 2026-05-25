@@ -295,6 +295,28 @@ body.light { color-scheme: light; }
 ::-webkit-scrollbar-thumb:hover { background: rgb(var(--color-primary) / 0.5); }
 
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.ai-workspace-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--color-primary) / 0.62) rgb(var(--color-surface-container-lowest) / 0.45);
+}
+.ai-workspace-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.ai-workspace-scrollbar::-webkit-scrollbar-track {
+  background: rgb(var(--color-surface-container-lowest) / 0.45);
+  border-radius: 999px;
+  margin: 10px 0;
+}
+.ai-workspace-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--color-primary) / 0.78),
+    rgb(var(--color-tertiary) / 0.48)
+  );
+  border: 2px solid rgb(var(--color-surface-container-lowest) / 0.78);
+  border-radius: 999px;
+}
 .hide-scrollbar::-webkit-scrollbar  { display: none; }
 .hide-scrollbar {
   -ms-overflow-style: none;

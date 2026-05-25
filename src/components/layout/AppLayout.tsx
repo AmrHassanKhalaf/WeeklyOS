@@ -8,8 +8,8 @@ import { useOfflineQueueStore } from '../../store/offlineQueueStore'
 import { PageTransition } from '../ui/PageTransition'
 import { cn } from '../../lib/cn'
 
-const loadAIAssistant = () => import('./AIAssistant').then((m) => ({ default: m.AIAssistant }))
-const AIAssistant = lazy(loadAIAssistant)
+const loadAIWorkspace = () => import('../ai/AIWorkspace').then((m) => ({ default: m.AIWorkspace }))
+const AIWorkspace = lazy(loadAIWorkspace)
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 interface AppLayoutProps {
@@ -85,16 +85,16 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
   const setMobile = useLayoutStore(state => state.setMobile)
   const closeSidebarsOnMobile = useLayoutStore(state => state.closeSidebarsOnMobile)
   const isDeepFocus = isFocusMode && focusLevel === 'deep'
-  const assistantPrefetchedRef = useRef(false)
+  const workspacePrefetchedRef = useRef(false)
   const registerListeners = useOfflineQueueStore((state) => state.registerListeners)
 
-  const warmAIAssistant = useCallback(() => {
-    if (assistantPrefetchedRef.current) return
-    assistantPrefetchedRef.current = true
-    void loadAIAssistant()
+  const warmAIWorkspace = useCallback(() => {
+    if (workspacePrefetchedRef.current) return
+    workspacePrefetchedRef.current = true
+    void loadAIWorkspace()
   }, [])
 
-  const shouldShowAssistant = isRightSidebarOpen && !isDeepFocus
+  const shouldShowAIWorkspace = isRightSidebarOpen && !isDeepFocus
 
   // Register the offline queue network listeners once on mount.
   // NOTE: Service worker registration is handled automatically by vite-plugin-pwa
@@ -112,21 +112,21 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
     return () => window.removeEventListener('resize', handleResize)
   }, [setMobile])
 
-  // Prefetch AI assistant when idle
+  // Prefetch AI workspace when idle
   useEffect(() => {
-    if (assistantPrefetchedRef.current || isDeepFocus) return
+    if (workspacePrefetchedRef.current || isDeepFocus) return
     let idleId: number | null = null
     if (window.requestIdleCallback) {
-      idleId = window.requestIdleCallback(() => warmAIAssistant(), { timeout: 1500 }) as unknown as number
+      idleId = window.requestIdleCallback(() => warmAIWorkspace(), { timeout: 1500 }) as unknown as number
     } else {
-      idleId = window.setTimeout(() => warmAIAssistant(), 1200)
+      idleId = window.setTimeout(() => warmAIWorkspace(), 1200)
     }
     return () => {
       if (idleId === null) return
       if (window.cancelIdleCallback) window.cancelIdleCallback(idleId)
       else window.clearTimeout(idleId)
     }
-  }, [warmAIAssistant, isDeepFocus])
+  }, [warmAIWorkspace, isDeepFocus])
 
   useEffect(() => {
     if (isFocusMode && focusLevel !== 'deep') {
@@ -135,8 +135,8 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
   }, [focusLevel, isFocusMode, setFocusMode])
 
   useEffect(() => {
-    if (shouldShowAssistant) warmAIAssistant()
-  }, [shouldShowAssistant, warmAIAssistant])
+    if (shouldShowAIWorkspace) warmAIWorkspace()
+  }, [shouldShowAIWorkspace, warmAIWorkspace])
 
   // Left padding for <main> reflects the current sidebar mode (desktop/tablet)
   const leftPad =
@@ -174,7 +174,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
           'h-screen w-full max-w-full box-border overflow-y-auto overflow-x-hidden custom-scrollbar transition-[padding] duration-300',
           isDeepFocus
             ? 'pl-0 pr-0 pt-0'
-            : cn(leftPad, !isMobile && isRightSidebarOpen ? 'lg:pr-80' : 'pr-0', 'pt-14', isMobile && !isFocusMode && 'pb-bottom-nav'),
+            : cn(leftPad, 'pr-0 pt-14', isMobile && !isFocusMode && 'pb-bottom-nav'),
         )}
         style={{ scrollbarGutter: 'stable' }}
       >
@@ -183,9 +183,9 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
       <MobileBottomNav />
 
-      {shouldShowAssistant && (
+      {shouldShowAIWorkspace && (
         <Suspense fallback={null}>
-          <AIAssistant variant={aiVariant} />
+          <AIWorkspace variant={aiVariant} />
         </Suspense>
       )}
     </div>

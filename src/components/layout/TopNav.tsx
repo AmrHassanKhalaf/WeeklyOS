@@ -40,7 +40,7 @@ export function TopNav() {
   const isFocusMode = useLayoutStore(state => state.isFocusMode)
   const focusLevel = useLayoutStore(state => state.focusLevel)
   const toggleLeftSidebar = useLayoutStore(state => state.toggleLeftSidebar)
-  const toggleRightSidebar = useLayoutStore(state => state.toggleRightSidebar)
+  const toggleAIWorkspace = useLayoutStore(state => state.toggleAIWorkspace)
   const currentWeek = useWeekStore((state) => state.currentWeek)
   const goToPreviousWeek = useWeekStore((state) => state.goToPreviousWeek)
   const goToNextWeek = useWeekStore((state) => state.goToNextWeek)
@@ -142,10 +142,10 @@ export function TopNav() {
         </button>
         <button
           onPointerDown={onAiDown}
-          onClick={toggleRightSidebar}
+          onClick={toggleAIWorkspace}
           className="ripple-surface relative w-9 h-9 rounded-xl flex items-center justify-center text-primary hover:bg-primary/10 hover:shadow-[0_0_18px_-2px_rgb(167_139_250_/_0.3)] focus-ring transition-all"
-          title="AI Assistant"
-          aria-label="Toggle AI Assistant"
+          title="AI Workspace"
+          aria-label="Toggle AI Workspace"
         >
           <Sparkles className="w-[18px] h-[18px]" strokeWidth={1.5} />
           <span className="absolute inset-0 rounded-xl animate-pulse-glow pointer-events-none opacity-40" />

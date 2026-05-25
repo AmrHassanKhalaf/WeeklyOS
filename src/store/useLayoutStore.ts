@@ -35,6 +35,10 @@ interface LayoutState {
   cycleSidebarMode: () => void
   setSidebarMode: (mode: SidebarMode) => void
 
+  openAIWorkspace: () => void
+  closeAIWorkspace: () => void
+  toggleAIWorkspace: () => void
+  /** @deprecated Use toggleAIWorkspace. Kept for older callers. */
   toggleRightSidebar: () => void
   setFocusMode: (isActive: boolean, level?: FocusModeLevel) => void
   setTaskPickerOpen: (isOpen: boolean) => void
@@ -48,7 +52,7 @@ const initialMode: SidebarMode = initialIsMobile ? 'hidden' : 'expanded'
 
 export const useLayoutStore = create<LayoutState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       sidebarMode: initialMode,
       isLeftSidebarOpen: initialMode !== 'hidden',
       isRightSidebarOpen: false,
@@ -85,7 +89,26 @@ export const useLayoutStore = create<LayoutState>()(
       setSidebarMode: (mode) =>
         set(() => ({ sidebarMode: mode, isLeftSidebarOpen: mode !== 'hidden' })),
 
-      toggleRightSidebar: () => set((state) => ({ isRightSidebarOpen: !state.isRightSidebarOpen })),
+      openAIWorkspace: () =>
+        set((state) => ({
+          isRightSidebarOpen: true,
+          ...(state.isMobile ? { isLeftSidebarOpen: false, sidebarMode: 'hidden' as SidebarMode } : {}),
+        })),
+
+      closeAIWorkspace: () => set({ isRightSidebarOpen: false }),
+
+      toggleAIWorkspace: () =>
+        set((state) => {
+          const isOpening = !state.isRightSidebarOpen
+          return {
+            isRightSidebarOpen: isOpening,
+            ...(isOpening && state.isMobile
+              ? { isLeftSidebarOpen: false, sidebarMode: 'hidden' as SidebarMode }
+              : {}),
+          }
+        }),
+
+      toggleRightSidebar: () => get().toggleAIWorkspace(),
       
       setFocusMode: (isActive, level) => set((state) => ({
         isFocusMode: isActive,

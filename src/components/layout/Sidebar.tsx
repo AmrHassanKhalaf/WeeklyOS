@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   Sparkles,
   Plus,
@@ -100,7 +100,6 @@ function NavItem({
 }
 
 export function Sidebar() {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const sidebarMode = useLayoutStore(state => state.sidebarMode)
   const isMobile = useLayoutStore(state => state.isMobile)
@@ -109,6 +108,7 @@ export function Sidebar() {
   const cycleSidebarMode = useLayoutStore(state => state.cycleSidebarMode)
   const toggleLeftSidebar = useLayoutStore(state => state.toggleLeftSidebar)
   const closeSidebarsOnMobile = useLayoutStore(state => state.closeSidebarsOnMobile)
+  const openAIWorkspace = useLayoutStore(state => state.openAIWorkspace)
   const currentWeek = useWeekStore((s) => s.currentWeek)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
@@ -238,10 +238,7 @@ export function Sidebar() {
             {!isRail ? (
               <Button
                 type="button"
-                onClick={() => {
-                  navigate('/brain-dump')
-                  closeSidebarsOnMobile()
-                }}
+                onClick={openAIWorkspace}
                 size="sm"
                 className="w-full font-bold tracking-wide"
                 leftIcon={<Plus className="w-4 h-4" strokeWidth={2} />}
@@ -251,11 +248,8 @@ export function Sidebar() {
             ) : (
               <button
                 type="button"
-                onClick={() => {
-                  navigate('/brain-dump')
-                  closeSidebarsOnMobile()
-                }}
-                title="New Plan"
+                onClick={openAIWorkspace}
+                title="Open AI Workspace"
                 className="ripple-surface w-11 h-11 mx-auto rounded-xl flex items-center justify-center obsidian-gradient text-white shadow-[0_8px_20px_-6px_rgb(124_58_237_/_0.4)] focus-ring transition-transform hover:scale-105 active:scale-95"
               >
                 <Plus className="w-5 h-5" strokeWidth={2} />
