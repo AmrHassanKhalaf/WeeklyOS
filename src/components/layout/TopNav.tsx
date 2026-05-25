@@ -43,14 +43,12 @@ export function TopNav() {
     toggleLeftSidebar,
     toggleRightSidebar,
   } = useLayoutStore()
-  const {
-    currentWeek,
-    goToPreviousWeek,
-    goToNextWeek,
-    goToCurrentWeek,
-    canGoPreviousWeek,
-    canGoNextWeek,
-  } = useWeekStore()
+  const currentWeek = useWeekStore((state) => state.currentWeek)
+  const goToPreviousWeek = useWeekStore((state) => state.goToPreviousWeek)
+  const goToNextWeek = useWeekStore((state) => state.goToNextWeek)
+  const goToCurrentWeek = useWeekStore((state) => state.goToCurrentWeek)
+  const canGoPreviousWeek = useWeekStore((state) => state.canGoPreviousWeek)
+  const canGoNextWeek = useWeekStore((state) => state.canGoNextWeek)
   const location = useLocation()
   const { ripples: menuRipples, onPointerDown: onMenuDown } = useRipple()
   const { ripples: aiRipples, onPointerDown: onAiDown } = useRipple()

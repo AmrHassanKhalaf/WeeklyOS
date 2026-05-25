@@ -36,7 +36,16 @@ function EmptyHabits({ tab, onAdd }: { tab: 'build' | 'break'; onAdd: () => void
 }
 
 export function HabitTracker() {
-  const { habits, currentMonth, currentYear, viewMode, isLoading, error, loadData, goToPrevMonth, goToNextMonth, setViewMode } = useHabitStore()
+  const habits = useHabitStore((state) => state.habits)
+  const currentMonth = useHabitStore((state) => state.currentMonth)
+  const currentYear = useHabitStore((state) => state.currentYear)
+  const viewMode = useHabitStore((state) => state.viewMode)
+  const isLoading = useHabitStore((state) => state.isLoading)
+  const error = useHabitStore((state) => state.error)
+  const loadData = useHabitStore((state) => state.loadData)
+  const goToPrevMonth = useHabitStore((state) => state.goToPrevMonth)
+  const goToNextMonth = useHabitStore((state) => state.goToNextMonth)
+  const setViewMode = useHabitStore((state) => state.setViewMode)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null)

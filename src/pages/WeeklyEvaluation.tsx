@@ -16,17 +16,21 @@ export function WeeklyEvaluation() {
     struggle: '',
     lessons: ''
   })
+  const currentWeekId = currentWeek?.id
+  const currentEvalWentWell = currentWeek?.evalWentWell || ''
+  const currentEvalStruggle = currentWeek?.evalStruggle || ''
+  const currentEvalLessons = currentWeek?.evalLessons || ''
 
   // Sync local state when currentWeek loads
   useEffect(() => {
-    if (currentWeek) {
+    if (currentWeekId) {
       setEvalState({
-        wentWell: currentWeek.evalWentWell || '',
-        struggle: currentWeek.evalStruggle || '',
-        lessons: currentWeek.evalLessons || ''
+        wentWell: currentEvalWentWell,
+        struggle: currentEvalStruggle,
+        lessons: currentEvalLessons
       })
     }
-  }, [currentWeek?.id, currentWeek?.evalWentWell, currentWeek?.evalStruggle, currentWeek?.evalLessons])
+  }, [currentWeekId, currentEvalWentWell, currentEvalStruggle, currentEvalLessons])
 
   const handleSave = (type: 'wentWell' | 'struggle' | 'lessons') => {
     useWeekStore.getState().updateEvaluation(type, evalState[type])

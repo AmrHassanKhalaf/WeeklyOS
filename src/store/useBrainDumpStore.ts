@@ -1,7 +1,5 @@
 // ─── useBrainDumpStore ────────────────────────────────────────────────────────
-// Refactored to:
-//  - Use brainDumpRepository instead of raw supabase.from() calls (Issue 2)
-//  - Use createAsyncSlice factory for isLoading/error lifecycle (Issue 4)
+// Brain-dump state and optimistic mutations.
 
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
@@ -11,7 +9,7 @@ import {
   updateBrainDumpItem,
   deleteBrainDumpItem,
   deleteBrainDumpItems,
-} from '../lib/repository/brainDumpRepository'
+} from '../services/brainDumpRepository'
 import { createAsyncSlice, type AsyncSlice } from './utils/createAsyncSlice'
 
 export interface BrainDumpItem {

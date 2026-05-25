@@ -1,4 +1,4 @@
-import type { WeekStartDay } from './useSettingsStore'
+import type { WeekStartDay } from '../store/useSettingsStore'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 

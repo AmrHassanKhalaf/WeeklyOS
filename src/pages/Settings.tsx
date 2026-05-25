@@ -33,8 +33,14 @@ const WEEK_START_OPTIONS: Array<{ value: WeekStartDay; label: string }> = [
 
 export function Settings() {
   const settings = useSettingsStore()
-  const { currentWeek, getPreviousWeekForReport, goToWeek } = useWeekStore()
-  const pinnedStore = usePinnedTaskStore()
+  const currentWeek = useWeekStore((state) => state.currentWeek)
+  const getPreviousWeekForReport = useWeekStore((state) => state.getPreviousWeekForReport)
+  const goToWeek = useWeekStore((state) => state.goToWeek)
+  const pinnedTasks = usePinnedTaskStore((state) => state.items)
+  const loadPinnedTasks = usePinnedTaskStore((state) => state.loadPinnedTasks)
+  const createPinnedTask = usePinnedTaskStore((state) => state.createPinnedTask)
+  const togglePinnedTask = usePinnedTaskStore((state) => state.togglePinnedTask)
+  const deletePinnedTask = usePinnedTaskStore((state) => state.deletePinnedTask)
   const { canInstall, install, isInstalled } = useInstallPrompt()
   const [isExporting, setIsExporting] = useState(false)
 
@@ -62,8 +68,8 @@ export function Settings() {
   }, [settings.activeProvider, settings.activeModel])
 
   useEffect(() => {
-    void pinnedStore.loadPinnedTasks()
-  }, [])
+    void loadPinnedTasks()
+  }, [loadPinnedTasks])
 
   useEffect(() => {
     if (!settings.autoDownloadCompletedWeekReport || !currentWeek) return
@@ -152,7 +158,7 @@ export function Settings() {
     }
 
     try {
-      await pinnedStore.createPinnedTask({
+      await createPinnedTask({
         title: pinnedDraft.title.trim(),
         description: pinnedDraft.description.trim() || undefined,
         priority: pinnedDraft.priority,
@@ -186,7 +192,7 @@ export function Settings() {
 
   const handleTogglePinnedTask = async (id: string, isActive: boolean) => {
     try {
-      await pinnedStore.togglePinnedTask(id, isActive)
+      await togglePinnedTask(id, isActive)
       if (currentWeek) {
         await goToWeek(currentWeek.weekNumber, currentWeek.year)
       }
@@ -197,7 +203,7 @@ export function Settings() {
 
   const handleDeletePinnedTask = async (id: string) => {
     try {
-      await pinnedStore.deletePinnedTask(id)
+      await deletePinnedTask(id)
       if (currentWeek) {
         await goToWeek(currentWeek.weekNumber, currentWeek.year)
       }
@@ -319,8 +325,8 @@ export function Settings() {
                 <p className="text-[11px] text-neutral-500">Leave date empty to repeat indefinitely.</p>
                 <Button type="button" onClick={handleCreatePinnedTask} size="sm" variant="secondary" className="text-[11px] font-bold uppercase tracking-widest touch-target mt-2">Create Pinned Task</Button>
                 <div className="space-y-2 pt-2 border-t border-white/10 max-h-64 overflow-y-auto pr-1">
-                  {pinnedStore.items.length===0&&<p className="text-xs text-neutral-500">No pinned tasks yet.</p>}
-                  {pinnedStore.items.map(item=>(
+                  {pinnedTasks.length===0&&<p className="text-xs text-neutral-500">No pinned tasks yet.</p>}
+                  {pinnedTasks.map(item=>(
                     <div key={item.id} className="bg-surface-container-lowest border border-white/5 rounded-lg px-3 py-2.5">
                       <div className="flex items-center justify-between gap-3">
                         <div>

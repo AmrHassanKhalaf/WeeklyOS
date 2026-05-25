@@ -5,7 +5,7 @@
 //   brain_dump: id, user_id, content, created_at, tags
 //   NOTE: No `updated_at` column.
 
-import { supabase } from '../supabase'
+import { supabase } from '../lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

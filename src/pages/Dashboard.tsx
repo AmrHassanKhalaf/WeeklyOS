@@ -34,8 +34,12 @@ function LoadingCard() {
 }
 
 export function Dashboard() {
-  const { currentWeek, weekSummary, isLoadingTasks, isLoadingWeek, deleteWeekData } = useWeekStore()
-  const { restDays } = useSettingsStore()
+  const currentWeek = useWeekStore((state) => state.currentWeek)
+  const weekSummary = useWeekStore((state) => state.weekSummary)
+  const isLoadingTasks = useWeekStore((state) => state.isLoadingTasks)
+  const isLoadingWeek = useWeekStore((state) => state.isLoadingWeek)
+  const deleteWeekData = useWeekStore((state) => state.deleteWeekData)
+  const restDays = useSettingsStore((state) => state.restDays)
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
   const [isInsightLoading, setIsInsightLoading] = useState(false)

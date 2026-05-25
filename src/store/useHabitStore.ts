@@ -1,8 +1,5 @@
 // ─── useHabitStore ────────────────────────────────────────────────────────────
-// Refactored to:
-//  - Use habitRepository instead of raw supabase.from() calls (Issue 2)
-//  - Use createAsyncSlice factory for isLoading/error lifecycle (Issue 4)
-//  - Add pending mutation ID tracking to prevent stale optimistic updates (Issue 3)
+// Habit state and optimistic mutations.
 
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
@@ -15,7 +12,7 @@ import {
   reorderHabit,
   createCompletion,
   deleteCompletion,
-} from '../lib/repository/habitRepository'
+} from '../services/habitRepository'
 import { createAsyncSlice, type AsyncSlice } from './utils/createAsyncSlice'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -172,6 +169,7 @@ interface HabitStore extends AsyncSlice {
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 const now = new Date()
+let habitVisibilityHandler: (() => void) | null = null
 
 export const useHabitStore = create<HabitStore>((set, get) => ({
   habits: [],
@@ -186,21 +184,18 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
 
   setMonth: (month, year) => {
     set({ currentMonth: month, currentYear: year })
-    void get().loadData()
   },
 
   goToPrevMonth: () => {
     const { currentMonth, currentYear } = get()
     const d = new Date(currentYear, currentMonth - 2, 1)
     set({ currentMonth: d.getMonth() + 1, currentYear: d.getFullYear() })
-    void get().loadData()
   },
 
   goToNextMonth: () => {
     const { currentMonth, currentYear } = get()
     const d = new Date(currentYear, currentMonth, 1)
     set({ currentMonth: d.getMonth() + 1, currentYear: d.getFullYear() })
-    void get().loadData()
   },
 
   // ── View ────────────────────────────────────────────────────────────────────
@@ -225,17 +220,16 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
       set({ habits, completions })
     })
 
-    // Step 6 — Tab-Discard Reconnect
-    // Re-load habits when the user returns to a background-discarded tab.
-    const handleVisibility = () => {
-      if (document.visibilityState !== 'visible') return
-      if (get().habits.length === 0 && !get().isLoading) {
-        console.info('[useHabitStore] Tab restored — re-loading habit data')
-        void get().loadData()
+    if (!habitVisibilityHandler) {
+      habitVisibilityHandler = () => {
+        if (document.visibilityState !== 'visible') return
+        if (get().habits.length === 0 && !get().isLoading) {
+          console.info('[useHabitStore] Tab restored — re-loading habit data')
+          void get().loadData()
+        }
       }
+      document.addEventListener('visibilitychange', habitVisibilityHandler)
     }
-    document.removeEventListener('visibilitychange', handleVisibility)
-    document.addEventListener('visibilitychange', handleVisibility)
   },
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
@@ -263,7 +257,7 @@ export const useHabitStore = create<HabitStore>((set, get) => ({
     const is_bad_habit = updates.type !== undefined ? updates.type === 'break_habit' : undefined
     const payload = is_bad_habit !== undefined ? { ...updates, is_bad_habit } : updates
 
-    // Issue 3: Track this mutation — cancel stale responses
+    // Track this mutation so stale responses cannot overwrite newer edits.
     const mutationId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
     set((state) => {
       const m = new Map(state._pendingMutations)

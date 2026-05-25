@@ -9,8 +9,8 @@
 // IMPORTANT: The `habits` table has a `difficulty` column that the TypeScript
 // store type `Habit` was missing. It is included here for completeness.
 
-import { supabase } from '../supabase'
-import type { HabitCategory, HabitGroup, Habit, HabitCompletion } from '../../store/useHabitStore'
+import { supabase } from '../lib/supabase'
+import type { HabitCategory, HabitGroup, Habit, HabitCompletion } from '../store/useHabitStore'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

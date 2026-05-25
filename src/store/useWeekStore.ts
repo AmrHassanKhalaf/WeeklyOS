@@ -5,8 +5,8 @@ import { offlineDelete, offlineInsert, offlineUpdate } from '../lib/supabaseWith
 import type { Json } from '../lib/database.types'
 import { useSettingsStore } from './useSettingsStore'
 import type { WeekStartDay } from './useSettingsStore'
-import { formatDaySerial, getAdjacentWeek, getWeekInfoForDate, getWeekStartDaySerial, getWeeksInYear } from './weekDateUtils'
-import { debounce } from './utils/debounce'
+import { formatDaySerial, getAdjacentWeek, getWeekInfoForDate, getWeekStartDaySerial, getWeeksInYear } from '../utils/weekDateUtils'
+import { debounce } from '../utils/debounce'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -432,11 +432,10 @@ let _realtimeChannel: RealtimeChannel | null = null
 let _pinnedFeatureAvailable: boolean | null = null
 let _visibilityHandler: (() => void) | null = null
 
-// Issue 3: Track in-flight mutation IDs per task to cancel stale responses.
 // Key = taskId, Value = latest mutation ID string.
 const _pendingTaskMutations = new Map<string, string>()
 
-// Issue 3: Debounced version of daily-note DB sync (300ms) to handle rapid keystroke updates.
+// Debounced daily-note DB sync to absorb rapid keystroke updates.
 const _debouncedNoteSync = debounce(
   async (weekId: string, notes: Record<string, string>) => {
     const { error } = await supabase
@@ -562,7 +561,11 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
       // Backward-compatible fallback for deployments that still have the old tasks_type_check.
       if (errCode === '23514' && errMsg.includes('tasks_type_check')) {
-        const fallbackRows = rows.map(({ type, ...rest }) => rest)
+        const fallbackRows = rows.map((row) => {
+          const { type: omittedType, ...fallbackRow } = row
+          void omittedType
+          return fallbackRow
+        })
         const { error: retryErr } = await supabase.from('tasks').insert(fallbackRows)
         if (!retryErr) return
         console.error('[materializePinnedTasksForWeek] Retry insert without type failed:', retryErr)
@@ -582,7 +585,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     const user = session?.user
     if (!user) return null
 
-    let { data: week, error: weekErr } = await supabase
+    const { data: existingWeek, error: weekErr } = await supabase
       .from('weeks')
       .select('*')
       .eq('user_id', user.id)
@@ -591,6 +594,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       .maybeSingle()
 
     if (weekErr) throw weekErr
+    let week = existingWeek
 
     if (!week && options?.createIfMissing) {
       const { data: newWeek, error: createErr } = await supabase
@@ -625,7 +629,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     const user = session?.user
     if (!user) return null
 
-    let { data: week, error: weekErr } = await supabase
+    const { data: existingWeek, error: weekErr } = await supabase
       .from('weeks')
       .select('*')
       .eq('user_id', user.id)
@@ -634,6 +638,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       .maybeSingle()
 
     if (weekErr) throw weekErr
+    let week = existingWeek
 
     if (!week && options?.createIfMissing) {
       const { data: newWeek, error: createErr } = await supabase
@@ -739,14 +744,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         })
       }
 
-      // 4. Brain dump (MIGRATED to useBrainDumpStore)
-
-      // Step 6 — PWA Tab-Discard Reconnect
-      // When the browser discards a background tab to reclaim RAM, the JS heap is
-      // evicted. On return, the tab reloads — but if the SW serves the app shell
-      // from cache the HTML/JS loads instantly while the data is stale. This
-      // visibilitychange listener re-fetches only when the tab becomes visible
-      // again, without a full page reload.
+      // If a restored tab has lost week data, re-fetch once it becomes visible.
       const handleVisibility = () => {
         if (document.visibilityState !== 'visible') return
         // Re-initialize data if the week data is missing (stale or discarded)
@@ -1060,8 +1058,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       if ('estimatedTime' in updates) payload.estimated_duration = updates.estimatedTime === undefined ? null : updates.estimatedTime
       if ('tags' in updates) payload.tags = updates.tags === undefined ? null : updates.tags
 
-      // Issue 3: Assign a unique mutation ID — if a newer mutation for the same task
-      // arrives before this one resolves, we discard the stale response.
+      // Discard stale responses when rapid edits target the same task.
       const mutationId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
       _pendingTaskMutations.set(taskId, mutationId)
 
@@ -1095,7 +1092,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         updateError = err
       }
 
-      // Issue 3: Discard result if a newer mutation has already taken over.
+      // Discard result if a newer mutation has already taken over.
       if (_pendingTaskMutations.get(taskId) !== mutationId) return
       _pendingTaskMutations.delete(taskId)
 
@@ -1228,7 +1225,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         } : null
       }))
 
-      // Issue 3: DB write is debounced at 300ms to absorb rapid keystrokes.
+      // DB write is debounced to absorb rapid keystrokes.
       _debouncedNoteSync(week.id, nextNotes)
     },
 
