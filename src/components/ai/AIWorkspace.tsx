@@ -32,6 +32,7 @@ import type { AIActionId, WorkspaceContextLayer, WorkspaceMode } from '../../ai/
 import { cn } from '../../lib/cn'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { UIBlockList } from './blocks/BrainDumpUIBlock'
+import { PlanningUIBlock } from './blocks/PlanningUIBlock'
 
 interface AIWorkspaceProps {
   variant?: 'default' | 'evaluation'
@@ -708,7 +709,7 @@ function ChatMode({
             >
               {message.text && <FormattedMessage text={message.text} />}
               {message.uiBlocks && message.uiBlocks.length > 0 && (
-                <UIBlockList blocks={message.uiBlocks} />
+                <UIBlockList blocks={message.uiBlocks} PlanningBlockComponent={PlanningUIBlock} />
               )}
               {message.provider && (
                 <p className="mt-3 border-t border-outline-variant/[0.12] pt-2 text-right text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-300/[0.65]">

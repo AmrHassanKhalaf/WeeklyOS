@@ -1,4 +1,6 @@
-import type { AIContext, AITool, AIToolResult, DayOfWeek, Priority } from '../../types'
+import type { AIContext, AITool, AIToolResult, DayOfWeek } from '../../types'
+import { runPlanningPipeline } from '../../planning/pipeline'
+import type { PlanningResult } from '../../planning/types'
 
 // ─── I/O Types ────────────────────────────────────────────────────────────────
 
@@ -8,24 +10,7 @@ export interface GenerateDayPlanInput {
   availableMinutes?: number
 }
 
-export interface DayPlanTask {
-  title: string
-  priority: Priority
-  estimatedTime?: string
-}
-
-export interface DayPlanFocusBlock {
-  label: string
-  durationMinutes?: number
-}
-
-export interface GenerateDayPlanOutput {
-  day: DayOfWeek
-  objective?: string
-  availableTasks: DayPlanTask[]
-  suggestedFocusBlocks: DayPlanFocusBlock[]
-  notes: string
-}
+export type GenerateDayPlanOutput = PlanningResult
 
 // ─── Contract ─────────────────────────────────────────────────────────────────
 
@@ -33,7 +18,7 @@ export const generateDayPlanContract: AITool<GenerateDayPlanInput, GenerateDayPl
   id: 'generateDayPlan',
   name: 'Generate Day Plan',
   description:
-    'Build a focused single-day plan from tasks assigned to that day and pending rollover. Suggests focus blocks based on task priority and available time.',
+    'Run the Planning Engine for a single day — filters to tasks assigned to or unscheduled for that day, prioritizes them with reasoning, suggests focus blocks, and surfaces overload warnings specific to that day.',
   category: 'planning',
   requiresConfirmation: false,
 
@@ -53,66 +38,28 @@ export const generateDayPlanContract: AITool<GenerateDayPlanInput, GenerateDayPl
 
   outputSchema: {
     type: 'object',
-    description: 'Structured single-day plan',
+    description: 'PlanningResult scoped to a single day',
     properties: {
-      day: { type: 'string', description: 'The planned day' },
-      objective: { type: 'string', description: 'Day objective' },
-      availableTasks: { type: 'array', description: 'Tasks available for this day' },
-      suggestedFocusBlocks: { type: 'array', description: 'Suggested focus time blocks' },
-      notes: { type: 'string', description: 'Planning notes for this day' },
+      mode: { type: 'string' },
+      summary: { type: 'object' },
+      prioritizedTasks: { type: 'array', items: { type: 'object' } },
+      suggestedFocusBlocks: { type: 'array', items: { type: 'object' } },
+      recommendations: { type: 'array', items: { type: 'object' } },
     },
-    required: ['day', 'availableTasks', 'suggestedFocusBlocks', 'notes'],
+    required: ['mode', 'summary', 'prioritizedTasks'],
   },
 
   execute: async (input, context: AIContext): Promise<AIToolResult<GenerateDayPlanOutput>> => {
-    const { tasks } = context
-    const { day, objective, availableMinutes } = input
-
-    // Tasks assigned to this day or unscheduled (pending)
-    const dayTasks = tasks.items.filter(
-      (t) => t.status === 'pending' && (t.day === day || !t.day)
-    )
-
-    const availableTasks: DayPlanTask[] = dayTasks
-      .sort((a, b) => {
-        const order: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
-        return order[a.priority] - order[b.priority]
-      })
-      .slice(0, 6)
-      .map((t) => ({ title: t.title, priority: t.priority, estimatedTime: t.estimatedTime }))
-
-    // Suggest focus blocks based on task count and available time
-    const suggestedFocusBlocks: DayPlanFocusBlock[] = []
-    const highPriorityTasks = availableTasks.filter((t) => t.priority === 'high')
-
-    if (highPriorityTasks.length > 0) {
-      suggestedFocusBlocks.push({
-        label: `Deep work — ${highPriorityTasks[0].title}`,
-        durationMinutes: availableMinutes ? Math.min(90, Math.floor(availableMinutes * 0.4)) : 90,
-      })
-    }
-
-    if (availableTasks.length > 1) {
-      suggestedFocusBlocks.push({
-        label: 'Medium tasks batch',
-        durationMinutes: availableMinutes ? Math.min(60, Math.floor(availableMinutes * 0.3)) : 60,
-      })
-    }
-
-    const notes =
-      availableTasks.length === 0
-        ? 'No tasks currently assigned to this day — consider pulling from pending backlog.'
-        : `${availableTasks.length} tasks available for ${day}. Start with the highest priority item before context switching.`
-
-    return {
-      ok: true,
-      output: {
-        day,
-        objective,
-        availableTasks,
-        suggestedFocusBlocks,
-        notes,
-      },
-    }
+    const result = runPlanningPipeline(context, {
+      mode: 'day',
+      targetDay: input.day,
+      focusObjective: input.objective,
+      maxRebalanceProposals: 1,
+      maxRecommendations: 3,
+    })
+    return { ok: true, output: result }
   },
 }
+
+// Keep legacy types for any external consumers that imported them
+export type { DayOfWeek }

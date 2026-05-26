@@ -14,6 +14,8 @@ import type {
 } from '../types'
 import { buildBrainDumpUIBlocks } from '../brain-dump/blocks'
 import type { BrainDumpExtraction } from '../brain-dump/types'
+import { buildPlanningUIBlocks } from '../planning/blocks'
+import type { PlanningResult } from '../planning/types'
 import type {
   OrchestratorRequest,
   OrchestratorResponse,
@@ -162,6 +164,23 @@ export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrc
       if (tc.toolId === 'organizeBrainDump' && tc.result?.ok && tc.result.output) {
         const extraction = tc.result.output as BrainDumpExtraction
         uiBlocks.push(...buildBrainDumpUIBlocks(extraction))
+      }
+      if (
+        (tc.toolId === 'generateWeekPlan' ||
+          tc.toolId === 'generateDayPlan' ||
+          tc.toolId === 'rescheduleTasks') &&
+        tc.result?.ok &&
+        tc.result.output
+      ) {
+        const plan = tc.result.output as PlanningResult
+        uiBlocks.push(...buildPlanningUIBlocks(plan))
+      }
+    }
+    // Also check pending (rescheduleTasks returns pending_confirmation but still has output)
+    for (const pc of pending) {
+      if (pc.toolId === 'rescheduleTasks' && pc.proposedOutput) {
+        const plan = pc.proposedOutput as PlanningResult
+        uiBlocks.push(...buildPlanningUIBlocks(plan))
       }
     }
 

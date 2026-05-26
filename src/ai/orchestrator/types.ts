@@ -64,6 +64,13 @@ export type OrchestratorUIBlockKind =
   | 'brain_dump_events'
   | 'brain_dump_ambiguous'
   | 'brain_dump_suggestions'
+  // Planning Engine blocks
+  | 'planning_summary'
+  | 'planning_tasks'
+  | 'planning_focus_blocks'
+  | 'planning_overload'
+  | 'planning_rebalance'
+  | 'planning_recommendations'
 
 /**
  * A structured display block that can be rendered as a rich card in the UI,

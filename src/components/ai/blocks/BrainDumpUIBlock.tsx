@@ -134,19 +134,33 @@ export function BrainDumpUIBlock({ block, className }: BrainDumpUIBlockProps) {
   )
 }
 
-// ─── Multi-block renderer ─────────────────────────────────────────────────────
+// ─── Multi-block renderer — routes to the correct component by kind ──────────
+
+const PLANNING_KINDS = new Set([
+  'planning_summary',
+  'planning_tasks',
+  'planning_focus_blocks',
+  'planning_overload',
+  'planning_rebalance',
+  'planning_recommendations',
+])
 
 interface UIBlockListProps {
   blocks: OrchestratorUIBlock[]
+  /** Optional lazy renderer for planning blocks — avoids circular imports. */
+  PlanningBlockComponent?: React.ComponentType<{ block: OrchestratorUIBlock }>
 }
 
-export function UIBlockList({ blocks }: UIBlockListProps) {
+export function UIBlockList({ blocks, PlanningBlockComponent }: UIBlockListProps) {
   if (blocks.length === 0) return null
   return (
     <div className="mt-3 space-y-2">
-      {blocks.map((block, idx) => (
-        <BrainDumpUIBlock key={`${block.kind}-${idx}`} block={block} />
-      ))}
+      {blocks.map((block, idx) => {
+        if (PLANNING_KINDS.has(block.kind) && PlanningBlockComponent) {
+          return <PlanningBlockComponent key={`${block.kind}-${idx}`} block={block} />
+        }
+        return <BrainDumpUIBlock key={`${block.kind}-${idx}`} block={block} />
+      })}
     </div>
   )
 }

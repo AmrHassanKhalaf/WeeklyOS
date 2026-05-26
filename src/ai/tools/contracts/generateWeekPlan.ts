@@ -1,4 +1,6 @@
-import type { AIContext, AITool, AIToolResult, PlanGenerationResult, Priority } from '../../types'
+import type { AIContext, AITool, AIToolResult } from '../../types'
+import { runPlanningPipeline } from '../../planning/pipeline'
+import type { PlanningResult } from '../../planning/types'
 
 // ─── I/O Types ────────────────────────────────────────────────────────────────
 
@@ -8,8 +10,7 @@ export interface GenerateWeekPlanInput {
   includeRollover?: boolean
 }
 
-// Output reuses the existing PlanGenerationResult shape
-export type GenerateWeekPlanOutput = PlanGenerationResult
+export type GenerateWeekPlanOutput = PlanningResult
 
 // ─── Contract ─────────────────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ export const generateWeekPlanContract: AITool<GenerateWeekPlanInput, GenerateWee
   id: 'generateWeekPlan',
   name: 'Generate Week Plan',
   description:
-    'Build a structured weekly plan from current workspace context — pending tasks, focus metrics, and workload distribution. Returns a plan skeleton; the AI layer populates day-level objectives.',
+    'Run the Planning Engine to produce a strategic weekly plan. Analyzes workload pressure, prioritizes tasks with reasoning, suggests focus blocks, proposes rebalancing for overloaded days, and generates actionable recommendations. All proposals require user confirmation.',
   category: 'planning',
   requiresConfirmation: false,
 
@@ -36,7 +37,7 @@ export const generateWeekPlanContract: AITool<GenerateWeekPlanInput, GenerateWee
       },
       includeRollover: {
         type: 'boolean',
-        description: 'Whether to explicitly include pending rollover tasks in the plan',
+        description: 'Whether to explicitly flag pending rollover tasks in the plan',
       },
     },
     required: [],
@@ -44,74 +45,28 @@ export const generateWeekPlanContract: AITool<GenerateWeekPlanInput, GenerateWee
 
   outputSchema: {
     type: 'object',
-    description: 'Structured weekly plan',
+    description: 'Full PlanningResult from the Planning Engine',
     properties: {
-      weekTitle: { type: 'string', description: 'Suggested week title or theme' },
-      dailyPlan: { type: 'array', description: 'Per-day objectives and task suggestions' },
-      recommendations: { type: 'array', description: 'Planning recommendations' },
-      risks: { type: 'array', description: 'Identified workload risks' },
+      mode: { type: 'string' },
+      summary: { type: 'object' },
+      workloadAnalysis: { type: 'object' },
+      prioritizedTasks: { type: 'array', items: { type: 'object' } },
+      suggestedFocusBlocks: { type: 'array', items: { type: 'object' } },
+      rebalanceSuggestions: { type: 'array', items: { type: 'object' } },
+      recommendations: { type: 'array', items: { type: 'object' } },
+      warnings: { type: 'array', items: { type: 'object' } },
+      planningReasoning: { type: 'array', items: { type: 'string' } },
     },
-    required: ['dailyPlan', 'recommendations', 'risks'],
+    required: ['mode', 'summary', 'prioritizedTasks', 'recommendations'],
   },
 
   execute: async (input, context: AIContext): Promise<AIToolResult<GenerateWeekPlanOutput>> => {
-    const { tasks, metrics, week } = context
-
-    const pendingTasks = tasks.items.filter((t) => t.status === 'pending')
-    const highPriorityPending = pendingTasks.filter((t) => t.priority === 'high')
-
-    const recommendations: string[] = []
-    const risks: string[] = []
-
-    if (input.focusObjective) {
-      recommendations.push(`Primary objective: ${input.focusObjective}`)
-    }
-
-    if (metrics.pendingCount > 0) {
-      recommendations.push(
-        `${metrics.pendingCount} pending tasks available — prioritize by energy level, not just urgency`
-      )
-    }
-
-    if (highPriorityPending.length > 3) {
-      risks.push(
-        `${highPriorityPending.length} high-priority tasks pending — risk of overcommitting the week`
-      )
-      recommendations.push('Protect time for the top 2–3 high-priority items before scheduling others')
-    }
-
-    if (input.includeRollover && metrics.pendingCount > 0) {
-      recommendations.push(
-        `${metrics.pendingCount} rollover tasks from current week — review before planning new work`
-      )
-    }
-
-    for (const constraint of input.constraints ?? []) {
-      recommendations.push(`Constraint noted: ${constraint}`)
-    }
-
-    // Produce a skeleton daily plan — the AI orchestrator (Phase 2.4) will flesh this out
-    const topTasks = pendingTasks
-      .sort((a, b) => {
-        const order: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
-        return order[a.priority] - order[b.priority]
-      })
-      .slice(0, 5)
-
-    return {
-      ok: true,
-      output: {
-        weekTitle: week.title,
-        dailyPlan: [],
-        recommendations,
-        risks,
-        // Attach top tasks as metadata for the LLM orchestrator to use
-        _pendingTaskSummary: topTasks.map((t) => ({
-          title: t.title,
-          priority: t.priority,
-          day: t.day,
-        })),
-      } as GenerateWeekPlanOutput & Record<string, unknown>,
-    }
+    const result = runPlanningPipeline(context, {
+      mode: 'week',
+      focusObjective: input.focusObjective,
+      constraints: input.constraints,
+      maxRebalanceProposals: input.includeRollover ? 4 : 3,
+    })
+    return { ok: true, output: result }
   },
 }
