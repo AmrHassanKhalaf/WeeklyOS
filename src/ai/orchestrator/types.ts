@@ -55,6 +55,15 @@ export type OrchestratorUIBlockKind =
   | 'reflection_summary'
   | 'reschedule_proposal'
   | 'warning'
+  // Brain Dump extraction blocks
+  | 'brain_dump_summary'
+  | 'brain_dump_tasks'
+  | 'brain_dump_habits'
+  | 'brain_dump_goals'
+  | 'brain_dump_reminders'
+  | 'brain_dump_events'
+  | 'brain_dump_ambiguous'
+  | 'brain_dump_suggestions'
 
 /**
  * A structured display block that can be rendered as a rich card in the UI,

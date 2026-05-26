@@ -31,6 +31,7 @@ import { buildActionPrompt } from '../../ai/prompts'
 import type { AIActionId, WorkspaceContextLayer, WorkspaceMode } from '../../ai/types'
 import { cn } from '../../lib/cn'
 import { useLayoutStore } from '../../store/useLayoutStore'
+import { UIBlockList } from './blocks/BrainDumpUIBlock'
 
 interface AIWorkspaceProps {
   variant?: 'default' | 'evaluation'
@@ -705,7 +706,10 @@ function ChatMode({
                     : 'border-primary/[0.14] bg-gradient-to-br from-primary/[0.08] via-surface-container-low/[0.58] to-surface-container-lowest/[0.78] text-on-surface rounded-bl-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
               )}
             >
-              <FormattedMessage text={message.text} />
+              {message.text && <FormattedMessage text={message.text} />}
+              {message.uiBlocks && message.uiBlocks.length > 0 && (
+                <UIBlockList blocks={message.uiBlocks} />
+              )}
               {message.provider && (
                 <p className="mt-3 border-t border-outline-variant/[0.12] pt-2 text-right text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-300/[0.65]">
                   via {message.provider}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { WorkspaceMode } from '../types'
 import { createAIOrchestrator } from '../orchestrator'
-import type { OrchestratorResponse, PendingToolConfirmation } from '../orchestrator/types'
+import type { OrchestratorResponse, OrchestratorUIBlock, PendingToolConfirmation } from '../orchestrator/types'
 import { createEdgeProvider } from '../providers'
 import { useWorkspaceContext } from './useAIContext'
 
@@ -12,6 +12,8 @@ export interface SessionMessage {
   role: 'ai' | 'user' | 'system'
   text: string
   provider?: string
+  /** Structured UI blocks attached to this AI message (e.g. brain dump extraction cards). */
+  uiBlocks?: OrchestratorUIBlock[]
 }
 
 const WELCOME_MESSAGE: SessionMessage = {
@@ -103,10 +105,15 @@ export function useOrchestratorSession(activeMode: WorkspaceMode): UseOrchestrat
         history,
       })
 
-      // Append AI response
+      // Append AI response (with optional structured UI blocks)
       setMessages((prev) => [
         ...prev,
-        { role: 'ai', text: response.message, provider: response.provider },
+        {
+          role: 'ai',
+          text: response.message,
+          provider: response.provider,
+          uiBlocks: response.uiBlocks,
+        },
       ])
 
       // Handle pending confirmations

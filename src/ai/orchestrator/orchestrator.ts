@@ -12,10 +12,13 @@ import type {
   AIToolId,
   WorkspaceMode,
 } from '../types'
+import { buildBrainDumpUIBlocks } from '../brain-dump/blocks'
+import type { BrainDumpExtraction } from '../brain-dump/types'
 import type {
   OrchestratorRequest,
   OrchestratorResponse,
   OrchestratorToolCall,
+  OrchestratorUIBlock,
   PendingToolConfirmation,
 } from './types'
 
@@ -153,11 +156,21 @@ export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrc
       request.mode
     )
 
+    // Post-process: convert known tool outputs into structured UI blocks
+    const uiBlocks: OrchestratorUIBlock[] = []
+    for (const tc of executed) {
+      if (tc.toolId === 'organizeBrainDump' && tc.result?.ok && tc.result.output) {
+        const extraction = tc.result.output as BrainDumpExtraction
+        uiBlocks.push(...buildBrainDumpUIBlocks(extraction))
+      }
+    }
+
     return {
       message: providerResponse.message.content,
       reasoning: providerResponse.reasoning,
       toolCalls: executed.length > 0 ? executed : undefined,
       pendingConfirmations: pending.length > 0 ? pending : undefined,
+      uiBlocks: uiBlocks.length > 0 ? uiBlocks : undefined,
       provider: providerResponse.provider,
       model: providerResponse.model,
       fromTool: (providerResponse.toolCalls?.length ?? 0) > 0,
