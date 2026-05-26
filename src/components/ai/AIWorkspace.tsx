@@ -25,26 +25,19 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { AI_ACTIONS } from '../../ai/actions'
-import { assembleContext, serializeContextForLLM } from '../../ai/context'
-import { useWorkspaceContext } from '../../ai/hooks'
+import { useOrchestratorSession, type SessionMessage } from '../../ai/hooks'
 import { WORKSPACE_MODE_DEFINITIONS, WORKSPACE_MODE_LIST } from '../../ai/modes'
 import { buildActionPrompt } from '../../ai/prompts'
 import type { AIActionId, WorkspaceContextLayer, WorkspaceMode } from '../../ai/types'
-import { useAiApi, type AiHistoryMessage } from '../../hooks/useApi'
 import { cn } from '../../lib/cn'
 import { useLayoutStore } from '../../store/useLayoutStore'
-
-type MessageRole = 'ai' | 'user' | 'system'
 
 interface AIWorkspaceProps {
   variant?: 'default' | 'evaluation'
 }
 
-interface ChatMessage {
-  role: MessageRole
-  text: string
-  provider?: string
-}
+// Alias to the hook's message type for local component usage
+type ChatMessage = SessionMessage
 
 
 const modeIcons: Record<WorkspaceMode, LucideIcon> = {
@@ -111,24 +104,22 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
   const reduceMotion = useReducedMotion()
   const closeAIWorkspace = useLayoutStore((state) => state.closeAIWorkspace)
   const isMobile = useLayoutStore((state) => state.isMobile)
-  const { raw: aiContext, workspace: workspaceContext } = useWorkspaceContext()
-  const { sendMessage } = useAiApi()
+
+  const [activeMode, setActiveMode] = useState<WorkspaceMode>(variant === 'evaluation' ? 'reflect' : 'plan')
+
+  const {
+    workspaceContext,
+    messages: chatMessages,
+    isProcessing: isAiTyping,
+    send,
+  } = useOrchestratorSession(activeMode)
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
   const feedbackTimerRef = useRef<number | null>(null)
-  const [activeMode, setActiveMode] = useState<WorkspaceMode>(variant === 'evaluation' ? 'reflect' : 'plan')
   const [chatInput, setChatInput] = useState('')
   const [brainDump, setBrainDump] = useState('')
-  const [isAiTyping, setIsAiTyping] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [stagedActionLabel, setStagedActionLabel] = useState<string | null>(null)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      role: 'ai',
-      text:
-        'I am ready with your WeeklyOS context. Choose a workflow, review the staged prompt, then send when you want the assistant to act.',
-    },
-  ])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -157,31 +148,9 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
   const handleSendMessage = async (overrideText?: string) => {
     const message = (overrideText ?? chatInput).trim()
     if (!message || isAiTyping) return
-
     setChatInput('')
     setActiveMode('chat')
-    setChatMessages((prev) => [...prev, { role: 'user', text: message }])
-    setIsAiTyping(true)
-
-    try {
-      const history: AiHistoryMessage[] = chatMessages
-        .filter((entry) => entry.role !== 'system')
-        .map((entry) => ({
-          role: entry.role === 'ai' ? 'assistant' : entry.role,
-          content: entry.text,
-        }))
-
-      const assembled = assembleContext(aiContext, activeMode, history)
-      const serialized = serializeContextForLLM(assembled)
-
-      const response = await sendMessage('workspace', message, { serialized }, undefined, history)
-      setChatMessages((prev) => [...prev, { role: 'ai', text: response.response, provider: response.providerUsed }])
-    } catch (error) {
-      const text = error instanceof Error ? error.message : 'Unexpected AI workspace error'
-      setChatMessages((prev) => [...prev, { role: 'system', text: `AI request failed: ${text}` }])
-    } finally {
-      setIsAiTyping(false)
-    }
+    await send(message)
   }
 
   const handleAction = (actionId: AIActionId) => {

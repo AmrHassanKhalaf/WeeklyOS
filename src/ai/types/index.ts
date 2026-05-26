@@ -132,18 +132,34 @@ export interface AITool<Input extends object = Record<string, unknown>, Output =
   execute?: (input: Input, context: AIContext) => Promise<AIToolResult<Output>>
 }
 
+/** A single tool call returned from the LLM provider. */
+export interface AIProviderToolCall {
+  toolId: string
+  toolName: string
+  input: Record<string, unknown>
+}
+
 export interface AIProviderRequest {
+  /** Fully-assembled message array (system + history + user). */
   messages: AIMessage[]
-  context: AIContext
+  /** Active workspace mode — used for provider-side context. */
   mode: WorkspaceMode
-  tools: AITool[]
+  /** Tool contracts available for this request. */
+  tools?: AITool[]
+  /** Model override — falls back to provider default. */
+  model?: string
   metadata?: Record<string, unknown>
 }
 
 export interface AIProviderResponse {
   message: AIMessage
-  providerId: string
-  toolResults?: AIToolResult[]
+  /** Tool calls the LLM requested to execute. */
+  toolCalls?: AIProviderToolCall[]
+  /** Internal reasoning chain (if supported by the provider). */
+  reasoning?: string
+  /** Provider identifier for display / debugging. */
+  provider: string
+  model?: string
   raw?: unknown
 }
 
@@ -151,12 +167,14 @@ export interface AIProvider {
   id: string
   label: string
   supportsTools: boolean
-  send: (request: AIProviderRequest) => Promise<AIProviderResponse>
+  supportsStreaming: boolean
+  generate: (request: AIProviderRequest) => Promise<AIProviderResponse>
+  stream?: (request: AIProviderRequest) => AsyncGenerator<string>
 }
 
 export interface AIResponse {
   message: AIMessage
-  providerId?: string
+  provider?: string
   actions?: AIAction[]
   toolResults?: AIToolResult[]
   metadata?: Record<string, unknown>

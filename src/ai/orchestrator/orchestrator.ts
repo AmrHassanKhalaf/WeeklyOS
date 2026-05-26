@@ -1,23 +1,25 @@
-import { buildAIContext } from '../context'
+import { assembleContext, serializeContextForLLM } from '../context'
 import { getWorkspaceModeDefinition } from '../modes'
-import { buildWorkspacePromptMessages } from '../prompts'
+import { buildModePrompt, buildWorkspaceSystemPrompt } from '../prompts'
 import { defaultAIToolRegistry, type AIToolRegistry } from '../tools'
+import { executeTool } from '../tools/executor'
 import type {
   AIContext,
-  AIContextInput,
   AIMessage,
   AIProvider,
-  AIProviderResponse,
+  AIProviderToolCall,
   AITool,
+  AIToolId,
   WorkspaceMode,
 } from '../types'
+import type {
+  OrchestratorRequest,
+  OrchestratorResponse,
+  OrchestratorToolCall,
+  PendingToolConfirmation,
+} from './types'
 
-export interface AIOrchestratorPrepareInput {
-  mode: WorkspaceMode
-  userInput: string
-  contextInput: AIContextInput
-  history?: AIMessage[]
-}
+// ─── Prepared Request (internal) ─────────────────────────────────────────────
 
 export interface AIOrchestratorPreparedRequest {
   mode: WorkspaceMode
@@ -26,9 +28,18 @@ export interface AIOrchestratorPreparedRequest {
   tools: AITool[]
 }
 
+// ─── Orchestrator Interface ───────────────────────────────────────────────────
+
 export interface AIOrchestrator {
-  prepare: (input: AIOrchestratorPrepareInput) => AIOrchestratorPreparedRequest
-  run: (input: AIOrchestratorPrepareInput) => Promise<AIProviderResponse>
+  /**
+   * Build the full AI payload (messages + tools) without calling the provider.
+   * Useful for inspection, testing, or passing to a custom provider.
+   */
+  prepare: (request: OrchestratorRequest) => AIOrchestratorPreparedRequest
+  /**
+   * Full execution: prepare → provider → process tool calls → structured response.
+   */
+  execute: (request: OrchestratorRequest) => Promise<OrchestratorResponse>
 }
 
 export interface AIOrchestratorOptions {
@@ -36,35 +47,122 @@ export interface AIOrchestratorOptions {
   toolRegistry?: AIToolRegistry
 }
 
-export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrchestrator {
-  const toolRegistry = options.toolRegistry ?? defaultAIToolRegistry
+// ─── Tool Call Processing ─────────────────────────────────────────────────────
 
-  const prepare = (input: AIOrchestratorPrepareInput): AIOrchestratorPreparedRequest => {
-    const context = buildAIContext(input.contextInput)
-    const modeDefinition = getWorkspaceModeDefinition(input.mode)
-    const tools = toolRegistry.resolve(modeDefinition.allowedToolIds)
-    const messages = [
-      ...(input.history ?? []),
-      ...buildWorkspacePromptMessages(input.mode, context, input.userInput),
-    ]
+async function processToolCalls(
+  toolCalls: AIProviderToolCall[],
+  registry: AIToolRegistry,
+  context: AIContext,
+  mode: WorkspaceMode
+): Promise<{
+  executed: OrchestratorToolCall[]
+  pending: PendingToolConfirmation[]
+}> {
+  const executed: OrchestratorToolCall[] = []
+  const pending: PendingToolConfirmation[] = []
 
-    return {
-      mode: input.mode,
-      context,
-      messages,
-      tools,
+  for (const tc of toolCalls) {
+    const tool = registry.get(tc.toolId as AIToolId)
+    if (!tool) continue
+
+    const execResult = await executeTool(tool, tc.input, { aiContext: context, mode })
+
+    if (execResult.status === 'pending_confirmation') {
+      pending.push({
+        confirmationId: `${tc.toolId}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        toolId: tc.toolId as AIToolId,
+        toolName: tool.name,
+        input: tc.input,
+        proposedOutput: execResult.output,
+      })
+    } else {
+      executed.push({
+        toolId: tc.toolId as AIToolId,
+        toolName: tool.name,
+        input: tc.input,
+        result: { ok: execResult.ok, output: execResult.output, error: execResult.error },
+        executionStatus: execResult.status,
+      })
     }
   }
 
-  return {
-    prepare,
-    run: async (input) => {
-      if (!options.provider) {
-        throw new Error('AI provider is not configured in the architecture skeleton.')
-      }
+  return { executed, pending }
+}
 
-      const prepared = prepare(input)
-      return options.provider.send(prepared)
-    },
+// ─── Factory ──────────────────────────────────────────────────────────────────
+
+export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrchestrator {
+  const toolRegistry = options.toolRegistry ?? defaultAIToolRegistry
+
+  // ── Prepare ────────────────────────────────────────────────────────────────
+  const prepare = (request: OrchestratorRequest): AIOrchestratorPreparedRequest => {
+    const { mode, context, userMessage, history = [] } = request
+
+    // Build the context summary for the system prompt
+    const assembled = assembleContext(context, mode, history)
+    const contextSummary = serializeContextForLLM(assembled)
+
+    // System prompt stack
+    const messages: AIMessage[] = [
+      buildWorkspaceSystemPrompt(),
+      buildModePrompt(mode),
+      { role: 'system', content: `[Workspace Context]\n${contextSummary}` },
+    ]
+
+    // Inject conversation history (skip system messages from history)
+    for (const turn of history) {
+      const role = turn.role === 'assistant' || turn.role === 'ai' ? 'assistant' : 'user'
+      if (turn.content?.trim()) {
+        messages.push({ role: role as AIMessage['role'], content: turn.content.trim() })
+      }
+    }
+
+    // Append the current user message
+    messages.push({ role: 'user', content: userMessage })
+
+    // Resolve tools allowed for this mode
+    const modeDefinition = getWorkspaceModeDefinition(mode)
+    const tools = toolRegistry.resolve(modeDefinition.allowedToolIds)
+
+    return { mode, context, messages, tools }
   }
+
+  // ── Execute ────────────────────────────────────────────────────────────────
+  const execute = async (request: OrchestratorRequest): Promise<OrchestratorResponse> => {
+    if (!options.provider) {
+      throw new Error(
+        'No AI provider is configured. Connect a provider before calling execute().'
+      )
+    }
+
+    const prepared = prepare(request)
+
+    // Call the provider
+    const providerResponse = await options.provider.generate({
+      messages: prepared.messages,
+      tools: prepared.tools,
+      mode: request.mode,
+      model: request.overrideModel,
+    })
+
+    // Process any tool calls the provider returned
+    const { executed, pending } = await processToolCalls(
+      providerResponse.toolCalls ?? [],
+      toolRegistry,
+      request.context,
+      request.mode
+    )
+
+    return {
+      message: providerResponse.message.content,
+      reasoning: providerResponse.reasoning,
+      toolCalls: executed.length > 0 ? executed : undefined,
+      pendingConfirmations: pending.length > 0 ? pending : undefined,
+      provider: providerResponse.provider,
+      model: providerResponse.model,
+      fromTool: (providerResponse.toolCalls?.length ?? 0) > 0,
+    }
+  }
+
+  return { prepare, execute }
 }
