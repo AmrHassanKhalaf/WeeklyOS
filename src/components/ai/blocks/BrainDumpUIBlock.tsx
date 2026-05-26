@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { OrchestratorUIBlock, OrchestratorUIBlockKind } from '../../../ai/orchestrator/types'
 import { cn } from '../../../lib/cn'
+import { ReflectionUIBlock } from './ReflectionUIBlock'
 
 // ─── Block Icon Map ───────────────────────────────────────────────────────────
 
@@ -145,6 +146,17 @@ const PLANNING_KINDS = new Set([
   'planning_recommendations',
 ])
 
+const REFLECTION_KINDS = new Set([
+  'reflection_summary',
+  'reflection_score_breakdown',
+  'reflection_wins',
+  'reflection_struggles',
+  'reflection_lessons',
+  'reflection_improvements',
+  'reflection_insights',
+  'reflection_next_week',
+])
+
 interface UIBlockListProps {
   blocks: OrchestratorUIBlock[]
   /** Optional lazy renderer for planning blocks — avoids circular imports. */
@@ -158,6 +170,9 @@ export function UIBlockList({ blocks, PlanningBlockComponent }: UIBlockListProps
       {blocks.map((block, idx) => {
         if (PLANNING_KINDS.has(block.kind) && PlanningBlockComponent) {
           return <PlanningBlockComponent key={`${block.kind}-${idx}`} block={block} />
+        }
+        if (REFLECTION_KINDS.has(block.kind)) {
+          return <ReflectionUIBlock key={`${block.kind}-${idx}`} block={block} />
         }
         return <BrainDumpUIBlock key={`${block.kind}-${idx}`} block={block} />
       })}

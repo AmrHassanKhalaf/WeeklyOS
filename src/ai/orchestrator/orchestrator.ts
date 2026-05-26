@@ -16,6 +16,8 @@ import { buildBrainDumpUIBlocks } from '../brain-dump/blocks'
 import type { BrainDumpExtraction } from '../brain-dump/types'
 import { buildPlanningUIBlocks } from '../planning/blocks'
 import type { PlanningResult } from '../planning/types'
+import { buildReflectionUIBlocks } from '../reflection/blocks'
+import type { ReflectionResult } from '../reflection/types'
 import type {
   OrchestratorRequest,
   OrchestratorResponse,
@@ -174,6 +176,14 @@ export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrc
       ) {
         const plan = tc.result.output as PlanningResult
         uiBlocks.push(...buildPlanningUIBlocks(plan))
+      }
+      if (
+        (tc.toolId === 'summarizeWeek' || tc.toolId === 'summarizeReflection') &&
+        tc.result?.ok &&
+        tc.result.output
+      ) {
+        const reflection = tc.result.output as ReflectionResult
+        uiBlocks.push(...buildReflectionUIBlocks(reflection))
       }
     }
     // Also check pending (rescheduleTasks returns pending_confirmation but still has output)

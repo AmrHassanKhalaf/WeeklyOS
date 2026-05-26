@@ -1,21 +1,20 @@
 import type { AIContext } from '../../types'
 import type { DayPressureScore, RiskLevel, WorkloadAnalysis } from '../types'
 import { ALL_DAYS, DAY_SHORT_NAMES, WEEK_ORDER } from '../utils'
-
-// ─── Thresholds ───────────────────────────────────────────────────────────────
-
-/** A day with this many pending tasks is considered overloaded. */
-const OVERLOAD_PENDING_THRESHOLD = 4
-/** A day with this pressure score is considered overloaded. */
-const OVERLOAD_PRESSURE_THRESHOLD = 60
+import { THRESHOLDS } from '../../config/thresholds'
+import { SCORING_WEIGHTS } from '../../config/scoringWeights'
 
 // ─── Pressure Formula ─────────────────────────────────────────────────────────
 //
-// pressureScore = (pending * 12) + (high-priority-pending * 10)
+// pressureScore = (pending * pressurePendingWeight) + (high-priority-pending * pressureHighPriorityWeight)
 // Capped at 100. A day with 4 pending (2 high-priority) scores ~68 → overloaded.
 
 function computePressureScore(pending: number, highPriorityPending: number): number {
-  return Math.min(100, pending * 12 + highPriorityPending * 10)
+  return Math.min(
+    100,
+    pending * SCORING_WEIGHTS.planning.pressurePendingWeight +
+      highPriorityPending * SCORING_WEIGHTS.planning.pressureHighPriorityWeight
+  )
 }
 
 // ─── Risk Level ───────────────────────────────────────────────────────────────
@@ -25,9 +24,13 @@ function deriveRiskLevel(
   overloadedCount: number,
   maxHighPriorityOnSingleDay: number
 ): RiskLevel {
-  if (overallPressure >= 80 || maxHighPriorityOnSingleDay >= 4) return 'critical'
-  if (overallPressure >= 60 || overloadedCount >= 3) return 'high'
-  if (overallPressure >= 35 || overloadedCount >= 1) return 'medium'
+  if (
+    overallPressure >= THRESHOLDS.workload.riskCritical ||
+    maxHighPriorityOnSingleDay >= THRESHOLDS.workload.criticalHighPriorityPerDay
+  )
+    return 'critical'
+  if (overallPressure >= THRESHOLDS.workload.riskHigh || overloadedCount >= 3) return 'high'
+  if (overallPressure >= THRESHOLDS.workload.riskMedium || overloadedCount >= 1) return 'medium'
   if (overallPressure >= 15) return 'low'
   return 'balanced'
 }
@@ -57,8 +60,8 @@ export function analyzeWorkload(context: AIContext): WorkloadAnalysis {
     const pressureScore = computePressureScore(totalPending, highPriorityPending)
 
     const isOverloaded =
-      totalPending >= OVERLOAD_PENDING_THRESHOLD ||
-      pressureScore >= OVERLOAD_PRESSURE_THRESHOLD
+      totalPending >= THRESHOLDS.workload.overloadPendingCount ||
+      pressureScore >= THRESHOLDS.workload.overloadPressureScore
 
     return {
       day,

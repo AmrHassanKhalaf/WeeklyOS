@@ -1,4 +1,6 @@
-import type { AIContext, AITool, AIToolResult, ReflectionSummary } from '../../types'
+import type { AIContext, AITool, AIToolResult } from '../../types'
+import { runReflectionPipeline } from '../../reflection/pipeline'
+import type { ReflectionResult } from '../../reflection/types'
 
 // ─── I/O Types ────────────────────────────────────────────────────────────────
 
@@ -6,8 +8,7 @@ export interface SummarizeReflectionInput {
   weekId?: string
 }
 
-// Output reuses the existing ReflectionSummary shape
-export type SummarizeReflectionOutput = ReflectionSummary
+export type SummarizeReflectionOutput = ReflectionResult
 
 // ─── Contract ─────────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ export const summarizeReflectionContract: AITool<
   id: 'summarizeReflection',
   name: 'Summarize Reflection',
   description:
-    'Distill the captured reflection notes (went well, struggles, lessons) into a structured summary with actionable next steps. Focused specifically on the reflection layer, not full week metrics.',
+    'Run the Reflection Engine focused on reflection notes and behavioral patterns. Analyzes completion, focus, habits, and behavior to produce structured wins, struggles, lessons, and insights. All analysis is grounded in real productivity data.',
   category: 'reflection',
   requiresConfirmation: false,
 
@@ -33,59 +34,42 @@ export const summarizeReflectionContract: AITool<
 
   outputSchema: {
     type: 'object',
-    description: 'Structured reflection summary',
+    description: 'Full ReflectionResult from the Reflection Engine',
     properties: {
-      wins: { type: 'array', description: 'Wins from reflection notes', items: { type: 'string' } },
-      struggles: { type: 'array', description: 'Struggles from reflection notes', items: { type: 'string' } },
-      lessons: { type: 'array', description: 'Lessons extracted from notes', items: { type: 'string' } },
-      nextActions: { type: 'array', description: 'Suggested next steps', items: { type: 'string' } },
-      sourceWeekId: { type: 'string', description: 'Week ID that was summarized' },
+      generatedAt: { type: 'string' },
+      context: { type: 'object' },
+      completion: { type: 'object' },
+      focus: { type: 'object' },
+      habit: { type: 'object' },
+      behavior: { type: 'object' },
+      insights: { type: 'array', items: { type: 'object' } },
+      summary: { type: 'object' },
+      score: { type: 'object' },
+      reflectionReasoning: { type: 'array', items: { type: 'string' } },
     },
-    required: ['wins', 'struggles', 'lessons', 'nextActions'],
+    required: ['generatedAt', 'context', 'completion', 'focus', 'habit', 'behavior', 'insights', 'summary', 'score'],
   },
 
   execute: async (input, context: AIContext): Promise<AIToolResult<SummarizeReflectionOutput>> => {
-    const { reflections, week } = context
+    // Check if user has captured any reflection notes
+    const { reflections } = context
+    const hasReflectionNotes =
+      (reflections.wentWell?.trim() ?? '') !== '' ||
+      (reflections.struggle?.trim() ?? '') !== '' ||
+      (reflections.lessons?.trim() ?? '') !== ''
 
-    const wins: string[] = []
-    const struggles: string[] = []
-    const lessons: string[] = []
-    const nextActions: string[] = []
-
-    if (reflections.wentWell?.trim()) {
-      wins.push(reflections.wentWell.trim().slice(0, 300))
-    }
-    if (reflections.struggle?.trim()) {
-      struggles.push(reflections.struggle.trim().slice(0, 300))
-    }
-    if (reflections.lessons?.trim()) {
-      lessons.push(reflections.lessons.trim().slice(0, 300))
-    }
-
-    if (wins.length === 0 && struggles.length === 0 && lessons.length === 0) {
+    if (!hasReflectionNotes) {
       return {
         ok: false,
         error: 'No reflection notes captured yet. Complete the weekly evaluation first.',
       }
     }
 
-    // Suggest next actions from lessons
-    if (lessons.length > 0) {
-      nextActions.push('Apply the lesson identified above in the next planning session')
-    }
-    if (struggles.length > 0) {
-      nextActions.push('Address the struggle identified before starting next week\'s planning')
-    }
-
-    return {
-      ok: true,
-      output: {
-        wins,
-        struggles,
-        lessons,
-        nextActions,
-        sourceWeekId: input.weekId ?? week.id,
-      },
-    }
+    const result = runReflectionPipeline(context, {
+      includeUserReflections: true,
+      maxInsights: 6,
+      generateNextWeekRecommendations: true,
+    })
+    return { ok: true, output: result }
   },
 }

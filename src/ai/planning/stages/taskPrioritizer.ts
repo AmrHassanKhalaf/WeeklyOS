@@ -1,14 +1,7 @@
 import type { AIContext } from '../../types'
 import type { FocusType, PrioritizedTask, WorkloadAnalysis } from '../types'
 import { WEEK_ORDER } from '../utils'
-
-// ─── Score Weights ────────────────────────────────────────────────────────────
-
-const PRIORITY_BASE: Record<string, number> = { high: 60, medium: 35, low: 15 }
-const CARRY_OVER_BONUS = 25
-const HIGH_PRIORITY_BONUS = 10
-const UNSCHEDULED_BONUS = 8
-const OVERLOAD_DAY_PENALTY = -12
+import { SCORING_WEIGHTS } from '../../config/scoringWeights'
 
 const MAX_TASKS = 10
 
@@ -61,7 +54,7 @@ export function prioritizeTasks(
   return context.tasks.items
     .filter((t) => t.status === 'pending')
     .map((task): PrioritizedTask => {
-      let score = PRIORITY_BASE[task.priority] ?? 35
+      let score = SCORING_WEIGHTS.planning.priorityBase[task.priority] ?? 35
       const urgencySignals: string[] = []
       const reasons: string[] = []
 
@@ -72,27 +65,27 @@ export function prioritizeTasks(
         (WEEK_ORDER[task.day] ?? 999) < todayOrder
 
       if (isCarryOver) {
-        score += CARRY_OVER_BONUS
+        score += SCORING_WEIGHTS.planning.carryOverBonus
         urgencySignals.push(`Carry-over from ${task.day}`)
         reasons.push(`Originally scheduled for ${task.day} — still unresolved`)
       }
 
       // ── High priority boost ──────────────────────────────────────────────
       if (task.priority === 'high') {
-        score += HIGH_PRIORITY_BONUS
+        score += SCORING_WEIGHTS.planning.highPriorityBonus
         urgencySignals.push('High priority')
       }
 
       // ── No day assigned ───────────────────────────────────────────────────
       if (!task.day) {
-        score += UNSCHEDULED_BONUS
+        score += SCORING_WEIGHTS.planning.unscheduledBonus
         urgencySignals.push('Not yet scheduled')
         reasons.push('No day assigned — needs placement this week')
       }
 
       // ── Overloaded day — signals candidate for rescheduling ─────────────
       if (task.day && overloadedDaySet.has(task.day)) {
-        score += OVERLOAD_DAY_PENALTY
+        score += SCORING_WEIGHTS.planning.overloadDayPenalty
         urgencySignals.push(`On overloaded ${task.day}`)
         reasons.push(`${task.day} is overloaded — consider moving this to a lighter day`)
       }

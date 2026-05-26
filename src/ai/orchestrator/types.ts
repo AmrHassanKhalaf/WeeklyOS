@@ -52,7 +52,6 @@ export type OrchestratorUIBlockKind =
   | 'insight'
   | 'plan_summary'
   | 'task_list'
-  | 'reflection_summary'
   | 'reschedule_proposal'
   | 'warning'
   // Brain Dump extraction blocks
@@ -71,6 +70,15 @@ export type OrchestratorUIBlockKind =
   | 'planning_overload'
   | 'planning_rebalance'
   | 'planning_recommendations'
+  // Reflection Engine blocks
+  | 'reflection_summary'
+  | 'reflection_score_breakdown'
+  | 'reflection_wins'
+  | 'reflection_struggles'
+  | 'reflection_lessons'
+  | 'reflection_improvements'
+  | 'reflection_insights'
+  | 'reflection_next_week'
 
 /**
  * A structured display block that can be rendered as a rich card in the UI,
