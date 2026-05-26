@@ -53,6 +53,8 @@ export function buildAIContext(input: AIContextInput): AIContext {
   const focusSeconds = input.focusSessions.reduce((total, session) => total + session.duration_seconds, 0)
   const brainDumpItems = input.brainDumpItems ?? []
 
+  const todayDay = week?.days.find((d) => d.isToday)
+
   return {
     createdAt: input.createdAt ?? new Date().toISOString(),
     source: 'weeklyos',
@@ -64,6 +66,7 @@ export function buildAIContext(input: AIContextInput): AIContext {
       dateRange: week?.dateRange ?? '',
       score: week?.score ?? 0,
     },
+    today: todayDay ? { day: todayDay.day, label: todayDay.shortName } : undefined,
     tasks: {
       items: taskItems,
       pending,

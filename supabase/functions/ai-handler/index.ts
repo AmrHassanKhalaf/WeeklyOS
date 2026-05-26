@@ -123,9 +123,15 @@ serve(async (req: Request) => {
     const apiKey = (keysRes.data || []).find(k => k.provider === provider)?.api_key
 
     const aiModel = model || settingsRes.data?.active_model || 'gemini-1.5-flash'
+    // Prefer a pre-serialized compact string over raw JSON dump.
+    // The client sends { serialized: string } when the context engine is active;
+    // older call-sites may still pass a plain object, so we fall back gracefully.
+    const contextStr =
+      typeof context?.serialized === 'string' ? context.serialized : JSON.stringify(context || {})
+
     const systemPrompt = type === 'schedule'
-      ? `${SCHEDULE_RULES}\nContext: ${JSON.stringify(context || {})}`
-      : `${GLOBAL_RULES}\nContext: ${JSON.stringify(context || {})}`
+      ? `${SCHEDULE_RULES}\nContext: ${contextStr}`
+      : `${GLOBAL_RULES}\nContext: ${contextStr}`
 
     if (['chat', 'reflection', 'challenge', 'insight', 'schedule'].includes(type)) {
       if (!apiKey) {

@@ -229,6 +229,106 @@ export interface AIContext {
     completionRate: number
     pendingCount: number
   }
+  /** The current calendar day within the displayed week, if determinable. */
+  today?: {
+    day: DayOfWeek
+    label: string
+  }
+}
+
+// ─── Context Engine Layer Types ────────────────────────────────────────────────
+
+export interface BaseContextLayer {
+  weekTitle: string
+  weekNumber?: number
+  year?: number
+  dateRange: string
+  score: number
+  completionRate: number
+  createdAt: string
+}
+
+export interface OverloadedDayInfo {
+  day: DayOfWeek
+  shortName: string
+  pendingCount: number
+  highPriorityCount: number
+  topTaskTitles: string[]
+}
+
+export interface WorkspaceContextLayer {
+  // Week
+  weekTitle: string
+  weekNumber?: number
+  dateRange: string
+  score: number
+
+  // Task metrics
+  totalPlanned: number
+  totalCompleted: number
+  pendingCount: number
+  completedCount: number
+  completionRate: number
+
+  // Today
+  todayLabel: string
+  todayTaskCount: number
+
+  // Focus
+  focusMinutes: number
+  focusSessionCount: number
+
+  // Risk / Analysis signals
+  peakDay: string
+  riskDay: string
+  riskCount: number
+  riskHighEffortCount: number
+  riskTaskTitles: string[]
+  overloadedDay: OverloadedDayInfo | null
+
+  // Derived AI signals
+  signalTitle: string
+  signalBody: string
+  continuity: {
+    lastPlanLabel: string
+    focusQualityLabel: string
+    rolloverLabel: string
+  }
+
+  // Activity & reflections
+  recentActivities: ActivityItem[]
+  reflections: {
+    wentWell?: string
+    struggle?: string
+    lessons?: string
+  }
+
+  // Compact aggregates (no raw rows)
+  habitCount: number
+  habitCompletionCount: number
+  brainDumpCount: number
+  brainDumpSelectedCount: number
+  topPendingTasks: Array<{ title: string; priority: Priority; day?: DayOfWeek }>
+}
+
+export interface ModeContextLayer {
+  mode: WorkspaceMode
+  label: string
+  focus: string[]
+  relevantSignals: string[]
+}
+
+export interface ConversationContextLayer {
+  messageCount: number
+  hasHistory: boolean
+  recentTurns: Array<{ role: 'user' | 'assistant'; content: string }>
+}
+
+export interface AssembledAIContext {
+  base: BaseContextLayer
+  workspace: WorkspaceContextLayer
+  mode: ModeContextLayer
+  conversation: ConversationContextLayer
 }
 
 export interface BrainDumpParseResult {
