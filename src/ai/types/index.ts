@@ -49,8 +49,11 @@ export type AIToolId =
   | 'createTask'
   | 'updateTask'
   | 'generateWeekPlan'
+  | 'generateDayPlan'
   | 'organizeBrainDump'
+  | 'summarizeWeek'
   | 'analyzeProductivity'
+  | 'rescheduleTasks'
   | 'createFocusSession'
   | 'summarizeReflection'
 
@@ -118,7 +121,7 @@ export interface AIToolResult<Output = unknown> {
   metadata?: Record<string, unknown>
 }
 
-export interface AITool<Input extends Record<string, unknown> = Record<string, unknown>, Output = unknown> {
+export interface AITool<Input extends object = Record<string, unknown>, Output = unknown> {
   id: AIToolId
   name: string
   description: string
