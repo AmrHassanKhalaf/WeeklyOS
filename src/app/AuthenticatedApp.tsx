@@ -1,11 +1,10 @@
-import { lazy, Suspense, useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useSettingsStore } from '../store/useSettingsStore'
 import { useWeekStore } from '../store/useWeekStore'
 import { LoadingScreen } from './LoadingScreen'
 
-const loadDashboard = () => import('../pages/Dashboard').then((m) => ({ default: m.Dashboard }))
-const Dashboard = lazy(loadDashboard)
+const Dashboard = lazy(() => import('../pages/Dashboard').then((m) => ({ default: m.Dashboard })))
 const WeeklyDistribution = lazy(() => import('../pages/WeeklyDistribution').then((m) => ({ default: m.WeeklyDistribution })))
 const FocusedDay = lazy(() => import('../pages/FocusedDay').then((m) => ({ default: m.FocusedDay })))
 const BrainDump = lazy(() => import('../pages/BrainDump').then((m) => ({ default: m.BrainDump })))
@@ -17,8 +16,6 @@ export function AuthenticatedApp() {
   const initialize = useWeekStore((state) => state.initialize)
   const cleanup = useWeekStore((state) => state.cleanup)
   const theme = useSettingsStore((state) => state.theme)
-  const dashboardPrefetchedRef = useRef(false)
-
   useEffect(() => {
     let isActive = true
 
@@ -49,12 +46,6 @@ export function AuthenticatedApp() {
       cleanup()
     }
   }, [initialize, cleanup])
-
-  useEffect(() => {
-    if (dashboardPrefetchedRef.current) return
-    dashboardPrefetchedRef.current = true
-    void loadDashboard()
-  }, [])
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)')

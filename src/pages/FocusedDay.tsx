@@ -921,7 +921,7 @@ export function FocusedDay() {
                       }`}>
                       {pomodoroPhase === 'focus' ? '● Focus' : '◎ Break'}
                     </span>
-                    <div className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border backdrop-blur-sm shadow-[0_0_25px_rgba(124,58,237,0.2)] ${pomodoroPhase === 'focus' ? 'bg-violet-500/10 border-violet-300/30' : 'bg-sky-500/10 border-sky-300/30'
+                  <div className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border shadow-[0_0_25px_rgba(124,58,237,0.2)] ${pomodoroPhase === 'focus' ? 'bg-violet-500/10 border-violet-300/30' : 'bg-sky-500/10 border-sky-300/30'
                       }`}>
                       <span className="text-2xl sm:text-3xl md:text-4xl font-mono font-black text-on-surface tabular-nums tracking-tight leading-none">
                         {formatTime(pomodoroTime)}

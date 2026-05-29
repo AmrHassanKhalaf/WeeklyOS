@@ -39,7 +39,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
 
   if (isCompact) {
     return (
-      <div className="bg-surface-container-low/70 backdrop-blur-md rounded-xl border border-outline-variant/20 p-6 opacity-80 hover:opacity-100 transition-opacity flex gap-6">
+      <div className="bg-surface-container-low/85 rounded-xl border border-outline-variant/20 p-6 opacity-80 hover:opacity-100 transition-opacity flex gap-6">
         <div className="text-center shrink-0">
           <h3 className="font-bold text-xl">{day.shortName}</h3>
           <p className="text-[10px] text-on-surface-variant">{day.date}</p>
@@ -66,8 +66,8 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
       className={cn(
         'relative rounded-2xl overflow-hidden flex flex-col md:flex-row transition-all duration-300',
         isToday
-          ? 'bg-surface-container/85 backdrop-blur-md ring-1 ring-primary/35 shadow-[0_24px_60px_-22px_rgb(124_58_237_/_0.55)]'
-          : 'bg-surface-container-low/70 backdrop-blur-md border border-outline-variant/20 hover:border-primary/25 hover:shadow-[0_24px_50px_-22px_rgb(124_58_237_/_0.32)]',
+          ? 'bg-surface-container/90 ring-1 ring-primary/35 shadow-[0_24px_60px_-22px_rgb(124_58_237_/_0.55)]'
+          : 'bg-surface-container-low/85 border border-outline-variant/20 hover:border-primary/25 hover:shadow-[0_24px_50px_-22px_rgb(124_58_237_/_0.32)]',
       )}
     >
       {/* Today shimmer accent at the top edge */}

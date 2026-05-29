@@ -17,7 +17,7 @@ export function PWAUpdateBanner() {
       className={
         'fixed bottom-4 left-1/2 -translate-x-1/2 z-[9998] animate-fade-up ' +
         'flex items-center gap-3 px-4 py-3 rounded-2xl ' +
-        'bg-surface-container border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl ' +
+        'bg-surface-container border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] ' +
         'text-sm text-on-surface max-w-sm w-[calc(100%-2rem)]'
       }
       role="status"

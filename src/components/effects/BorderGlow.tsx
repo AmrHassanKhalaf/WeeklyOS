@@ -91,6 +91,7 @@ type BorderGlowProps = {
   colors?: string[]
   fillOpacity?: number
   className?: string
+  trackPointer?: boolean
 }
 
 export default function BorderGlow({
@@ -106,11 +107,13 @@ export default function BorderGlow({
   colors = ['#c084fc', '#f472b6', '#38bdf8'],
   fillOpacity = 0.5,
   className = '',
+  trackPointer = false,
 }: BorderGlowProps) {
   const cardRef = useRef<HTMLDivElement | null>(null)
   const rectRef = useRef<CachedRect | null>(null)
   const pointerRef = useRef({ x: 0, y: 0 })
   const pointerFrameRef = useRef<number | null>(null)
+  const shouldTrackPointer = trackPointer || animated
 
   const measureCard = useCallback(() => {
     const card = cardRef.current
@@ -164,6 +167,7 @@ export default function BorderGlow({
   }, [flushPointerPosition])
 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    if (!shouldTrackPointer) return
     const rect = rectRef.current ?? measureCard()
     if (!rect) return
 
@@ -172,17 +176,19 @@ export default function BorderGlow({
       y: event.clientY - rect.top,
     }
     schedulePointerUpdate()
-  }, [measureCard, schedulePointerUpdate])
+  }, [measureCard, schedulePointerUpdate, shouldTrackPointer])
 
   const handlePointerEnter = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    if (!shouldTrackPointer) return
     const card = cardRef.current
     if (!card) return
     measureCard()
     card.style.setProperty('--edge-proximity', '35')
     handlePointerMove(event)
-  }, [handlePointerMove, measureCard])
+  }, [handlePointerMove, measureCard, shouldTrackPointer])
 
   const handlePointerLeave = useCallback(() => {
+    if (!shouldTrackPointer) return
     const card = cardRef.current
     if (!card) return
     rectRef.current = null
@@ -194,9 +200,11 @@ export default function BorderGlow({
       card.style.setProperty('--edge-proximity', '0')
     }
     card.style.setProperty('--cursor-angle', '45deg')
-  }, [animated])
+  }, [animated, shouldTrackPointer])
 
   useEffect(() => {
+    if (!shouldTrackPointer) return
+
     const clearCachedRect = () => {
       rectRef.current = null
     }
@@ -212,7 +220,7 @@ export default function BorderGlow({
         pointerFrameRef.current = null
       }
     }
-  }, [])
+  }, [shouldTrackPointer])
 
   useEffect(() => {
     if (!animated || !cardRef.current) return
@@ -269,10 +277,10 @@ export default function BorderGlow({
   return (
     <div
       ref={cardRef}
-      onPointerEnter={handlePointerEnter}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-      className={`border-glow-card ${className}`.trim()}
+      onPointerEnter={shouldTrackPointer ? handlePointerEnter : undefined}
+      onPointerMove={shouldTrackPointer ? handlePointerMove : undefined}
+      onPointerLeave={shouldTrackPointer ? handlePointerLeave : undefined}
+      className={`border-glow-card ${shouldTrackPointer ? 'border-glow-card--track' : ''} ${className}`.trim()}
       style={style}
     >
       <span className="edge-light" />

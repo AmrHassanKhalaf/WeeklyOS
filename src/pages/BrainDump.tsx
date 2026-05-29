@@ -98,7 +98,7 @@ export function BrainDump() {
           <div
             className={cn(
               'relative rounded-2xl p-6 transition-all duration-300',
-              'bg-surface-container-low/50 border backdrop-blur-md',
+              'bg-surface-container-low/80 border',
               isInputFocused
                 ? 'border-primary/30 shadow-[0_0_0_1px_rgb(109_40_217/0.15),0_24px_60px_-22px_rgb(109_40_217/0.30)]'
                 : 'border-outline-variant/20 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.3)]',
@@ -257,7 +257,7 @@ export function BrainDump() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 32, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="fixed bottom-[calc(5rem+var(--safe-bottom,0px))] sm:bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 sm:gap-2 p-2 bg-surface-container-highest/85 backdrop-blur-lg rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-outline-variant/20 w-[92vw] sm:w-auto"
+            className="fixed bottom-[calc(5rem+var(--safe-bottom,0px))] sm:bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 sm:gap-2 p-2 bg-surface-container-highest/95 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-outline-variant/20 w-[92vw] sm:w-auto"
           >
             <span className="text-[10px] text-on-surface-variant px-2 sm:px-4 shrink-0">
               {selectedCount} selected

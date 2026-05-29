@@ -54,7 +54,7 @@ function NetworkStatusBadge() {
         transition={{ duration: 0.25 }}
         className={cn(
           'fixed top-2 left-1/2 -translate-x-1/2 z-[9999]',
-          'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium shadow-lg backdrop-blur',
+          'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium shadow-lg',
           colorClass
         )}
         aria-live="polite"
@@ -112,22 +112,6 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
     return () => window.removeEventListener('resize', handleResize)
   }, [setMobile])
 
-  // Prefetch AI workspace when idle
-  useEffect(() => {
-    if (workspacePrefetchedRef.current || isDeepFocus) return
-    let idleId: number | null = null
-    if (window.requestIdleCallback) {
-      idleId = window.requestIdleCallback(() => warmAIWorkspace(), { timeout: 1500 }) as unknown as number
-    } else {
-      idleId = window.setTimeout(() => warmAIWorkspace(), 1200)
-    }
-    return () => {
-      if (idleId === null) return
-      if (window.cancelIdleCallback) window.cancelIdleCallback(idleId)
-      else window.clearTimeout(idleId)
-    }
-  }, [warmAIWorkspace, isDeepFocus])
-
   useEffect(() => {
     if (isFocusMode && focusLevel !== 'deep') {
       setFocusMode(false)
@@ -160,7 +144,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/50 z-40"
             onClick={closeSidebarsOnMobile}
           />
         )}
