@@ -120,9 +120,11 @@ function normalizeProvider(provider: string | null | undefined): SupportedProvid
 }
 
 function getProviderCredential(provider: SupportedProvider, storedValue?: string | null) {
-  if (provider === 'gemini') return storedValue || Deno.env.get('GEMINI_API_KEY') || ''
-  if (provider === 'grok') return storedValue || Deno.env.get('XAI_API_KEY') || ''
-  return storedValue || Deno.env.get('OLLAMA_BASE_URL') || 'http://localhost:11434'
+  // Treat empty string as missing so it doesn't shadow the env-var fallback
+  const stored = storedValue?.trim() || undefined
+  if (provider === 'gemini') return stored || Deno.env.get('GEMINI_API_KEY') || ''
+  if (provider === 'grok') return stored || Deno.env.get('XAI_API_KEY') || ''
+  return stored || Deno.env.get('OLLAMA_BASE_URL') || 'http://localhost:11434'
 }
 
 function buildSystemInstruction(rawMessages: any[], fallback: string) {
@@ -304,6 +306,15 @@ async function handleWorkspace(
   const apiKey = credential
   const genAI = new GoogleGenerativeAI(apiKey)
 
+  // Validate model name — protect against invalid/hallucinated model names
+  // that would cause a 400 from the Gemini API with a confusing error.
+  const GEMINI_MODEL_FALLBACK = 'gemini-2.5-flash'
+  const resolvedModel = (typeof aiModel === 'string' && aiModel.startsWith('gemini-'))
+    ? aiModel
+    : GEMINI_MODEL_FALLBACK
+  if (resolvedModel !== aiModel) {
+    console.warn(`[ai-handler] Unknown Gemini model "${aiModel}", falling back to ${resolvedModel}`)
+  }
   // Extract system messages and build the system instruction
   // (Gemini treats all system messages as a single system instruction)
   const systemMessages = (rawMessages || [])
@@ -315,7 +326,7 @@ async function handleWorkspace(
 
   // Build Gemini model config
   const modelConfig: any = {
-    model: aiModel,
+    model: resolvedModel,
     systemInstruction,
   }
 
@@ -384,7 +395,7 @@ async function handleWorkspace(
     response: result.response.text(),
     toolCalls: [],
     providerUsed: provider,
-    model: aiModel,
+    model: resolvedModel,
   })
 }
 
