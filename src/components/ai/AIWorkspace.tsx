@@ -1,4 +1,4 @@
-import { type MutableRefObject, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type MutableRefObject, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
@@ -25,59 +25,22 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { AI_ACTIONS } from '../../ai/actions'
+import { useOrchestratorSession, type SessionMessage } from '../../ai/hooks'
 import { WORKSPACE_MODE_DEFINITIONS, WORKSPACE_MODE_LIST } from '../../ai/modes'
 import { buildActionPrompt } from '../../ai/prompts'
-import type { AIActionId, WorkspaceMode } from '../../ai/types'
-import { useAiApi, type AiHistoryMessage } from '../../hooks/useApi'
+import type { AIActionId, WorkspaceContextLayer, WorkspaceMode } from '../../ai/types'
 import { cn } from '../../lib/cn'
 import { useLayoutStore } from '../../store/useLayoutStore'
-import { useWeekStore } from '../../store/useWeekStore'
-
-type MessageRole = 'ai' | 'user' | 'system'
+import { UIBlockList } from './blocks/BrainDumpUIBlock'
+import { PlanningUIBlock } from './blocks/PlanningUIBlock'
 
 interface AIWorkspaceProps {
   variant?: 'default' | 'evaluation'
 }
 
-interface ChatMessage {
-  role: MessageRole
-  text: string
-  provider?: string
-}
+// Alias to the hook's message type for local component usage
+type ChatMessage = SessionMessage
 
-interface WeeklyContext extends Record<string, unknown> {
-  weekTitle: string
-  weekNumber?: number
-  dateRange: string
-  score: number
-  totalPlanned: number
-  totalCompleted: number
-  pendingCount: number
-  doneCount: number
-  todayLabel: string
-  todayTaskCount: number
-  focusMinutes: number
-  focusSessionCount: number
-  peakDay: string
-  riskDay: string
-  riskCount: number
-  riskHighEffortCount: number
-  riskTaskTitles: string[]
-  signalTitle: string
-  signalBody: string
-  continuity: {
-    lastPlanLabel: string
-    focusQualityLabel: string
-    rolloverLabel: string
-  }
-  recentActivities: Array<{ id: string; text: string; time: number; done: boolean }>
-  reflections: {
-    wentWell?: string
-    struggle?: string
-    lessons?: string
-  }
-  tasks: Array<Record<string, unknown>>
-}
 
 const modeIcons: Record<WorkspaceMode, LucideIcon> = {
   analyze: BarChart3,
@@ -143,25 +106,22 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
   const reduceMotion = useReducedMotion()
   const closeAIWorkspace = useLayoutStore((state) => state.closeAIWorkspace)
   const isMobile = useLayoutStore((state) => state.isMobile)
-  const currentWeek = useWeekStore((state) => state.currentWeek)
-  const focusSessions = useWeekStore((state) => state.focusSessions)
-  const { sendMessage } = useAiApi()
+
+  const [activeMode, setActiveMode] = useState<WorkspaceMode>(variant === 'evaluation' ? 'reflect' : 'plan')
+
+  const {
+    workspaceContext,
+    messages: chatMessages,
+    isProcessing: isAiTyping,
+    send,
+  } = useOrchestratorSession(activeMode)
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
   const feedbackTimerRef = useRef<number | null>(null)
-  const [activeMode, setActiveMode] = useState<WorkspaceMode>(variant === 'evaluation' ? 'reflect' : 'plan')
   const [chatInput, setChatInput] = useState('')
   const [brainDump, setBrainDump] = useState('')
-  const [isAiTyping, setIsAiTyping] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [stagedActionLabel, setStagedActionLabel] = useState<string | null>(null)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      role: 'ai',
-      text:
-        'I am ready with your WeeklyOS context. Choose a workflow, review the staged prompt, then send when you want the assistant to act.',
-    },
-  ])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -177,118 +137,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
     }
   }, [])
 
-  const weekTasks = useMemo(() => {
-    if (!currentWeek) return []
-    return currentWeek.days.flatMap((day) => [
-      ...(day.highTask ? [day.highTask] : []),
-      ...day.mediumTasks,
-      ...day.smallTasks,
-    ])
-  }, [currentWeek])
-
-  const weeklyContext = useMemo<WeeklyContext>(() => {
-    const pendingTasks = weekTasks.filter((task) => task.status === 'pending')
-    const doneTasks = weekTasks.filter((task) => task.status === 'done')
-    const today = currentWeek?.days.find((day) => day.isToday) ?? currentWeek?.days[0]
-    const focusSeconds = focusSessions.reduce((total, session) => total + session.duration_seconds, 0)
-
-    let peakDay = currentWeek?.days[0]?.shortName ?? 'Today'
-    let peakDone = -1
-    let riskDay = currentWeek?.days[0]?.shortName ?? 'Today'
-    let riskCount = 0
-    let riskTasks: typeof weekTasks = []
-
-    currentWeek?.days.forEach((day) => {
-      const dayTasks = [
-        ...(day.highTask ? [day.highTask] : []),
-        ...day.mediumTasks,
-        ...day.smallTasks,
-      ]
-      const completed = dayTasks.filter((task) => task.status === 'done').length
-      const pending = dayTasks.filter((task) => task.status === 'pending').length
-      if (completed > peakDone) {
-        peakDone = completed
-        peakDay = day.shortName
-      }
-      if (pending > riskCount) {
-        riskCount = pending
-        riskDay = day.shortName
-        riskTasks = dayTasks.filter((task) => task.status === 'pending')
-      }
-    })
-
-    const riskHighEffortCount = riskTasks.filter((task) => task.priority === 'high').length
-    const riskTaskTitles = riskTasks
-      .slice(0, 2)
-      .map((task) => task.title)
-      .filter(Boolean)
-    const riskTaskHint = riskTaskTitles.length ? `: ${riskTaskTitles.join(', ')}.` : '.'
-    const signalTitle =
-      riskCount > 0 ? `${riskDay} overload detected` : focusSessions.length > 0 ? 'Focus rhythm active' : 'Planning baseline ready'
-    const signalBody =
-      riskCount > 0
-        ? `${riskCount} pending tasks are stacked together${
-            riskHighEffortCount > 0
-              ? `, including ${riskHighEffortCount} high-effort ${riskHighEffortCount === 1 ? 'item' : 'items'}`
-              : ''
-          }${riskTaskHint}`
-        : `No overloaded day is visible. Peak output is ${peakDay}; keep that window clean for deep work.`
-    const lastPlanActivity = currentWeek?.activities?.find((activity) =>
-      /plan|planned|generated/i.test(activity.text)
-    )
-    const continuity = {
-      lastPlanLabel: lastPlanActivity ? 'Last generated plan: recent activity' : 'Last generated plan: not logged yet',
-      focusQualityLabel:
-        focusSessions.length > 0 ? 'Focus quality: signal captured this week' : 'Focus quality: waiting for sessions',
-      rolloverLabel:
-        pendingTasks.length > doneTasks.length
-          ? `Rollover pressure: ${pendingTasks.length} unresolved tasks`
-          : 'Rollover pressure: under control',
-    }
-
-    return {
-      weekTitle: currentWeek?.title ?? 'Current Week',
-      weekNumber: currentWeek?.weekNumber,
-      dateRange: currentWeek?.dateRange ?? '',
-      score: currentWeek?.score ?? 0,
-      totalPlanned: currentWeek?.totalPlanned ?? weekTasks.length,
-      totalCompleted: currentWeek?.totalCompleted ?? doneTasks.length,
-      pendingCount: pendingTasks.length,
-      doneCount: doneTasks.length,
-      todayLabel: today?.shortName ?? 'Today',
-      todayTaskCount: today
-        ? [today.highTask, ...today.mediumTasks, ...today.smallTasks].filter(Boolean).length
-        : 0,
-      focusMinutes: Math.round(focusSeconds / 60),
-      focusSessionCount: focusSessions.length,
-      peakDay,
-      riskDay,
-      riskCount,
-      riskHighEffortCount,
-      riskTaskTitles,
-      signalTitle,
-      signalBody,
-      continuity,
-      recentActivities: currentWeek?.activities?.slice(0, 5) ?? [],
-      reflections: {
-        wentWell: currentWeek?.evalWentWell,
-        struggle: currentWeek?.evalStruggle,
-        lessons: currentWeek?.evalLessons,
-      },
-      tasks: weekTasks.map((task) => ({
-        title: task.title,
-        priority: task.priority,
-        status: task.status,
-        day: task.day,
-        estimatedTime: task.estimatedTime,
-        actualDuration: task.actualDuration,
-      })),
-    }
-  }, [currentWeek, focusSessions, weekTasks])
-
-  const completionRate = weeklyContext.totalPlanned
-    ? Math.round((weeklyContext.totalCompleted / weeklyContext.totalPlanned) * 100)
-    : 0
+  const completionRate = workspaceContext.completionRate
 
   const stagePrompt = (prompt: string, label = 'Prompt') => {
     setChatInput(prompt)
@@ -301,28 +150,9 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
   const handleSendMessage = async (overrideText?: string) => {
     const message = (overrideText ?? chatInput).trim()
     if (!message || isAiTyping) return
-
     setChatInput('')
     setActiveMode('chat')
-    setChatMessages((prev) => [...prev, { role: 'user', text: message }])
-    setIsAiTyping(true)
-
-    try {
-      const history: AiHistoryMessage[] = chatMessages
-        .filter((entry) => entry.role !== 'system')
-        .map((entry) => ({
-          role: entry.role === 'ai' ? 'assistant' : entry.role,
-          content: entry.text,
-        }))
-
-      const response = await sendMessage('workspace', message, weeklyContext, undefined, history)
-      setChatMessages((prev) => [...prev, { role: 'ai', text: response.response, provider: response.providerUsed }])
-    } catch (error) {
-      const text = error instanceof Error ? error.message : 'Unexpected AI workspace error'
-      setChatMessages((prev) => [...prev, { role: 'system', text: `AI request failed: ${text}` }])
-    } finally {
-      setIsAiTyping(false)
-    }
+    await send(message)
   }
 
   const handleAction = (actionId: AIActionId) => {
@@ -383,14 +213,14 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
         )}
       >
         <WorkspaceHeader
-          weeklyContext={weeklyContext}
+          weeklyContext={workspaceContext}
           isRecording={isRecording}
           onRecordingToggle={() => setIsRecording((value) => !value)}
           onClose={closeAIWorkspace}
         />
 
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-[238px_minmax(0,1fr)]">
-          <ContextSidebar weeklyContext={weeklyContext} completionRate={completionRate} onAction={handleAction} />
+          <ContextSidebar weeklyContext={workspaceContext} completionRate={completionRate} onAction={handleAction} />
 
           <div className="flex min-h-0 flex-1 flex-col">
             <ModeNavigation activeMode={activeMode} onModeChange={setActiveMode} />
@@ -406,14 +236,14 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
                 >
                   {activeMode === 'analyze' && (
                     <AnalyzeMode
-                      weeklyContext={weeklyContext}
+                      weeklyContext={workspaceContext}
                       completionRate={completionRate}
                       onAction={handleAction}
                     />
                   )}
                   {activeMode === 'plan' && (
                     <PlanMode
-                      weeklyContext={weeklyContext}
+                      weeklyContext={workspaceContext}
                       brainDump={brainDump}
                       isRecording={isRecording}
                       onBrainDumpChange={setBrainDump}
@@ -422,11 +252,11 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
                     />
                   )}
                   {activeMode === 'reflect' && (
-                    <ReflectMode weeklyContext={weeklyContext} onAction={handleAction} />
+                    <ReflectMode weeklyContext={workspaceContext} onAction={handleAction} />
                   )}
                   {activeMode === 'chat' && (
                     <ChatMode
-                      weeklyContext={weeklyContext}
+                      weeklyContext={workspaceContext}
                       messages={chatMessages}
                       isAiTyping={isAiTyping}
                       onAction={handleAction}
@@ -461,7 +291,7 @@ function WorkspaceHeader({
   onRecordingToggle,
   onClose,
 }: {
-  weeklyContext: WeeklyContext
+  weeklyContext: WorkspaceContextLayer
   isRecording: boolean
   onRecordingToggle: () => void
   onClose: () => void
@@ -511,7 +341,7 @@ function ContextSidebar({
   completionRate,
   onAction,
 }: {
-  weeklyContext: WeeklyContext
+  weeklyContext: WorkspaceContextLayer
   completionRate: number
   onAction: (action: AIActionId) => void
 }) {
@@ -552,7 +382,7 @@ function ContextSidebar({
           <div className="mt-3 space-y-2">
             <StateLine label="Today load" value={`${weeklyContext.todayTaskCount} tasks`} />
             <StateLine label="Date range" value={weeklyContext.dateRange || 'Current'} />
-            <StateLine label="Done" value={`${weeklyContext.doneCount}/${weeklyContext.totalPlanned}`} />
+            <StateLine label="Done" value={`${weeklyContext.completedCount}/${weeklyContext.totalPlanned}`} />
           </div>
         </div>
 
@@ -616,7 +446,7 @@ function AnalyzeMode({
   completionRate,
   onAction,
 }: {
-  weeklyContext: WeeklyContext
+  weeklyContext: WorkspaceContextLayer
   completionRate: number
   onAction: (action: AIActionId) => void
 }) {
@@ -676,7 +506,7 @@ function PlanMode({
   onAction,
   onRecordingToggle,
 }: {
-  weeklyContext: WeeklyContext
+  weeklyContext: WorkspaceContextLayer
   brainDump: string
   isRecording: boolean
   onBrainDumpChange: (value: string) => void
@@ -791,7 +621,7 @@ function ReflectMode({
   weeklyContext,
   onAction,
 }: {
-  weeklyContext: WeeklyContext
+  weeklyContext: WorkspaceContextLayer
   onAction: (action: AIActionId) => void
 }) {
   const mode = WORKSPACE_MODE_DEFINITIONS.reflect
@@ -841,7 +671,7 @@ function ChatMode({
   isAiTyping,
   onAction,
 }: {
-  weeklyContext: WeeklyContext
+  weeklyContext: WorkspaceContextLayer
   messages: ChatMessage[]
   isAiTyping: boolean
   onAction: (action: AIActionId) => void
@@ -877,7 +707,10 @@ function ChatMode({
                     : 'border-primary/[0.14] bg-gradient-to-br from-primary/[0.08] via-surface-container-low/[0.58] to-surface-container-lowest/[0.78] text-on-surface rounded-bl-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
               )}
             >
-              <FormattedMessage text={message.text} />
+              {message.text && <FormattedMessage text={message.text} />}
+              {message.uiBlocks && message.uiBlocks.length > 0 && (
+                <UIBlockList blocks={message.uiBlocks} PlanningBlockComponent={PlanningUIBlock} />
+              )}
               {message.provider && (
                 <p className="mt-3 border-t border-outline-variant/[0.12] pt-2 text-right text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-300/[0.65]">
                   via {message.provider}
