@@ -1,14 +1,10 @@
-import type { AIContext } from '../../types'
 import type {
   CompletionAnalysis,
   FocusAnalysis,
   HabitAnalysis,
   BehaviorAnalysis,
   ReflectionInsight,
-  InsightKind,
 } from '../types'
-import { THRESHOLDS } from '../../config/thresholds'
-import { SCORING_WEIGHTS } from '../../config/scoringWeights'
 
 // ─── ID Generator ─────────────────────────────────────────────────────────────
 
@@ -19,10 +15,7 @@ function nextId(prefix: string): string {
 
 // ─── Insight Builders ────────────────────────────────────────────────────────
 
-function buildCompletionInsights(
-  completion: CompletionAnalysis,
-  context: AIContext
-): ReflectionInsight[] {
+function buildCompletionInsights(completion: CompletionAnalysis): ReflectionInsight[] {
   const insights: ReflectionInsight[] = []
   const { completionRate, quality, carryOverConcern, highPriorityPending } = completion
 
@@ -101,7 +94,7 @@ function buildCompletionInsights(
   return insights
 }
 
-function buildFocusInsights(focus: FocusAnalysis, context: AIContext): ReflectionInsight[] {
+function buildFocusInsights(focus: FocusAnalysis): ReflectionInsight[] {
   const insights: ReflectionInsight[] = []
   const { pattern, sessionCount, totalMinutes, isConsistent } = focus
 
@@ -164,7 +157,7 @@ function buildFocusInsights(focus: FocusAnalysis, context: AIContext): Reflectio
   return insights
 }
 
-function buildHabitInsights(habit: HabitAnalysis, context: AIContext): ReflectionInsight[] {
+function buildHabitInsights(habit: HabitAnalysis): ReflectionInsight[] {
   const insights: ReflectionInsight[] = []
   const { consistency, activeCount, totalCompletions } = habit
 
@@ -201,8 +194,7 @@ function buildHabitInsights(habit: HabitAnalysis, context: AIContext): Reflectio
 
 function buildBehaviorInsights(
   behavior: BehaviorAnalysis,
-  completion: CompletionAnalysis,
-  context: AIContext
+  completion: CompletionAnalysis
 ): ReflectionInsight[] {
   const insights: ReflectionInsight[] = []
   const { peakDay, peakDayLabel, sustainability, planningAccuracy } = behavior
@@ -293,14 +285,13 @@ export function generateInsights(
   focus: FocusAnalysis,
   habit: HabitAnalysis,
   behavior: BehaviorAnalysis,
-  context: AIContext,
   maxInsights: number = 8
 ): ReflectionInsight[] {
   const allInsights: ReflectionInsight[] = [
-    ...buildCompletionInsights(completion, context),
-    ...buildFocusInsights(focus, context),
-    ...buildHabitInsights(habit, context),
-    ...buildBehaviorInsights(behavior, completion, context),
+    ...buildCompletionInsights(completion),
+    ...buildFocusInsights(focus),
+    ...buildHabitInsights(habit),
+    ...buildBehaviorInsights(behavior, completion),
   ]
 
   // Sort by priority (high first), then by kind (wins first, warnings last)

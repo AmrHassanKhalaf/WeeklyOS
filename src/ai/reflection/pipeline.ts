@@ -16,7 +16,8 @@ import { SCORING_WEIGHTS } from '../config/scoringWeights'
 
 function buildWeeklySummary(
   insights: ReflectionResult['insights'],
-  context: AIContext
+  context: AIContext,
+  options: Pick<ReflectionOptions, 'includeUserReflections' | 'generateNextWeekRecommendations'>
 ): WeeklySummary {
   const wins: string[] = []
   const struggles: string[] = []
@@ -54,19 +55,19 @@ function buildWeeklySummary(
     }
   }
 
-  // Add user reflection notes if available
-  if (context.reflections.wentWell) {
+  // User-entered reflection notes are opt-in so callers can run a data-only summary.
+  if (options.includeUserReflections && context.reflections.wentWell) {
     wins.push(context.reflections.wentWell.slice(0, 200))
   }
-  if (context.reflections.struggle) {
+  if (options.includeUserReflections && context.reflections.struggle) {
     struggles.push(context.reflections.struggle.slice(0, 200))
   }
-  if (context.reflections.lessons) {
+  if (options.includeUserReflections && context.reflections.lessons) {
     lessons.push(context.reflections.lessons.slice(0, 200))
   }
 
   // Default recommendations if none generated
-  if (nextWeekRecommendations.length === 0) {
+  if (options.generateNextWeekRecommendations && nextWeekRecommendations.length === 0) {
     if (context.tasks.pending > 0) {
       nextWeekRecommendations.push('Review and prioritize pending tasks for next week')
     } else {
@@ -227,10 +228,13 @@ export function runReflectionPipeline(
   const behavior = analyzeBehavior(context)
 
   // ── Stage 5: Insight Generation ─────────────────────────────────────────
-  const insights = generateInsights(completion, focus, habit, behavior, context, maxInsights)
+  const insights = generateInsights(completion, focus, habit, behavior, maxInsights)
 
   // ── Stage 6: Weekly Summary ─────────────────────────────────────────────
-  const summary = buildWeeklySummary({ insights }, context)
+  const summary = buildWeeklySummary(insights, context, {
+    includeUserReflections,
+    generateNextWeekRecommendations,
+  })
 
   // ── Stage 7: Score Calculation ─────────────────────────────────────────
   const score = calculateReflectionScore(completion, focus, habit)

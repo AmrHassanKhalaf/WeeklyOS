@@ -71,6 +71,16 @@ function json(data: unknown, status = 200) {
   })
 }
 
+function withProviderTelemetry(data: Record<string, unknown>, startedAt: number) {
+  return {
+    ...data,
+    telemetry: {
+      ...((data.telemetry as Record<string, unknown> | undefined) ?? {}),
+      providerMs: Math.max(0, Math.round(performance.now() - startedAt)),
+    },
+  }
+}
+
 function normalizeHistory(history: any[]) {
   if (!Array.isArray(history) || history.length === 0) return []
 
@@ -227,6 +237,7 @@ async function handleWorkspace(
   provider: SupportedProvider,
   aiModel: string
 ) {
+  const providerStartedAt = performance.now()
   const {
     messages: rawMessages,
     tools: toolDeclarations,
@@ -261,12 +272,12 @@ async function handleWorkspace(
       input: parseToolArgs(tc.function?.arguments),
     })).filter((tc: any) => tc.toolId)
 
-    return json({
+    return json(withProviderTelemetry({
       response: message?.content || '',
       toolCalls,
       providerUsed: provider,
       model: payload?.model || aiModel,
-    })
+    }, providerStartedAt))
   }
 
   if (provider === 'ollama') {
@@ -294,13 +305,13 @@ async function handleWorkspace(
       input: parseToolArgs(tc.function?.arguments),
     })).filter((tc: any) => tc.toolId)
 
-    return json({
+    return json(withProviderTelemetry({
       response: message.content || '',
       reasoning: message.thinking,
       toolCalls,
       providerUsed: provider,
       model: payload?.model || aiModel,
-    })
+    }, providerStartedAt))
   }
 
   const apiKey = credential
@@ -375,7 +386,7 @@ async function handleWorkspace(
   )
 
   if (!userText.trim()) {
-    return json({ error: 'Missing user message' }, 400)
+    return json(withProviderTelemetry({ error: 'Missing user message' }, providerStartedAt), 400)
   }
 
   const result = await chat.sendMessage(userText)
@@ -385,7 +396,7 @@ async function handleWorkspace(
   const functionCallPart = candidate?.content?.parts?.find((p: any) => p.functionCall)
   if (functionCallPart?.functionCall) {
     const fc = functionCallPart.functionCall
-    return json({
+    return json(withProviderTelemetry({
       response: '',
       toolCalls: [{
         toolId: fc.name,
@@ -393,15 +404,15 @@ async function handleWorkspace(
       }],
       providerUsed: provider,
       model: aiModel,
-    })
+    }, providerStartedAt))
   }
 
-  return json({
+  return json(withProviderTelemetry({
     response: result.response.text(),
     toolCalls: [],
     providerUsed: provider,
     model: resolvedModel,
-  })
+  }, providerStartedAt))
 }
 
 async function generateLegacyResponse(
@@ -413,6 +424,7 @@ async function generateLegacyResponse(
   history: any[],
   type: string
 ) {
+  const providerStartedAt = performance.now()
   if (provider === 'grok') {
     const messages = normalizeOpenAiMessages([
       { role: 'system', content: systemPrompt },
@@ -429,11 +441,11 @@ async function generateLegacyResponse(
       body: JSON.stringify({ model: aiModel, messages, stream: false }),
     }, 'xAI')
 
-    return json({
+    return json(withProviderTelemetry({
       response: payload?.choices?.[0]?.message?.content || '',
       providerUsed: provider,
       model: payload?.model || aiModel,
-    })
+    }, providerStartedAt))
   }
 
   if (provider === 'ollama') {
@@ -454,12 +466,12 @@ async function generateLegacyResponse(
       }),
     }, 'Ollama')
 
-    return json({
+    return json(withProviderTelemetry({
       response: payload?.message?.content || '',
       reasoning: payload?.message?.thinking,
       providerUsed: provider,
       model: payload?.model || aiModel,
-    })
+    }, providerStartedAt))
   }
 
   const LEGACY_GEMINI_FALLBACK = 'gemini-2.5-flash'
@@ -483,7 +495,7 @@ async function generateLegacyResponse(
 
   const chat = geminiModel.startChat({ history: normalizeHistory(history || []) })
   const result = await chat.sendMessage(resolvedInput)
-  return json({ response: result.response.text(), providerUsed: provider, model: safeModel })
+  return json(withProviderTelemetry({ response: result.response.text(), providerUsed: provider, model: safeModel }, providerStartedAt))
 }
 
 // ─── Main Handler ─────────────────────────────────────────────────────────────

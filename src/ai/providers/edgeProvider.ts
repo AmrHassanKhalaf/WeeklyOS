@@ -8,6 +8,7 @@ import type {
   AIProviderToolCall,
   AITool,
 } from '../types'
+import { recordAITelemetry, roundDuration } from '../telemetry'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -123,6 +124,7 @@ export function createEdgeProvider(): AIProvider {
           body: JSON.stringify(payload),
         })
 
+      const edgeStartedAt = performance.now()
       let response = await callEdge(session.access_token)
 
       if (response.status === 401) {
@@ -138,12 +140,15 @@ export function createEdgeProvider(): AIProvider {
         throw new Error(errPayload?.error || `Edge function returned ${response.status}`)
       }
 
+      const edgeRoundTripMs = roundDuration(performance.now() - edgeStartedAt)
+
       const data = (await response.json()) as {
         response?: string
         toolCalls?: Array<{ toolId: string; input: Record<string, unknown> }>
         reasoning?: string
         providerUsed?: string
         model?: string
+        telemetry?: Record<string, unknown>
       }
 
       // Normalize tool calls
@@ -153,12 +158,29 @@ export function createEdgeProvider(): AIProvider {
         input: tc.input ?? {},
       }))
 
+      const providerMetadata = {
+        ...(data.telemetry ?? {}),
+        edgeRoundTripMs,
+      }
+
+      recordAITelemetry({
+        name: 'ai.provider.edge',
+        durationMs: edgeRoundTripMs,
+        mode: request.mode,
+        provider: data.providerUsed ?? 'edge',
+        model: data.model ?? model,
+        metadata: {
+          toolCallCount: toolCalls.length,
+        },
+      })
+
       return {
         message: { role: 'assistant', content: data.response ?? '' },
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         reasoning: data.reasoning,
         provider: data.providerUsed ?? 'edge',
         model: data.model ?? model,
+        metadata: providerMetadata,
         raw: data,
       }
     },

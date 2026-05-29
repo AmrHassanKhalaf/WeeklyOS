@@ -25,7 +25,7 @@ function classifyFocusPattern(totalMinutes: number): FocusPattern {
  */
 export function analyzeFocus(context: AIContext): FocusAnalysis {
   const { focus } = context
-  const { sessions, totalMinutes, sessionCount } = focus
+  const { totalMinutes, sessionCount } = focus
 
   const averageSessionMinutes = sessionCount > 0 ? Math.round(totalMinutes / sessionCount) : 0
   const pattern = classifyFocusPattern(totalMinutes)

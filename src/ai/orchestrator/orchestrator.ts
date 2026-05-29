@@ -18,6 +18,7 @@ import { buildPlanningUIBlocks } from '../planning/blocks'
 import type { PlanningResult } from '../planning/types'
 import { buildReflectionUIBlocks } from '../reflection/blocks'
 import type { ReflectionResult } from '../reflection/types'
+import { recordAITelemetry, roundDuration } from '../telemetry'
 import type {
   OrchestratorRequest,
   OrchestratorResponse,
@@ -25,6 +26,12 @@ import type {
   OrchestratorUIBlock,
   PendingToolConfirmation,
 } from './types'
+
+interface DeniedToolCall {
+  toolId: string
+  toolName: string
+  reason: 'unknown_tool' | 'not_allowed_for_mode'
+}
 
 // ─── Prepared Request (internal) ─────────────────────────────────────────────
 
@@ -60,17 +67,38 @@ async function processToolCalls(
   toolCalls: AIProviderToolCall[],
   registry: AIToolRegistry,
   context: AIContext,
-  mode: WorkspaceMode
+  mode: WorkspaceMode,
+  allowedToolIds: Set<AIToolId>
 ): Promise<{
   executed: OrchestratorToolCall[]
   pending: PendingToolConfirmation[]
+  denied: DeniedToolCall[]
 }> {
   const executed: OrchestratorToolCall[] = []
   const pending: PendingToolConfirmation[] = []
+  const denied: DeniedToolCall[] = []
 
   for (const tc of toolCalls) {
     const tool = registry.get(tc.toolId as AIToolId)
-    if (!tool) continue
+    if (!tool) {
+      denied.push({
+        toolId: tc.toolId,
+        toolName: tc.toolName,
+        reason: 'unknown_tool',
+      })
+      continue
+    }
+
+    // The provider only receives mode-allowed tools, but responses are treated
+    // as untrusted. Re-check here so guessed/unadvertised tool names cannot run.
+    if (!allowedToolIds.has(tool.id)) {
+      denied.push({
+        toolId: tc.toolId,
+        toolName: tool.name,
+        reason: 'not_allowed_for_mode',
+      })
+      continue
+    }
 
     const execResult = await executeTool(tool, tc.input, { aiContext: context, mode })
 
@@ -93,7 +121,7 @@ async function processToolCalls(
     }
   }
 
-  return { executed, pending }
+  return { executed, pending, denied }
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -142,23 +170,31 @@ export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrc
       )
     }
 
+    const totalStartedAt = performance.now()
+    const prepareStartedAt = performance.now()
     const prepared = prepare(request)
+    const prepareMs = roundDuration(performance.now() - prepareStartedAt)
 
     // Call the provider
+    const providerStartedAt = performance.now()
     const providerResponse = await options.provider.generate({
       messages: prepared.messages,
       tools: prepared.tools,
       mode: request.mode,
       model: request.overrideModel,
     })
+    const providerMs = roundDuration(performance.now() - providerStartedAt)
 
     // Process any tool calls the provider returned
-    const { executed, pending } = await processToolCalls(
+    const toolStartedAt = performance.now()
+    const { executed, pending, denied } = await processToolCalls(
       providerResponse.toolCalls ?? [],
       toolRegistry,
       request.context,
-      request.mode
+      request.mode,
+      new Set(prepared.tools.map((tool) => tool.id))
     )
+    const toolsMs = roundDuration(performance.now() - toolStartedAt)
 
     // Post-process: convert known tool outputs into structured UI blocks
     const uiBlocks: OrchestratorUIBlock[] = []
@@ -194,6 +230,28 @@ export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrc
       }
     }
 
+    const totalMs = roundDuration(performance.now() - totalStartedAt)
+    const telemetry = {
+      totalMs,
+      prepareMs,
+      providerMs,
+      toolsMs,
+      toolCallCount: providerResponse.toolCalls?.length ?? 0,
+      executedToolCallCount: executed.length,
+      pendingConfirmationCount: pending.length,
+      deniedToolCallCount: denied.length,
+      allowedToolIds: prepared.tools.map((tool) => tool.id),
+    }
+
+    recordAITelemetry({
+      name: 'ai.orchestrator.execute',
+      durationMs: totalMs,
+      mode: request.mode,
+      provider: providerResponse.provider,
+      model: providerResponse.model,
+      metadata: telemetry,
+    })
+
     return {
       message: providerResponse.message.content,
       reasoning: providerResponse.reasoning,
@@ -203,6 +261,11 @@ export function createAIOrchestrator(options: AIOrchestratorOptions = {}): AIOrc
       provider: providerResponse.provider,
       model: providerResponse.model,
       fromTool: (providerResponse.toolCalls?.length ?? 0) > 0,
+      metadata: {
+        ...(providerResponse.metadata ?? {}),
+        telemetry,
+        deniedToolCalls: denied.length > 0 ? denied : undefined,
+      },
     }
   }
 
