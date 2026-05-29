@@ -2,7 +2,7 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { AlertCircle, X, TrendingUp, ThumbsUp, Sparkles, ThumbsDown, Lightbulb } from 'lucide-react'
 import { useWeekStore } from '../store/useWeekStore'
 import { useAiApi } from '../hooks/useApi'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 export function WeeklyEvaluation() {
   const currentWeek = useWeekStore(state => state.currentWeek)
@@ -17,6 +17,10 @@ export function WeeklyEvaluation() {
     struggle: '',
     lessons: ''
   })
+
+  // Debounce timer refs for autosave
+  const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
   const currentWeekId = currentWeek?.id
   const currentEvalWentWell = currentWeek?.evalWentWell || ''
   const currentEvalStruggle = currentWeek?.evalStruggle || ''
@@ -33,9 +37,20 @@ export function WeeklyEvaluation() {
     }
   }, [currentWeekId, currentEvalWentWell, currentEvalStruggle, currentEvalLessons])
 
-  const handleSave = (type: 'wentWell' | 'struggle' | 'lessons') => {
-    useWeekStore.getState().updateEvaluation(type, evalState[type])
-  }
+  const handleSave = useCallback((type: 'wentWell' | 'struggle' | 'lessons', value?: string) => {
+    const text = value ?? evalState[type]
+    useWeekStore.getState().updateEvaluation(type, text)
+  }, [evalState])
+
+  const handleChange = useCallback((type: 'wentWell' | 'struggle' | 'lessons', value: string) => {
+    setEvalState(prev => ({ ...prev, [type]: value }))
+    // Debounce: save 800ms after user stops typing
+    if (saveTimerRef.current[type]) clearTimeout(saveTimerRef.current[type])
+    saveTimerRef.current[type] = setTimeout(() => {
+      useWeekStore.getState().updateEvaluation(type, value)
+    }, 800)
+  }, [])
+
 
   const handleGenerate = async (type: 'wentWell' | 'struggle' | 'lessons') => {
     if (!currentWeek) return
@@ -187,7 +202,7 @@ export function WeeklyEvaluation() {
             </div>
             <textarea
               value={evalState.wentWell}
-              onChange={e => setEvalState(prev => ({ ...prev, wentWell: e.target.value }))}
+              onChange={e => handleChange('wentWell', e.target.value)}
               onBlur={() => handleSave('wentWell')}
               placeholder="Reflect on your wins and successes this week..."
               className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-tertiary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
@@ -215,7 +230,7 @@ export function WeeklyEvaluation() {
             </div>
             <textarea
               value={evalState.struggle}
-              onChange={e => setEvalState(prev => ({ ...prev, struggle: e.target.value }))}
+              onChange={e => handleChange('struggle', e.target.value)}
               onBlur={() => handleSave('struggle')}
               placeholder="Note any roadblocks, distractions, or missed targets..."
               className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-error p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
@@ -243,7 +258,7 @@ export function WeeklyEvaluation() {
             </div>
             <textarea
               value={evalState.lessons}
-              onChange={e => setEvalState(prev => ({ ...prev, lessons: e.target.value }))}
+              onChange={e => handleChange('lessons', e.target.value)}
               onBlur={() => handleSave('lessons')}
               placeholder="What changes will you make to your workflow next week?"
               className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-primary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"

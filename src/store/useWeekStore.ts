@@ -1138,11 +1138,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         ...dayPlan.smallTasks,
       ].filter(t => t && t.status === 'pending').map(t => t!.id)
 
-      if (pendingTasks.length > 0) {
-        await supabase.from('tasks').update({ status: 'done' }).in('id', pendingTasks)
-      }
-
-      // Optimistic update
+      // Optimistic update first
+      const snapshot = get().currentWeek
       set(state => ({
         currentWeek: state.currentWeek ? {
           ...state.currentWeek,
@@ -1157,6 +1154,17 @@ export const useWeekStore = create<WeekStore>((set, get) => {
           ),
         } : null,
       }))
+      await syncToDb()
+
+      // Persist to DB, revert on failure
+      if (pendingTasks.length > 0) {
+        const { error: dbErr } = await supabase.from('tasks').update({ status: 'done' }).in('id', pendingTasks)
+        if (dbErr) {
+          console.error('[markDayComplete] DB write failed, reverting:', dbErr)
+          set({ currentWeek: snapshot })
+          throw new Error('Failed to mark day complete. Please try again.')
+        }
+      }
     },
 
     deleteDayData: async (day) => {

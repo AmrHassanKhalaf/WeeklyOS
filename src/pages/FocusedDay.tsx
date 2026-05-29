@@ -550,6 +550,8 @@ export function FocusedDay() {
   const [isLooseSession, setIsLooseSession] = useState(false)
   const [showTodayTasksList, setShowTodayTasksList] = useState(true)
   const [showFocusRecordsList, setShowFocusRecordsList] = useState(true)
+  const [isDayCompleting, setIsDayCompleting] = useState(false)
+  const [dayCompleteError, setDayCompleteError] = useState<string | null>(null)
 
   useEffect(() => {
     setTaskPickerOpen(showTaskPrompt)
@@ -574,7 +576,6 @@ export function FocusedDay() {
   if (currentWeek) lastKnownWeekRef.current = currentWeek
   const displayWeek = currentWeek ?? lastKnownWeekRef.current
 
-  // ── Global keyboard shortcut: F toggles Deep Focus ───────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -798,6 +799,23 @@ export function FocusedDay() {
   const sideColumnClass = 'xl:sticky xl:top-8'
 
   const todayFocusSeconds = focusSessions.reduce((acc, curr) => acc + curr.duration_seconds, 0)
+
+  // Derive whether today is complete (all tasks done) — used for button state
+  const allTodayTasks = [todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean)
+  const isDayComplete = allTodayTasks.length > 0 && allTodayTasks.every(t => t!.status === 'done')
+
+  const handleMarkDayComplete = async () => {
+    if (isDayCompleting || isDayComplete) return
+    setDayCompleteError(null)
+    setIsDayCompleting(true)
+    try {
+      await markDayComplete(todayPlan.day)
+    } catch (err) {
+      setDayCompleteError(err instanceof Error ? err.message : 'Failed to mark day complete')
+    } finally {
+      setIsDayCompleting(false)
+    }
+  }
 
   return (
     <AppLayout>
@@ -1268,20 +1286,50 @@ export function FocusedDay() {
           </div>
 
           {/* ── Day Complete ───────────────────────────────────────────────────── */}
-          <div className="pt-6 pb-10 flex justify-center">
+          <div className="pt-6 pb-10 flex flex-col items-center gap-3">
+            {dayCompleteError && (
+              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl">
+                {dayCompleteError}
+              </p>
+            )}
             <Button
               type="button"
-              onClick={() => todayPlan && markDayComplete(todayPlan.day)}
-              variant="secondary"
+              onClick={handleMarkDayComplete}
+              disabled={isDayCompleting || isDayComplete}
+              variant={isDayComplete ? 'primary' : 'secondary'}
               size="lg"
-              className="px-12 py-4 rounded-2xl font-bold group"
+              className={`px-12 py-4 rounded-2xl font-bold group transition-all ${
+                isDayComplete
+                  ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300 cursor-default'
+                  : ''
+              }`}
             >
               <div className="flex flex-col items-center gap-1.5">
-                <BadgeCheck className="text-3xl mb-0.5 group-hover:scale-110 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
-                <span className="text-base">Mark Day Complete</span>
-                <span className="text-[10px] font-normal uppercase tracking-widest text-tertiary/60">
-                  Finalize All Progress
-                </span>
+                {isDayComplete ? (
+                  <>
+                    <BadgeCheck className="text-3xl mb-0.5 text-emerald-400" strokeWidth={1.5} />
+                    <span className="text-base text-emerald-300">Day Complete!</span>
+                    <span className="text-[10px] font-normal uppercase tracking-widest text-emerald-400/60">
+                      All Tasks Finalized
+                    </span>
+                  </>
+                ) : isDayCompleting ? (
+                  <>
+                    <BadgeCheck className="text-3xl mb-0.5 animate-pulse" strokeWidth={1.5} />
+                    <span className="text-base">Completing...</span>
+                    <span className="text-[10px] font-normal uppercase tracking-widest text-tertiary/60">
+                      Saving Progress
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <BadgeCheck className="text-3xl mb-0.5 group-hover:scale-110 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
+                    <span className="text-base">Mark Day Complete</span>
+                    <span className="text-[10px] font-normal uppercase tracking-widest text-tertiary/60">
+                      Finalize All Progress
+                    </span>
+                  </>
+                )}
               </div>
             </Button>
           </div>

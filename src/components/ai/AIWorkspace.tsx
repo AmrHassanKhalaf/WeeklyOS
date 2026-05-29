@@ -113,7 +113,9 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
     workspaceContext,
     messages: chatMessages,
     isProcessing: isAiTyping,
+    error: aiError,
     send,
+    clearError,
   } = useOrchestratorSession(activeMode)
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
@@ -151,7 +153,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
     const message = (overrideText ?? chatInput).trim()
     if (!message || isAiTyping) return
     setChatInput('')
-    setActiveMode('chat')
+    clearError()
     await send(message)
   }
 
@@ -275,10 +277,12 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
           isAiTyping={isAiTyping}
           isRecording={isRecording}
           stagedActionLabel={stagedActionLabel}
+          aiError={aiError}
           onInputChange={setChatInput}
           onRecordingToggle={() => setIsRecording((value) => !value)}
           onSend={() => void handleSendMessage()}
           onSuggestedPrompt={handleSuggestedPrompt}
+          onClearError={clearError}
         />
       </motion.section>
     </div>
@@ -740,10 +744,12 @@ function ConversationDock({
   isAiTyping,
   isRecording,
   stagedActionLabel,
+  aiError,
   onInputChange,
   onRecordingToggle,
   onSend,
   onSuggestedPrompt,
+  onClearError,
 }: {
   activeMode: WorkspaceMode
   chatInput: string
@@ -751,10 +757,12 @@ function ConversationDock({
   isAiTyping: boolean
   isRecording: boolean
   stagedActionLabel: string | null
+  aiError: string | null
   onInputChange: (value: string) => void
   onRecordingToggle: () => void
   onSend: () => void
   onSuggestedPrompt: (prompt: string) => void
+  onClearError: () => void
 }) {
   return (
     <footer className="relative shrink-0 border-t border-primary/[0.12] bg-surface-container-lowest/[0.72] p-3 shadow-[0_-18px_42px_-30px_rgba(0,0,0,0.95)] sm:p-4">
@@ -780,6 +788,21 @@ function ConversationDock({
           ))}
         </div>
       </div>
+
+      {aiError && (
+        <div className="mb-2 flex items-center gap-2 rounded-2xl border border-red-300/[0.22] bg-red-500/[0.12] px-3 py-2 text-xs font-semibold text-red-100">
+          <AlertTriangle className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+          <span className="flex-1 min-w-0 truncate">{aiError}</span>
+          <button
+            type="button"
+            onClick={onClearError}
+            className="shrink-0 rounded-lg p-0.5 hover:bg-red-300/20 transition-colors"
+            aria-label="Dismiss error"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      )}
 
       {stagedActionLabel && (
         <div className="mb-2 flex items-center gap-2 rounded-2xl border border-emerald-300/[0.16] bg-emerald-400/[0.08] px-3 py-2 text-xs font-semibold text-emerald-100">
@@ -836,7 +859,9 @@ function ConversationDock({
           onClick={onSend}
           disabled={!chatInput.trim() || isAiTyping}
           className="obsidian-gradient mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_-14px_rgba(124,58,237,0.95)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 focus-ring"
-          title="Send"
+          title={isAiTyping ? 'Processing…' : 'Send message'}
+          id="ai-workspace-send-btn"
+          aria-label="Send message"
         >
           <Send className="h-[18px] w-[18px]" strokeWidth={1.8} />
         </button>
