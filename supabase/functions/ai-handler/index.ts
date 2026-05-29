@@ -306,14 +306,19 @@ async function handleWorkspace(
   const apiKey = credential
   const genAI = new GoogleGenerativeAI(apiKey)
 
-  // Validate model name — protect against invalid/hallucinated model names
-  // that would cause a 400 from the Gemini API with a confusing error.
+  // Validate model name against known valid Gemini model prefixes.
+  // This prevents invalid names (e.g. 'gemini-flash-latest', 'gemini-3.x') from
+  // reaching the Gemini API and returning a cryptic 400 error.
   const GEMINI_MODEL_FALLBACK = 'gemini-2.5-flash'
-  const resolvedModel = (typeof aiModel === 'string' && aiModel.startsWith('gemini-'))
-    ? aiModel
-    : GEMINI_MODEL_FALLBACK
-  if (resolvedModel !== aiModel) {
-    console.warn(`[ai-handler] Unknown Gemini model "${aiModel}", falling back to ${resolvedModel}`)
+  const VALID_GEMINI_PREFIXES = [
+    'gemini-2.5-', 'gemini-2.0-', 'gemini-1.5-', 'gemini-1.0-',
+    'gemini-pro', 'gemini-ultra', 'gemini-nano',
+  ]
+  const isValidGeminiModel = typeof aiModel === 'string' &&
+    VALID_GEMINI_PREFIXES.some(prefix => aiModel.startsWith(prefix))
+  const resolvedModel = isValidGeminiModel ? aiModel : GEMINI_MODEL_FALLBACK
+  if (!isValidGeminiModel) {
+    console.warn(`[ai-handler] Invalid Gemini model "${aiModel}", using fallback: ${GEMINI_MODEL_FALLBACK}`)
   }
   // Extract system messages and build the system instruction
   // (Gemini treats all system messages as a single system instruction)
@@ -457,16 +462,28 @@ async function generateLegacyResponse(
     })
   }
 
+  const LEGACY_GEMINI_FALLBACK = 'gemini-2.5-flash'
+  const VALID_LEGACY_PREFIXES = [
+    'gemini-2.5-', 'gemini-2.0-', 'gemini-1.5-', 'gemini-1.0-',
+    'gemini-pro', 'gemini-ultra',
+  ]
+  const isValidLegacyModel = typeof aiModel === 'string' &&
+    VALID_LEGACY_PREFIXES.some(p => aiModel.startsWith(p))
+  const safeModel = isValidLegacyModel ? aiModel : LEGACY_GEMINI_FALLBACK
+  if (!isValidLegacyModel) {
+    console.warn(`[ai-handler/legacy] Invalid model "${aiModel}", using ${LEGACY_GEMINI_FALLBACK}`)
+  }
+
   const genAI = new GoogleGenerativeAI(credential)
   const geminiModel = genAI.getGenerativeModel({
-    model: aiModel,
+    model: safeModel,
     systemInstruction: systemPrompt,
     ...(type === 'schedule' ? { generationConfig: { responseMimeType: 'application/json' } } : {}),
   })
 
   const chat = geminiModel.startChat({ history: normalizeHistory(history || []) })
   const result = await chat.sendMessage(resolvedInput)
-  return json({ response: result.response.text(), providerUsed: provider, model: aiModel })
+  return json({ response: result.response.text(), providerUsed: provider, model: safeModel })
 }
 
 // ─── Main Handler ─────────────────────────────────────────────────────────────
