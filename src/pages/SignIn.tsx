@@ -74,34 +74,29 @@ export function SignIn() {
       {/* Layered ambient orbs — violet, pink, cyan */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full animate-float-soft"
+        className="pointer-events-none absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgb(124 58 237 / 0.32), transparent 65%)',
-          filter: 'blur(8px)',
+          background: 'radial-gradient(circle, rgb(124 58 237 / 0.22), transparent 68%)',
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 -right-32 w-[32rem] h-[32rem] rounded-full animate-float-soft"
+        className="pointer-events-none absolute -bottom-32 -right-32 w-[32rem] h-[32rem] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgb(34 211 238 / 0.26), transparent 65%)',
-          filter: 'blur(8px)',
-          animationDelay: '1.4s',
+          background: 'radial-gradient(circle, rgb(34 211 238 / 0.18), transparent 68%)',
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/2 right-0 w-[24rem] h-[24rem] rounded-full animate-float-soft"
+        className="pointer-events-none absolute top-1/2 right-0 w-[24rem] h-[24rem] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgb(244 114 182 / 0.18), transparent 60%)',
-          filter: 'blur(8px)',
-          animationDelay: '2.6s',
+          background: 'radial-gradient(circle, rgb(244 114 182 / 0.14), transparent 64%)',
         }}
       />
 
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10 animate-fade-up relative z-10">
-        <div className="w-11 h-11 rounded-2xl obsidian-gradient flex items-center justify-center shadow-[0_12px_36px_-8px_rgb(124_58_237_/_0.6)] animate-float-soft">
+        <div className="w-11 h-11 rounded-2xl obsidian-gradient flex items-center justify-center shadow-[0_12px_36px_-8px_rgb(124_58_237_/_0.6)]">
           <Sparkles className="text-white text-xl" strokeWidth={1.5} />
         </div>
         <div>

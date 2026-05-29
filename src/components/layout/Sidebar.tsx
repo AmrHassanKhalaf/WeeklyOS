@@ -44,7 +44,7 @@ function NavItem({
       onPointerDown={onPointerDown}
       className={({ isActive }) =>
         cn(
-          'ripple-surface group relative flex items-center rounded-xl transition-all duration-300 focus-ring',
+          'ripple-surface group relative flex items-center rounded-xl transition-colors duration-150 focus-ring',
           collapsed ? 'justify-center px-0 py-2.5 mx-auto w-11 h-11' : 'gap-3 px-3 py-2',
           isActive
             ? 'text-on-surface bg-surface-container-high/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_4px_12px_-4px_rgba(0,0,0,0.2)]'
@@ -74,23 +74,20 @@ function NavItem({
           )}
           <Icon 
             className={cn(
-              'w-[18px] h-[18px] relative z-10 transition-transform duration-300',
-              isActive ? 'text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : 'text-neutral-500 group-hover:text-neutral-300',
-              'group-hover:scale-105',
+              'w-[18px] h-[18px] relative z-10 transition-colors duration-150',
+              isActive ? 'text-primary' : 'text-neutral-500 group-hover:text-neutral-300',
             )}
             strokeWidth={isActive ? 2 : 1.5}
           />
           {!collapsed && (
-            <motion.span
-              initial={false}
-              animate={{ opacity: 1 }}
+            <span
               className={cn(
                 "relative z-10 text-[13px] tracking-wide truncate transition-colors duration-300",
                 isActive ? "font-semibold text-neutral-100" : "font-medium text-neutral-400 group-hover:text-neutral-200"
               )}
             >
               {label}
-            </motion.span>
+            </span>
           )}
           <RippleContainer ripples={ripples} />
         </>
@@ -139,8 +136,8 @@ export function Sidebar() {
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
         className={cn(
           'fixed left-0 top-0 h-screen z-50 flex flex-col border-r border-outline-variant/15',
-          'bg-surface-container-lowest/85 backdrop-blur-lg backdrop-saturate-150',
-          'shadow-[0_30px_80px_-30px_rgba(0,0,0,0.5),inset_-1px_0_0_rgb(255_255_255_/_0.04)]',
+          'bg-surface-container-lowest/97',
+          'shadow-[0_20px_48px_-30px_rgba(0,0,0,0.5),inset_-1px_0_0_rgb(255_255_255_/_0.04)]',
           width,
         )}
         aria-hidden={isHidden}
@@ -153,7 +150,7 @@ export function Sidebar() {
               isRail ? 'justify-center' : 'gap-3 px-2',
             )}
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center obsidian-gradient shrink-0 shadow-[0_8px_24px_-6px_rgb(124_58_237_/_0.4)] animate-float-soft">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center obsidian-gradient shrink-0 shadow-[0_8px_24px_-6px_rgb(124_58_237_/_0.4)]">
               <Sparkles className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
             <AnimatePresence>
@@ -198,7 +195,7 @@ export function Sidebar() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-4 mb-2 rounded-2xl border border-outline-variant/25 bg-surface-container-low/60 backdrop-blur-md px-3.5 py-3 relative overflow-hidden"
+                className="mt-4 mb-2 rounded-2xl border border-outline-variant/25 bg-surface-container-low/80 px-3.5 py-3 relative overflow-hidden"
               >
                 <div
                   aria-hidden
@@ -277,7 +274,7 @@ export function Sidebar() {
             {/* User card */}
             <div
               className={cn(
-                'rounded-2xl bg-surface-container-low/60 border border-outline-variant/25 backdrop-blur-md transition-all',
+                'rounded-2xl bg-surface-container-low/80 border border-outline-variant/25 transition-colors',
                 isRail ? 'p-1 flex flex-col items-center gap-2' : 'p-2.5 flex items-center gap-3',
               )}
             >

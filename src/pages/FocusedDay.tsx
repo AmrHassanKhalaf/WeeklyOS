@@ -18,8 +18,8 @@ const PRESETS = [
 ]
 
 // ── Circular SVG progress ─────────────────────────────────────────────────────
-// Receives raw pomodoroTime + totalSecs so it can do its own sub-second RAF
-// interpolation — giving a truly continuous sweep at 60 fps.
+// Receives raw pomodoroTime + totalSecs so it can do lightweight sub-second
+// interpolation without forcing React to re-render the timer every frame.
 function CircularProgress({
   pomodoroTime,
   totalSecs,
@@ -44,17 +44,17 @@ function CircularProgress({
   // Discrete progress (used for ticks — whole seconds only)
   const tickProgress = totalSecs > 0 ? pomodoroTime / totalSecs : 0
 
-  // ── Continuous RAF loop ──────────────────────────────────────────────────────
-  // lastTickTimeRef: wall-clock time when pomodoroTime last changed (each store tick)
-  // Each RAF frame computes: continuousProgress = (pomodoroTime - subSecElapsed) / totalSecs
+  // Timer arc interpolation.
+  // lastTickTimeRef: wall-clock time when pomodoroTime last changed (each store tick).
+  // A light 10 Hz DOM update keeps the timer smooth without competing with pointer movement.
   const arcRef = useRef<SVGCircleElement>(null)
-  const rafRef = useRef<number>(0)
+  const intervalRef = useRef<number | null>(null)
   const lastTickTimeRef = useRef<number>(performance.now())
   const pomodoroTimeRef = useRef<number>(pomodoroTime)
   const totalSecsRef = useRef<number>(totalSecs)
   const isRunningRef = useRef<boolean>(isRunning)
 
-  // Sync mutable refs so the RAF closure always reads fresh values
+  // Sync mutable refs so the interval callback always reads fresh values.
   useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
   useEffect(() => { totalSecsRef.current = totalSecs }, [totalSecs])
 
@@ -83,14 +83,14 @@ function CircularProgress({
       return
     }
 
-    const loop = (now: number) => {
-      updateArc(now)
-      rafRef.current = requestAnimationFrame(loop)
+    updateArc()
+    intervalRef.current = window.setInterval(() => updateArc(performance.now()), 100)
+    return () => {
+      if (intervalRef.current === null) return
+      window.clearInterval(intervalRef.current)
+      intervalRef.current = null
     }
-
-    rafRef.current = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [circumference, isRunning, pomodoroTime, totalSecs])
+  }, [circumference, isRunning])
 
   // Clock tick marks — drawn inside the ring, update once/second (discrete is fine)
   const TICK_COUNT = 60
@@ -115,30 +115,13 @@ function CircularProgress({
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" style={{ transform: 'rotate(-90deg)' }}>
-      <defs>
-        <filter id="tick-glow" x="-50%" y="-50%" width="200%" height="200%" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <filter id="tick-glow-major" x="-100%" y="-100%" width="300%" height="300%" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="2.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
       {/* Outer ambient ring */}
       <circle cx={cx} cy={cy} r={r + 14} fill="none" stroke={color} strokeWidth={1} strokeOpacity={0.08} />
 
       {/* Track */}
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={stroke} />
 
-      {/* Progress arc — driven purely by RAF, no React re-render needed */}
+      {/* Progress arc — driven by a lightweight DOM interval, no React re-render needed */}
       <circle
         ref={arcRef}
         cx={cx} cy={cy} r={r}
@@ -149,7 +132,6 @@ function CircularProgress({
         strokeDasharray={circumference}
         strokeDashoffset={circumference * (1 - tickProgress)}
         style={{ transition: 'stroke 0.4s' }}
-        filter={`drop-shadow(0 0 14px ${color}cc)`}
       />
 
       {/* Clock tick marks */}
@@ -162,7 +144,6 @@ function CircularProgress({
             stroke={glowColor}
             strokeWidth={tick.isMajor ? 2.5 : 1.5}
             strokeLinecap="round"
-            filter={tick.isMajor ? 'url(#tick-glow-major)' : undefined}
             opacity={tick.isMajor ? 1 : 0.85}
           />
         ) : (

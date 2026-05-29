@@ -264,8 +264,6 @@ body.light { color-scheme: light; }
   background: rgb(var(--color-glass-bg) / var(--glass-alpha));
   border: var(--glass-border-width) solid rgb(var(--color-glass-border) / var(--glass-border-alpha));
   box-shadow: var(--shadow-glass);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   isolation: isolate;
 }
 
@@ -601,8 +599,6 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
     background: rgb(var(--color-glass-bg) / var(--glass-alpha));
     border: var(--glass-border-width) solid rgb(var(--color-glass-border) / var(--glass-border-alpha));
     box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   }
 
   /* Subtle top-edge highlight (1px gradient line) — gives depth */
@@ -689,8 +685,6 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
       border-color 0.22s ease,
       box-shadow 0.22s ease,
       background-color 0.22s ease;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
   }
 
   .input-base::placeholder {
@@ -759,8 +753,6 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
       box-shadow 0.25s ease,
       color 0.2s ease,
       filter 0.22s ease;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
     overflow: hidden;
     isolation: isolate;
     user-select: none;

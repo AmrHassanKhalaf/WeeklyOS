@@ -64,7 +64,7 @@ export function TopNav() {
       initial={false}
       animate={{ left: offsetLeft }}
       transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-      className="fixed top-0 right-0 h-14 z-40 bg-background/60 backdrop-blur-lg backdrop-saturate-150 flex items-center justify-between px-2 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
+      className="fixed top-0 right-0 h-14 z-40 bg-background/95 flex items-center justify-between px-2 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
     >
       {/* Left: hamburger + page title */}
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
@@ -143,12 +143,11 @@ export function TopNav() {
         <button
           onPointerDown={onAiDown}
           onClick={toggleAIWorkspace}
-          className="ripple-surface relative w-9 h-9 rounded-xl flex items-center justify-center text-primary hover:bg-primary/10 hover:shadow-[0_0_18px_-2px_rgb(167_139_250_/_0.3)] focus-ring transition-all"
+          className="ripple-surface relative w-9 h-9 rounded-xl flex items-center justify-center text-primary hover:bg-primary/10 focus-ring transition-colors"
           title="AI Workspace"
           aria-label="Toggle AI Workspace"
         >
           <Sparkles className="w-[18px] h-[18px]" strokeWidth={1.5} />
-          <span className="absolute inset-0 rounded-xl animate-pulse-glow pointer-events-none opacity-40" />
           <RippleContainer ripples={aiRipples} />
         </button>
       </div>
