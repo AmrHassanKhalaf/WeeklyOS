@@ -96,6 +96,123 @@ function normalizeHistory(history: any[]) {
   return validHistory
 }
 
+type SupportedProvider = 'gemini' | 'grok' | 'ollama'
+
+const DEFAULT_MODELS: Record<SupportedProvider, string> = {
+  gemini: 'gemini-2.5-flash',
+  grok: 'grok-4.3',
+  ollama: 'llama3.2',
+}
+
+class ProviderRequestError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ProviderRequestError'
+    this.status = status
+  }
+}
+
+function normalizeProvider(provider: string | null | undefined): SupportedProvider {
+  if (provider === 'grok' || provider === 'ollama') return provider
+  return 'gemini'
+}
+
+function getProviderCredential(provider: SupportedProvider, storedValue?: string | null) {
+  if (provider === 'gemini') return storedValue || Deno.env.get('GEMINI_API_KEY') || ''
+  if (provider === 'grok') return storedValue || Deno.env.get('XAI_API_KEY') || ''
+  return storedValue || Deno.env.get('OLLAMA_BASE_URL') || 'http://localhost:11434'
+}
+
+function buildSystemInstruction(rawMessages: any[], fallback: string) {
+  return (rawMessages || [])
+    .filter((m: any) => m.role === 'system')
+    .map((m: any) => m.content)
+    .filter(Boolean)
+    .join('\n\n') || fallback
+}
+
+function normalizeOpenAiMessages(rawMessages: any[], fallbackSystem: string, fallbackUserText = '') {
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = []
+  const systemInstruction = buildSystemInstruction(rawMessages, fallbackSystem)
+  if (systemInstruction.trim()) messages.push({ role: 'system', content: systemInstruction })
+
+  for (const message of rawMessages || []) {
+    if (message.role === 'system') continue
+    const content = (message.content || message.text || '').toString().trim()
+    if (!content) continue
+    messages.push({
+      role: message.role === 'assistant' || message.role === 'model' || message.role === 'ai' ? 'assistant' : 'user',
+      content,
+    })
+  }
+
+  if (messages.filter(m => m.role !== 'system').length === 0 && fallbackUserText.trim()) {
+    messages.push({ role: 'user', content: fallbackUserText })
+  }
+
+  return messages
+}
+
+function toJsonSchema(schema: any): any {
+  if (!schema || typeof schema !== 'object') return { type: 'object', properties: {} }
+  const next: any = { ...schema }
+  if (typeof next.type === 'string') next.type = next.type.toLowerCase()
+  if (next.properties && typeof next.properties === 'object') {
+    next.properties = Object.fromEntries(
+      Object.entries(next.properties).map(([key, value]) => [key, toJsonSchema(value)])
+    )
+  }
+  if (next.items) next.items = toJsonSchema(next.items)
+  return next
+}
+
+function toOpenAiTools(toolDeclarations: any[]) {
+  if (!Array.isArray(toolDeclarations)) return []
+  return toolDeclarations
+    .filter((tool: any) => tool?.name)
+    .map((tool: any) => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description || '',
+        parameters: toJsonSchema(tool.parameters || { type: 'object', properties: {} }),
+      },
+    }))
+}
+
+function parseToolArgs(args: unknown) {
+  if (!args) return {}
+  if (typeof args === 'string') {
+    try {
+      return JSON.parse(args)
+    } catch {
+      return {}
+    }
+  }
+  return typeof args === 'object' ? args : {}
+}
+
+async function fetchJson(url: string, init: RequestInit, provider: string) {
+  const response = await fetch(url, init)
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    const message =
+      payload?.error?.message ||
+      payload?.error ||
+      payload?.message ||
+      `${provider} request failed with ${response.status}`
+    throw new ProviderRequestError(message, response.status)
+  }
+  return payload
+}
+
+function ollamaChatUrl(baseUrl: string) {
+  const trimmed = baseUrl.trim().replace(/\/+$/, '')
+  return trimmed.endsWith('/api') ? `${trimmed}/chat` : `${trimmed}/api/chat`
+}
+
 // ─── Workspace Handler (Phase 2.4+) ──────────────────────────────────────────
 //
 // Accepts a structured message array assembled by the client orchestrator.
@@ -104,8 +221,8 @@ function normalizeHistory(history: any[]) {
 
 async function handleWorkspace(
   reqData: any,
-  apiKey: string,
-  provider: string,
+  credential: string,
+  provider: SupportedProvider,
   aiModel: string
 ) {
   const {
@@ -114,6 +231,77 @@ async function handleWorkspace(
     context,
   } = reqData
 
+  if (provider === 'grok') {
+    const messages = normalizeOpenAiMessages(
+      rawMessages || [],
+      WORKSPACE_RULES,
+      typeof context?.serialized === 'string' ? `Context: ${context.serialized}` : ''
+    )
+    const payload = await fetchJson('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${credential}`,
+      },
+      body: JSON.stringify({
+        model: aiModel,
+        messages,
+        stream: false,
+        ...(Array.isArray(toolDeclarations) && toolDeclarations.length > 0
+          ? { tools: toOpenAiTools(toolDeclarations) }
+          : {}),
+      }),
+    }, 'xAI')
+
+    const message = payload?.choices?.[0]?.message
+    const toolCalls = (message?.tool_calls || []).map((tc: any) => ({
+      toolId: tc.function?.name,
+      input: parseToolArgs(tc.function?.arguments),
+    })).filter((tc: any) => tc.toolId)
+
+    return json({
+      response: message?.content || '',
+      toolCalls,
+      providerUsed: provider,
+      model: payload?.model || aiModel,
+    })
+  }
+
+  if (provider === 'ollama') {
+    const messages = normalizeOpenAiMessages(
+      rawMessages || [],
+      WORKSPACE_RULES,
+      typeof context?.serialized === 'string' ? `Context: ${context.serialized}` : ''
+    )
+    const payload = await fetchJson(ollamaChatUrl(credential), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: aiModel,
+        messages,
+        stream: false,
+        ...(Array.isArray(toolDeclarations) && toolDeclarations.length > 0
+          ? { tools: toOpenAiTools(toolDeclarations) }
+          : {}),
+      }),
+    }, 'Ollama')
+
+    const message = payload?.message || {}
+    const toolCalls = (message.tool_calls || []).map((tc: any) => ({
+      toolId: tc.function?.name,
+      input: parseToolArgs(tc.function?.arguments),
+    })).filter((tc: any) => tc.toolId)
+
+    return json({
+      response: message.content || '',
+      reasoning: message.thinking,
+      toolCalls,
+      providerUsed: provider,
+      model: payload?.model || aiModel,
+    })
+  }
+
+  const apiKey = credential
   const genAI = new GoogleGenerativeAI(apiKey)
 
   // Extract system messages and build the system instruction
@@ -200,6 +388,76 @@ async function handleWorkspace(
   })
 }
 
+async function generateLegacyResponse(
+  provider: SupportedProvider,
+  credential: string,
+  aiModel: string,
+  systemPrompt: string,
+  resolvedInput: string,
+  history: any[],
+  type: string
+) {
+  if (provider === 'grok') {
+    const messages = normalizeOpenAiMessages([
+      { role: 'system', content: systemPrompt },
+      ...(history || []),
+      { role: 'user', content: resolvedInput },
+    ], systemPrompt)
+
+    const payload = await fetchJson('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${credential}`,
+      },
+      body: JSON.stringify({ model: aiModel, messages, stream: false }),
+    }, 'xAI')
+
+    return json({
+      response: payload?.choices?.[0]?.message?.content || '',
+      providerUsed: provider,
+      model: payload?.model || aiModel,
+    })
+  }
+
+  if (provider === 'ollama') {
+    const messages = normalizeOpenAiMessages([
+      { role: 'system', content: systemPrompt },
+      ...(history || []),
+      { role: 'user', content: resolvedInput },
+    ], systemPrompt)
+
+    const payload = await fetchJson(ollamaChatUrl(credential), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: aiModel,
+        messages,
+        stream: false,
+        ...(type === 'schedule' ? { format: 'json' } : {}),
+      }),
+    }, 'Ollama')
+
+    return json({
+      response: payload?.message?.content || '',
+      reasoning: payload?.message?.thinking,
+      providerUsed: provider,
+      model: payload?.model || aiModel,
+    })
+  }
+
+  const genAI = new GoogleGenerativeAI(credential)
+  const geminiModel = genAI.getGenerativeModel({
+    model: aiModel,
+    systemInstruction: systemPrompt,
+    ...(type === 'schedule' ? { generationConfig: { responseMimeType: 'application/json' } } : {}),
+  })
+
+  const chat = geminiModel.startChat({ history: normalizeHistory(history || []) })
+  const result = await chat.sendMessage(resolvedInput)
+  return json({ response: result.response.text(), providerUsed: provider, model: aiModel })
+}
+
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
@@ -238,14 +496,15 @@ serve(async (req: Request) => {
         .eq('user_id', userId),
     ])
 
-    const provider = overrideProvider || settingsRes.data?.default_provider || 'gemini'
-    const apiKey = (keysRes.data || []).find((k: any) => k.provider === provider)?.api_key
-    const aiModel = model || settingsRes.data?.active_model || 'gemini-1.5-flash'
+    const provider = normalizeProvider(overrideProvider || settingsRes.data?.default_provider || 'gemini')
+    const storedCredential = (keysRes.data || []).find((k: any) => k.provider === provider)?.api_key
+    const credential = getProviderCredential(provider, storedCredential)
+    const aiModel = model || settingsRes.data?.active_model || DEFAULT_MODELS[provider]
 
     // ── Phase 2.4+ structured workspace requests ──────────────────────────────
     if (type === 'workspace' && Array.isArray(reqData.messages)) {
-      if (!apiKey) return json({ error: 'No API key configured' }, 400)
-      return await handleWorkspace(reqData, apiKey, provider, aiModel)
+      if (!credential) return json({ error: `No ${provider} configuration found` }, 400)
+      return await handleWorkspace(reqData, credential, provider, aiModel)
     }
 
     // ── Legacy request types (backward compat) ────────────────────────────────
@@ -258,7 +517,7 @@ serve(async (req: Request) => {
         : `${GLOBAL_RULES}\nContext: ${contextStr}`
 
     if (['chat', 'reflection', 'challenge', 'insight', 'schedule'].includes(type)) {
-      if (!apiKey) return json({ error: 'No API key configured' }, 400)
+      if (!credential) return json({ error: `No ${provider} configuration found` }, 400)
 
       const fallbackInputs: Record<string, string> = {
         challenge: `Create a concise weekly challenge from these pending tasks: ${(context?.tasks || '').toString()}`,
@@ -271,20 +530,11 @@ serve(async (req: Request) => {
       const resolvedInput = (input?.trim() || fallbackInputs[type] || '').trim()
       if (!resolvedInput) return json({ error: 'Missing input' }, 400)
 
-      const genAI = new GoogleGenerativeAI(apiKey)
-      const geminiModel = genAI.getGenerativeModel({
-        model: aiModel,
-        systemInstruction: systemPrompt,
-        ...(type === 'schedule' ? { generationConfig: { responseMimeType: 'application/json' } } : {}),
-      })
-
-      const chat = geminiModel.startChat({ history: normalizeHistory(history || []) })
-      const result = await chat.sendMessage(resolvedInput)
-      return json({ response: result.response.text(), providerUsed: provider })
+      return await generateLegacyResponse(provider, credential, aiModel, systemPrompt, resolvedInput, history || [], type)
     }
 
     return json({ error: 'Unsupported request type' }, 400)
   } catch (error: any) {
-    return json({ error: error.message }, 500)
+    return json({ error: error.message }, error instanceof ProviderRequestError ? error.status : 500)
   }
 })

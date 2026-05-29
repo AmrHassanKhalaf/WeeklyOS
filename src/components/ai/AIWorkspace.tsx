@@ -183,7 +183,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
       onMouseDown={closeAIWorkspace}
     >
       <motion.div
-        className="absolute inset-0 bg-background/[0.72] backdrop-blur-md"
+        className="absolute inset-0 bg-background/[0.84]"
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -206,7 +206,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
         exit={reduceMotion ? undefined : isMobile ? { y: '100%' } : { x: 28, opacity: 0 }}
         transition={{ type: 'spring', damping: 30, stiffness: 260 }}
         className={cn(
-          'absolute flex flex-col overflow-hidden border border-primary/[0.24] bg-gradient-to-br from-primary/[0.12] via-surface-container-low/[0.96] to-surface-container-lowest/[0.98] text-on-surface shadow-[0_30px_90px_-26px_rgba(0,0,0,0.9),0_0_70px_rgba(124,58,237,0.18),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-xl backdrop-saturate-150',
+          'absolute flex flex-col overflow-hidden border border-primary/[0.24] bg-gradient-to-br from-primary/[0.12] via-surface-container-low/[0.98] to-surface-container-lowest text-on-surface shadow-[0_30px_90px_-26px_rgba(0,0,0,0.9),0_0_70px_rgba(124,58,237,0.18),inset_0_1px_0_rgba(255,255,255,0.07)]',
           isMobile
             ? 'inset-x-0 bottom-0 h-[94dvh] rounded-t-[1.75rem]'
             : 'right-4 top-4 bottom-4 w-[min(1080px,calc(100vw-2rem))] rounded-[1.75rem]'
@@ -835,7 +835,7 @@ function ConversationDock({
           type="button"
           onClick={onSend}
           disabled={!chatInput.trim() || isAiTyping}
-          className="obsidian-gradient mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_-14px_rgba(124,58,237,0.95)] transition-[filter,opacity] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-ring"
+          className="obsidian-gradient mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_-14px_rgba(124,58,237,0.95)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 focus-ring"
           title="Send"
         >
           <Send className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -900,7 +900,7 @@ function ModeHero({
           <button
             type="button"
             onClick={() => onAction(primaryAction)}
-            className="obsidian-gradient inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-[0_20px_46px_-18px_rgba(124,58,237,1)] transition-[filter] hover:brightness-110 focus-ring"
+            className="obsidian-gradient inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-[0_20px_46px_-18px_rgba(124,58,237,1)] transition-opacity hover:opacity-90 focus-ring"
           >
             <PrimaryIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
             {primaryLabel}

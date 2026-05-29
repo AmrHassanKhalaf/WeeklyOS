@@ -184,7 +184,6 @@ function TaskRow({
   accentColor?: 'purple' | 'teal' | 'yellow'
   isRunning?: boolean
 }) {
-  const [isHovered, setIsHovered] = useState(false)
   const done = task.status === 'done'
   const totalSecs = (task.actualDuration || 0) + unsavedSeconds
   const taskDuration = `${Math.floor(totalSecs / 60)}m ${(totalSecs % 60).toString().padStart(2, '0')}s`
@@ -193,14 +192,15 @@ function TaskRow({
   const C = accentColor === 'purple'
     ? {
       containerActive: 'border-violet-300/55 bg-gradient-to-br from-violet-500/[0.18] via-violet-500/[0.075] to-transparent shadow-[0_0_34px_rgba(139,92,246,0.28),inset_0_1px_0_rgba(255,255,255,0.08)]',
-      containerHover: 'border-violet-500/40 bg-gradient-to-br from-violet-500/[0.08] to-transparent shadow-[0_0_16px_rgba(139,92,246,0.16)]',
+      containerInteractive: 'hover:border-violet-500/40 hover:bg-gradient-to-br hover:from-violet-500/[0.08] hover:to-transparent hover:shadow-[0_0_16px_rgba(139,92,246,0.16)] hover:scale-[1.007]',
       containerIdle: 'border-violet-500/10 bg-transparent',
       stripe: 'bg-violet-300 shadow-[0_0_16px_rgba(167,139,250,0.95)]',
-      titleActive: 'text-violet-100 font-black drop-shadow-[0_0_10px_rgba(167,139,250,0.35)]',
-      titleHover: 'text-neutral-100 font-semibold',
+      titleActive: 'text-violet-100 font-black',
+      titleInteractive: 'group-hover/task:text-neutral-100',
       pill: 'border-violet-300/30 bg-violet-500/14 text-violet-200',
+      pillInteractive: 'group-hover/task:border-violet-300/30 group-hover/task:bg-violet-500/14 group-hover/task:text-violet-200',
       btnActive: 'border-violet-300/42 bg-violet-500/14 text-violet-200 shadow-[0_0_20px_rgba(139,92,246,0.18)]',
-      btnHover: 'border-violet-500/60 bg-violet-500/20 text-violet-200',
+      btnInteractive: 'hover:border-violet-500/60 hover:bg-violet-500/20 hover:text-violet-200',
       btnIdle: 'border-violet-500/30 bg-transparent text-violet-400 hover:bg-violet-500/10',
       dot: 'bg-violet-400',
       activeGlow: 'shadow-[0_0_42px_rgba(139,92,246,0.36)] ring-1 ring-violet-200/24',
@@ -210,14 +210,15 @@ function TaskRow({
     : accentColor === 'yellow'
       ? {
         containerActive: 'border-amber-200/48 bg-gradient-to-br from-amber-400/[0.16] via-amber-400/[0.06] to-transparent shadow-[0_0_32px_rgba(251,191,36,0.24),inset_0_1px_0_rgba(255,255,255,0.08)]',
-        containerHover: 'border-amber-400/35 bg-gradient-to-br from-amber-400/[0.07] to-transparent shadow-[0_0_14px_rgba(251,191,36,0.15)]',
+        containerInteractive: 'hover:border-amber-400/35 hover:bg-gradient-to-br hover:from-amber-400/[0.07] hover:to-transparent hover:shadow-[0_0_14px_rgba(251,191,36,0.15)] hover:scale-[1.007]',
         containerIdle: 'border-amber-400/10 bg-transparent',
         stripe: 'bg-amber-200 shadow-[0_0_16px_rgba(251,191,36,0.9)]',
-        titleActive: 'text-amber-100 font-black drop-shadow-[0_0_10px_rgba(251,191,36,0.32)]',
-        titleHover: 'text-neutral-100 font-semibold',
+        titleActive: 'text-amber-100 font-black',
+        titleInteractive: 'group-hover/task:text-neutral-100',
         pill: 'border-amber-200/28 bg-amber-400/12 text-amber-200',
+        pillInteractive: 'group-hover/task:border-amber-200/28 group-hover/task:bg-amber-400/12 group-hover/task:text-amber-200',
         btnActive: 'border-amber-200/40 bg-amber-400/12 text-amber-200 shadow-[0_0_18px_rgba(251,191,36,0.16)]',
-        btnHover: 'border-amber-400/60 bg-amber-400/20 text-amber-200',
+        btnInteractive: 'hover:border-amber-400/60 hover:bg-amber-400/20 hover:text-amber-200',
         btnIdle: 'border-amber-400/35 bg-transparent text-amber-300 hover:bg-amber-400/10',
         dot: 'bg-amber-300',
         activeGlow: 'shadow-[0_0_40px_rgba(251,191,36,0.28)] ring-1 ring-amber-100/22',
@@ -226,14 +227,15 @@ function TaskRow({
       }
       : {
         containerActive: 'border-teal-200/52 bg-gradient-to-br from-teal-500/[0.16] via-teal-500/[0.065] to-transparent shadow-[0_0_34px_rgba(45,212,191,0.26),inset_0_1px_0_rgba(255,255,255,0.08)]',
-        containerHover: 'border-teal-500/35 bg-gradient-to-br from-teal-500/[0.07] to-transparent shadow-[0_0_14px_rgba(20,184,166,0.14)]',
+        containerInteractive: 'hover:border-teal-500/35 hover:bg-gradient-to-br hover:from-teal-500/[0.07] hover:to-transparent hover:shadow-[0_0_14px_rgba(20,184,166,0.14)] hover:scale-[1.007]',
         containerIdle: 'border-teal-500/10 bg-transparent',
         stripe: 'bg-teal-200 shadow-[0_0_16px_rgba(45,212,191,0.95)]',
-        titleActive: 'text-teal-100 font-black drop-shadow-[0_0_10px_rgba(45,212,191,0.35)]',
-        titleHover: 'text-neutral-100 font-semibold',
+        titleActive: 'text-teal-100 font-black',
+        titleInteractive: 'group-hover/task:text-neutral-100',
         pill: 'border-teal-200/28 bg-teal-500/12 text-teal-200',
+        pillInteractive: 'group-hover/task:border-teal-200/28 group-hover/task:bg-teal-500/12 group-hover/task:text-teal-200',
         btnActive: 'border-teal-200/42 bg-teal-500/12 text-teal-200 shadow-[0_0_20px_rgba(45,212,191,0.18)]',
-        btnHover: 'border-teal-500/60 bg-teal-500/20 text-teal-200',
+        btnInteractive: 'hover:border-teal-500/60 hover:bg-teal-500/20 hover:text-teal-200',
         btnIdle: 'border-teal-500/35 bg-transparent text-teal-400 hover:bg-teal-500/10',
         dot: 'bg-teal-400',
         activeGlow: 'shadow-[0_0_42px_rgba(45,212,191,0.32)] ring-1 ring-teal-100/24',
@@ -242,8 +244,8 @@ function TaskRow({
       }
 
   // ── Derived display state ─────────────────────────────────────────────────────
-  const showExpanded = (isActive || (isHovered && !done)) && !isDimmed
-  const showStripe = showExpanded
+  // Keep hover feedback in CSS so pointer movement does not force React re-renders.
+  const showExpanded = isActive && !isDimmed
 
   const containerCls = isDimmed
     ? 'border-white/5 bg-transparent opacity-25 grayscale'
@@ -251,28 +253,23 @@ function TaskRow({
       ? 'border-white/[0.06] bg-transparent opacity-45 grayscale'
       : isActive
         ? `${C.containerActive} ${isRunning ? C.runningGlow : C.activeGlow}`
-        : isHovered
-          ? `${C.containerHover} scale-[1.007]`
-          : C.containerIdle
+        : `${C.containerIdle} ${C.containerInteractive}`
 
   const titleCls = done
     ? 'line-through text-neutral-600'
     : isActive ? C.titleActive
-      : isHovered ? C.titleHover
-        : 'text-neutral-400'
+      : `text-neutral-400 ${C.titleInteractive}`
 
   return (
     <div
-      onMouseEnter={() => { if (!done && !isDimmed) setIsHovered(true) }}
-      onMouseLeave={() => setIsHovered(false)}
-      className={`relative rounded-2xl border overflow-hidden transition-[background-color,border-color,opacity,transform] duration-300 ${containerCls}`}
+      className={`group/task relative rounded-2xl border overflow-hidden transform-gpu transition-[background-color,border-color,opacity,transform] duration-300 ${containerCls}`}
     >
       {isActive && (
         <div className={`pointer-events-none absolute inset-0 ${C.wash} ${isRunning ? 'opacity-100' : 'opacity-75'}`} />
       )}
       {/* Left accent stripe — visible when hovered or active */}
-      {showStripe && (
-        <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-colors duration-300 ${C.stripe}`} />
+      {!done && !isDimmed && (
+        <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-opacity duration-300 ${C.stripe} ${showExpanded ? 'opacity-100' : 'opacity-0 group-hover/task:opacity-100'}`} />
       )}
 
       <div className="px-4 py-3">
@@ -305,14 +302,14 @@ function TaskRow({
             <div
               className={`mt-1 flex min-h-7 flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-wider transition-[opacity,transform,color] duration-200 ${
                 isDimmed || done ? 'pointer-events-none translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
-              } ${isActive || isHovered ? 'text-neutral-400' : 'text-neutral-600'}`}
+              } ${isActive ? 'text-neutral-400' : 'text-neutral-600 group-hover/task:text-neutral-400'}`}
             >
-              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-[background-color,border-color,color] duration-200 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
+              <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 transition-[background-color,border-color,color] duration-200 ${isActive ? C.pill : `border-transparent ${C.pillInteractive}`}`}>
                 <Timer className="w-3 h-3" strokeWidth={1.5} />
                 {taskDuration}
               </span>
               {task.estimatedTime && (
-                <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-[background-color,border-color,color] duration-200 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
+                <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 transition-[background-color,border-color,color] duration-200 ${isActive ? C.pill : `border-transparent ${C.pillInteractive}`}`}>
                   <Clock className="w-3 h-3" strokeWidth={1.5} />
                   Est: {task.estimatedTime}
                 </span>
@@ -333,7 +330,7 @@ function TaskRow({
             <button
               onClick={(e) => { e.stopPropagation(); onMakeActive?.() }}
               className={`shrink-0 px-3 py-1.5 touch-target rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-[background-color,border-color,color] duration-200
-                ${isHovered ? C.btnHover : C.btnIdle}`}
+                ${C.btnIdle} ${C.btnInteractive}`}
             >
               Focus Task
             </button>
@@ -843,8 +840,8 @@ export function FocusedDay() {
       </AnimatePresence>
 
       <motion.div
-        className={`container-responsive py-responsive mx-auto pb-24 items-start transition-[opacity,filter,transform] duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-w-[1200px] ${isFocusMode && focusLevel === 'deep'
-          ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
+        className={`container-responsive py-responsive mx-auto pb-24 items-start transition-[opacity,transform] duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-w-[1200px] ${isFocusMode && focusLevel === 'deep'
+          ? 'opacity-0 scale-[0.98] pointer-events-none absolute'
           : `grid grid-cols-1 gap-6 sm:gap-8 opacity-100 max-w-[1200px] pb-24 ${pageGridClass}`
           }`}
       >
@@ -890,7 +887,7 @@ export function FocusedDay() {
             : 'border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-surface-container-low/60 to-surface-container-lowest/80'
             }`}>
             {/* Ambient glow blob */}
-            <div className={`absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-20 transition-colors duration-500 ${pomodoroPhase === 'focus' ? 'bg-violet-600' : 'bg-sky-500'
+            <div className={`absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20 transition-colors duration-500 ${pomodoroPhase === 'focus' ? 'bg-[radial-gradient(circle,rgba(124,58,237,0.42),transparent_68%)]' : 'bg-[radial-gradient(circle,rgba(14,165,233,0.42),transparent_68%)]'
               }`} />
 
             {/* ── Minimal Focus toggle — top-right corner ────────────────── */}
@@ -1294,9 +1291,9 @@ export function FocusedDay() {
         <AnimatePresence>
           {!isFocusMode && (
             <motion.div
-              initial={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
-              animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
-              exit={{ opacity: 0, filter: 'blur(10px)', x: 20 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className={`min-w-0 space-y-6 self-start ${sideColumnClass}`}
             >

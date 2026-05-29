@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 
-export type AIProvider = 'gemini' | 'grok'
+export type AIProvider = 'gemini' | 'grok' | 'ollama'
 export type WeekStartDay = 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
 
 function getDefaultTimeZone(): string {
@@ -86,7 +86,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       aiKeys: {},
       activeProvider: 'gemini',
-      activeModel: 'gemini-1.5-flash',
+      activeModel: 'gemini-2.5-flash',
       fallbackEnabled: true,
       theme: 'dark',
       dailyReminders: true,

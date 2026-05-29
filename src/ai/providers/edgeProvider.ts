@@ -68,7 +68,7 @@ function normalizeMessagesForEdge(
  *
  * The edge function handles:
  * - API key retrieval (server-side, not exposed to client)
- * - Gemini API calls with optional function calling
+ * - Provider API calls with optional function calling
  * - Authentication via JWT
  *
  * This provider translates the orchestrator's normalized request into the
@@ -77,7 +77,7 @@ function normalizeMessagesForEdge(
 export function createEdgeProvider(): AIProvider {
   return {
     id: 'edge',
-    label: 'Edge (Gemini)',
+    label: 'Edge AI',
     supportsTools: true,
     supportsStreaming: false,
 
@@ -93,7 +93,8 @@ export function createEdgeProvider(): AIProvider {
       if (!session?.user) throw new Error('Not authenticated')
 
       const state = useSettingsStore.getState()
-      const model = request.model || state.activeModel || 'gemini-1.5-flash'
+      const provider = state.activeProvider || 'gemini'
+      const model = request.model || state.activeModel || 'gemini-2.5-flash'
 
       // Build tool declarations for function calling
       const functionDeclarations = (request.tools ?? []).map(convertToolToFunctionDeclaration)
@@ -101,6 +102,7 @@ export function createEdgeProvider(): AIProvider {
       const payload: Record<string, unknown> = {
         type: 'workspace',
         messages: normalizeMessagesForEdge(request.messages),
+        overrideProvider: provider,
         model,
         mode: request.mode,
       }
