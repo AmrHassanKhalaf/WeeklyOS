@@ -265,17 +265,17 @@ function TaskRow({
     <div
       onMouseEnter={() => { if (!done && !isDimmed) setIsHovered(true) }}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${containerCls}`}
+      className={`relative rounded-2xl border overflow-hidden transition-[background-color,border-color,opacity,transform] duration-300 ${containerCls}`}
     >
       {isActive && (
         <div className={`pointer-events-none absolute inset-0 ${C.wash} ${isRunning ? 'opacity-100' : 'opacity-75'}`} />
       )}
       {/* Left accent stripe — visible when hovered or active */}
       {showStripe && (
-        <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-all duration-300 ${C.stripe}`} />
+        <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-colors duration-300 ${C.stripe}`} />
       )}
 
-      <div className="px-4 py-3 transition-all duration-300">
+      <div className="px-4 py-3">
 
         {/* ── Main row (always visible) ──────────────────────────────────────── */}
         <div className="flex items-center gap-3">
@@ -286,7 +286,7 @@ function TaskRow({
             aria-label={done ? 'Mark task incomplete' : 'Mark task complete'}
           >
             <span
-              className={`flex items-center justify-center rounded-full border transition-all duration-200 ${
+              className={`flex items-center justify-center rounded-full border transition-colors duration-200 ${
                 done
                   ? 'border-neutral-500 bg-neutral-700 text-neutral-300'
                   : 'border-neutral-500 text-transparent group-hover/check:border-neutral-300 group-hover/check:bg-white/[0.03]'
@@ -299,20 +299,20 @@ function TaskRow({
 
           {/* Title + metadata */}
           <div className="min-w-0 flex-1">
-            <span className={`block truncate text-base font-bold transition-all duration-200 ${titleCls}`}>
+            <span className={`block truncate text-base font-bold transition-colors duration-200 ${titleCls}`}>
               {task.title}
             </span>
             <div
-              className={`mt-1 flex flex-wrap items-center gap-2 overflow-hidden text-[10px] font-mono uppercase tracking-wider transition-all duration-300 ${
-                isDimmed || done ? 'max-h-0 opacity-0' : 'max-h-7 opacity-100'
+              className={`mt-1 flex min-h-7 flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-wider transition-[opacity,transform,color] duration-200 ${
+                isDimmed || done ? 'pointer-events-none translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
               } ${isActive || isHovered ? 'text-neutral-400' : 'text-neutral-600'}`}
             >
-              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-all duration-300 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
+              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-[background-color,border-color,color] duration-200 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
                 <Timer className="w-3 h-3" strokeWidth={1.5} />
                 {taskDuration}
               </span>
               {task.estimatedTime && (
-                <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-all duration-300 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
+                <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-[background-color,border-color,color] duration-200 ${isActive || isHovered ? C.pill + ' border' : ''}`}>
                   <Clock className="w-3 h-3" strokeWidth={1.5} />
                   Est: {task.estimatedTime}
                 </span>
@@ -324,7 +324,7 @@ function TaskRow({
           {isActive ? (
             <button
               onClick={(e) => { e.stopPropagation(); onMakeActive?.() }}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 touch-target rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all ${C.btnActive}`}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 touch-target rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-[background-color,border-color,color] ${C.btnActive}`}
             >
               <span className={`w-3 h-3 rounded-full ${C.dot} ${isRunning ? 'animate-pulse' : ''}`} />
               {isRunning ? 'Running' : 'Active'}
@@ -332,7 +332,7 @@ function TaskRow({
           ) : !done ? (
             <button
               onClick={(e) => { e.stopPropagation(); onMakeActive?.() }}
-              className={`shrink-0 px-3 py-1.5 touch-target rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all duration-200
+              className={`shrink-0 px-3 py-1.5 touch-target rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-[background-color,border-color,color] duration-200
                 ${isHovered ? C.btnHover : C.btnIdle}`}
             >
               Focus Task
@@ -431,7 +431,7 @@ function TaskPickerGate({
           <button
             type="button"
             onClick={onCancel}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-outline-variant/25 bg-surface-container-low/60 text-on-surface-variant transition-all hover:border-primary/35 hover:text-primary"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-outline-variant/25 bg-surface-container-low/60 text-on-surface-variant transition-[border-color,color] hover:border-primary/35 hover:text-primary"
             aria-label="Close task picker"
           >
             <span className="text-lg leading-none">&times;</span>
@@ -461,7 +461,7 @@ function TaskPickerGate({
                             key={task.id}
                             type="button"
                             onClick={() => onChooseTask(task.id)}
-                            className={`group/task rounded-2xl border bg-black/18 px-3 py-3 text-left transition-all duration-200 ${tone.border}`}
+                            className={`group/task rounded-2xl border bg-black/18 px-3 py-3 text-left transition-[background-color,border-color,color,transform] duration-200 ${tone.border}`}
                           >
                             <span className="block truncate text-sm font-black text-neutral-200 group-hover/task:text-white">{task.title}</span>
                             <span className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -498,7 +498,7 @@ function TaskPickerGate({
           <button
             type="button"
             onClick={onStartWithoutTask}
-            className="group/no-task relative overflow-hidden rounded-2xl border border-violet-300/42 bg-violet-500/18 px-4 py-3 text-left text-violet-100 shadow-[0_0_28px_rgba(139,92,246,0.22)] transition-all hover:border-violet-200/60 hover:bg-violet-500/24 sm:min-w-[240px]"
+            className="group/no-task relative overflow-hidden rounded-2xl border border-violet-300/42 bg-violet-500/18 px-4 py-3 text-left text-violet-100 shadow-[0_0_28px_rgba(139,92,246,0.22)] transition-[background-color,border-color,color] hover:border-violet-200/60 hover:bg-violet-500/24 sm:min-w-[240px]"
           >
             <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/16 to-transparent transition-transform duration-700 group-hover/no-task:translate-x-[120%]" />
             <span className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-violet-100/55 to-transparent" />
@@ -843,8 +843,7 @@ export function FocusedDay() {
       </AnimatePresence>
 
       <motion.div
-        layout
-        className={`container-responsive py-responsive mx-auto pb-24 items-start transition-all duration-[2500ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-w-[1200px] ${isFocusMode && focusLevel === 'deep'
+        className={`container-responsive py-responsive mx-auto pb-24 items-start transition-[opacity,filter,transform] duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-w-[1200px] ${isFocusMode && focusLevel === 'deep'
           ? 'opacity-0 blur-xl scale-[0.98] pointer-events-none absolute'
           : `grid grid-cols-1 gap-6 sm:gap-8 opacity-100 max-w-[1200px] pb-24 ${pageGridClass}`
           }`}
@@ -876,8 +875,8 @@ export function FocusedDay() {
                 <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-neutral-500 mb-1">Day Progress</p>
                 <div className="w-32 sm:w-48 h-1.5 sm:h-2 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-primary to-tertiary rounded-full transition-all duration-700"
-                    style={{ width: `${dayProgress * 100}%` }}
+                    className="h-full w-full origin-left bg-gradient-to-r from-primary to-tertiary rounded-full transition-transform duration-700"
+                    style={{ transform: `scaleX(${dayProgress})` }}
                   />
                 </div>
                 <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">{completedCount}/{totalCount} tasks</p>
@@ -886,7 +885,7 @@ export function FocusedDay() {
           </div>
 
           {/* ── Pomodoro Timer Card ─────────────────────────────────────────── */}
-          <div className={`relative rounded-3xl border overflow-hidden transition-all duration-500 ${pomodoroPhase === 'focus'
+          <div className={`relative rounded-3xl border overflow-hidden transition-[background-color,border-color] duration-500 ${pomodoroPhase === 'focus'
             ? 'border-primary/30 bg-gradient-to-br from-primary/10 via-surface-container-low/60 to-surface-container-lowest/80'
             : 'border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-surface-container-low/60 to-surface-container-lowest/80'
             }`}>
@@ -898,7 +897,7 @@ export function FocusedDay() {
             <button
               onClick={() => isFocusMode && focusLevel === 'minimal' ? setFocusMode(false) : setFocusMode(true, 'minimal')}
               title={isFocusMode && focusLevel === 'minimal' ? 'Exit Minimal Focus' : 'Minimal Focus'}
-              className={`absolute top-4 right-4 z-20 p-2 rounded-xl border transition-all duration-200 group ${
+              className={`absolute top-4 right-4 z-20 p-2 rounded-xl border transition-[background-color,border-color,color] duration-200 group ${
                 isFocusMode && focusLevel === 'minimal'
                   ? 'border-teal-500/50 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
                   : 'border-white/10 bg-transparent text-neutral-500 hover:border-white/25 hover:text-neutral-300 hover:bg-white/5'
@@ -991,7 +990,7 @@ export function FocusedDay() {
                       type="button"
                       onClick={isFocusMode && focusLevel === 'deep' ? () => setFocusMode(false) : () => setFocusMode(true, 'deep')}
                       whileTap={{ scale: 0.97 }}
-                      className={`group relative w-full sm:w-auto overflow-hidden rounded-xl border text-left p-3 sm:px-4 sm:py-2.5 flex items-center gap-2.5 touch-target transition-all duration-300 ${
+                      className={`group relative w-full sm:w-auto overflow-hidden rounded-xl border text-left p-3 sm:px-4 sm:py-2.5 flex items-center gap-2.5 touch-target transition-[background-color,border-color,color,transform] duration-300 ${
                         isFocusMode && focusLevel === 'deep'
                           ? 'from-violet-500/15 via-violet-900/10 to-black/80 bg-gradient-to-br border-violet-500/40 ring-1 ring-white/10'
                           : 'bg-transparent border-white/10 hover:border-violet-500/30'
@@ -1018,7 +1017,7 @@ export function FocusedDay() {
                       )}
 
                       {/* Icon */}
-                      <div className={`relative shrink-0 w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br transition-all duration-300 border ${
+                      <div className={`relative shrink-0 w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br transition-[background-color,border-color,color] duration-300 border ${
                         isFocusMode && focusLevel === 'deep'
                           ? 'from-violet-500/30 to-violet-700/20 border-violet-500/30 shadow-[0_0_14px_rgba(139,92,246,0.35)]'
                           : 'from-violet-500/10 to-violet-700/5 border-white/10 group-hover:border-violet-500/25 group-hover:shadow-[0_0_10px_rgba(139,92,246,0.2)]'
@@ -1058,7 +1057,7 @@ export function FocusedDay() {
                       aria-expanded={showPresets}
                     >
                       <span className="flex items-center gap-3 min-w-0">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-neutral-400 transition-all duration-300 group-hover:border-primary/30 group-hover:text-primary group-hover:bg-primary/5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-neutral-400 transition-[background-color,border-color,color] duration-300 group-hover:border-primary/30 group-hover:text-primary group-hover:bg-primary/5">
                           <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} />
                         </span>
                         <span className="min-w-0">
@@ -1068,7 +1067,7 @@ export function FocusedDay() {
                           </span>
                         </span>
                       </span>
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-neutral-500 transition-all duration-300 group-hover:text-neutral-300">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-neutral-500 transition-colors duration-300 group-hover:text-neutral-300">
                         {showPresets ? <ChevronUp className="w-[14px] h-[14px]" strokeWidth={1.8} /> : <ChevronDown className="w-[14px] h-[14px]" strokeWidth={1.8} />}
                       </span>
                     </button>
@@ -1076,11 +1075,11 @@ export function FocusedDay() {
                     <AnimatePresence initial={false}>
                     {showPresets && (
                       <motion.div
-                        initial={{ opacity: 0, y: -4, height: 0 }}
-                        animate={{ opacity: 1, y: 0, height: 'auto' }}
-                        exit={{ opacity: 0, y: -4, height: 0 }}
-                        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-                        className="mt-4 space-y-3 overflow-hidden will-change-[height,opacity]"
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                        className="mt-4 space-y-3 will-change-[opacity,transform]"
                       >
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {PRESETS.map(p => (
@@ -1091,7 +1090,7 @@ export function FocusedDay() {
                                 setShowCustom(false)
                                 setPomodoroPreset(p.focus, p.brk)
                               }}
-                              className={`group/preset relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all ${timerSelection === 'preset' && pomodoroFocusMin === p.focus && pomodoroBreakMin === p.brk
+                              className={`group/preset relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-[background-color,border-color,color] ${timerSelection === 'preset' && pomodoroFocusMin === p.focus && pomodoroBreakMin === p.brk
                                 ? 'border-primary/60 bg-primary/15 text-primary shadow-[0_0_24px_rgba(139,92,246,0.16)]'
                                 : 'border-white/10 bg-white/[0.018] text-neutral-400 hover:border-white/25 hover:text-white hover:bg-white/[0.04]'
                                 }`}
@@ -1106,7 +1105,7 @@ export function FocusedDay() {
                               setTimerSelection('custom')
                               setShowCustom(c => !c)
                             }}
-                            className={`relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-all ${timerSelection === 'custom'
+                            className={`relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-[background-color,border-color,color] ${timerSelection === 'custom'
                               ? 'border-teal-300/45 bg-teal-500/10 text-teal-200 shadow-[0_0_22px_rgba(45,212,191,0.12)]'
                               : 'border-white/10 bg-white/[0.018] text-neutral-400 hover:border-teal-300/30 hover:text-teal-200 hover:bg-teal-500/[0.05]'
                               }`}
@@ -1119,10 +1118,10 @@ export function FocusedDay() {
                         <AnimatePresence initial={false}>
                         {showCustom && (
                           <motion.div
-                            initial={{ opacity: 0, y: -6, scale: 0.985, height: 0 }}
-                            animate={{ opacity: 1, y: 0, scale: 1, height: 'auto' }}
-                            exit={{ opacity: 0, y: -6, scale: 0.985, height: 0 }}
-                            transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                            initial={{ opacity: 0, y: -6, scale: 0.985 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -6, scale: 0.985 }}
+                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                             className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto] items-end gap-3 rounded-2xl border border-teal-300/10 bg-teal-500/[0.035] p-3"
                           >
                             <label className="space-y-1.5">
@@ -1333,17 +1332,17 @@ export function FocusedDay() {
                       {[todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).length} items
                     </span>
                   </span>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-neutral-500 transition-all group-hover:border-primary/30 group-hover:text-primary">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-neutral-500 transition-[border-color,color] group-hover:border-primary/30 group-hover:text-primary">
                     {showTodayTasksList ? <ChevronUp className="w-4 h-4" strokeWidth={1.8} /> : <ChevronDown className="w-4 h-4" strokeWidth={1.8} />}
                   </span>
                 </button>
                 <AnimatePresence initial={false}>
                   {showTodayTasksList && (
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden border-t border-white/[0.06]"
                     >
                       <div className="custom-scrollbar max-h-64 space-y-4 overflow-y-auto overscroll-contain px-6 py-5">
@@ -1383,17 +1382,17 @@ export function FocusedDay() {
                       </span>
                     </span>
                   </span>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-neutral-500 transition-all group-hover:border-primary/30 group-hover:text-primary">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-neutral-500 transition-[border-color,color] group-hover:border-primary/30 group-hover:text-primary">
                     {showFocusRecordsList ? <ChevronUp className="w-4 h-4" strokeWidth={1.8} /> : <ChevronDown className="w-4 h-4" strokeWidth={1.8} />}
                   </span>
                 </button>
                 <AnimatePresence initial={false}>
                   {showFocusRecordsList && (
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden border-t border-white/[0.06]"
                     >
                       <div className="custom-scrollbar max-h-72 overflow-y-auto overscroll-contain px-6 py-5">

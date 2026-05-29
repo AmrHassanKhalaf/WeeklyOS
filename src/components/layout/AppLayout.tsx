@@ -106,10 +106,21 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
   // Track viewport breakpoint
   useEffect(() => {
-    const handleResize = () => setMobile(window.innerWidth < 1024)
+    let frameId: number | null = null
+    const syncMobile = () => {
+      frameId = null
+      setMobile(window.innerWidth < 1024)
+    }
+    const handleResize = () => {
+      if (frameId !== null) return
+      frameId = window.requestAnimationFrame(syncMobile)
+    }
     window.addEventListener('resize', handleResize)
-    handleResize()
-    return () => window.removeEventListener('resize', handleResize)
+    syncMobile()
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
+    }
   }, [setMobile])
 
   useEffect(() => {
@@ -155,7 +166,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
       <main
         className={cn(
-          'h-screen w-full max-w-full box-border overflow-y-auto overflow-x-hidden custom-scrollbar transition-[padding] duration-300',
+          'h-screen w-full max-w-full box-border overflow-y-auto overflow-x-hidden custom-scrollbar',
           isDeepFocus
             ? 'pl-0 pr-0 pt-0'
             : cn(leftPad, 'pr-0 pt-14', isMobile && !isFocusMode && 'pb-bottom-nav'),

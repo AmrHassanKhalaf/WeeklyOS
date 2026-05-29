@@ -413,7 +413,7 @@ export function Dashboard() {
                 >
                   <div
                     className={cn(
-                      'w-full rounded-md transition-all duration-300',
+                      'w-full rounded-md transition-colors duration-300',
                       d.isToday
                         ? 'obsidian-gradient shadow-[0_8px_18px_-6px_rgb(124_58_237_/_0.65)]'
                         : 'bg-primary/30 group-hover:bg-primary/45',

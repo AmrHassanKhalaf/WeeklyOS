@@ -120,6 +120,7 @@ export const useLayoutStore = create<LayoutState>()(
 
       setMobile: (isMobile) =>
         set((state) => {
+          if (isMobile === state.isMobile) return state
           if (isMobile && !state.isMobile) {
             return {
               isMobile,
@@ -136,7 +137,7 @@ export const useLayoutStore = create<LayoutState>()(
               isRightSidebarOpen: false,
             }
           }
-          return { isMobile }
+          return state
         }),
 
       closeSidebarsOnMobile: () =>

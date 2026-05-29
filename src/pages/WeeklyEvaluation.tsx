@@ -128,7 +128,7 @@ export function WeeklyEvaluation() {
               <TrendingUp className="text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }} strokeWidth={1.5} />
             </div>
             <div className="mt-4 h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-primary-container to-primary" style={{ width: `${score}%` }} />
+              <div className="h-full w-full origin-left bg-gradient-to-r from-primary-container to-primary" style={{ transform: `scaleX(${score / 100})` }} />
             </div>
             <div className="mt-3 text-[10px] text-neutral-500">
               {currentWeek.totalCompleted} / {currentWeek.totalPlanned} tasks completed
@@ -190,7 +190,7 @@ export function WeeklyEvaluation() {
               onChange={e => setEvalState(prev => ({ ...prev, wentWell: e.target.value }))}
               onBlur={() => handleSave('wentWell')}
               placeholder="Reflect on your wins and successes this week..."
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-tertiary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-tertiary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
 
@@ -218,7 +218,7 @@ export function WeeklyEvaluation() {
               onChange={e => setEvalState(prev => ({ ...prev, struggle: e.target.value }))}
               onBlur={() => handleSave('struggle')}
               placeholder="Note any roadblocks, distractions, or missed targets..."
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-error p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-error p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
 
@@ -246,7 +246,7 @@ export function WeeklyEvaluation() {
               onChange={e => setEvalState(prev => ({ ...prev, lessons: e.target.value }))}
               onBlur={() => handleSave('lessons')}
               placeholder="What changes will you make to your workflow next week?"
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-primary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-all resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-primary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
         </div>

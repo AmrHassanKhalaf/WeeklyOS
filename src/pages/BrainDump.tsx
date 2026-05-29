@@ -97,7 +97,7 @@ export function BrainDump() {
         >
           <div
             className={cn(
-              'relative rounded-2xl p-6 transition-all duration-300',
+              'relative rounded-2xl p-6 transition-colors duration-300',
               'bg-surface-container-low/80 border',
               isInputFocused
                 ? 'border-primary/30 shadow-[0_0_0_1px_rgb(109_40_217/0.15),0_24px_60px_-22px_rgb(109_40_217/0.30)]'
@@ -237,7 +237,7 @@ export function BrainDump() {
               ) : (
                 <button
                   onClick={() => setShowQuickInput(true)}
-                  className="group w-full py-5 mt-2 rounded-2xl border-2 border-dashed border-outline-variant/35 flex items-center justify-center gap-3 text-outline hover:text-on-surface-variant hover:border-outline-variant/60 hover:bg-surface-container-low/20 transition-all"
+                  className="group w-full py-5 mt-2 rounded-2xl border-2 border-dashed border-outline-variant/35 flex items-center justify-center gap-3 text-outline hover:text-on-surface-variant hover:border-outline-variant/60 hover:bg-surface-container-low/20 transition-[background-color,border-color,color]"
                 >
                   <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
                   <span className="text-sm font-bold tracking-widest uppercase">Add a Quick Task</span>

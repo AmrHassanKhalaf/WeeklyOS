@@ -82,7 +82,7 @@ export function HabitTracker() {
       <button
         key={tab}
         onClick={() => setActiveTab(tab)}
-        className="relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+        className="relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-[background-color,border-color,color]"
         style={{
           background: active ? `${color}18` : 'transparent',
           color: active ? color : 'rgb(var(--color-on-surface-variant))',
@@ -140,7 +140,7 @@ export function HabitTracker() {
           <div className="flex items-center bg-surface-container-low/60 border border-outline-variant/30 rounded-xl p-0.5 gap-0.5 w-full sm:w-auto">
             {(['monthly', 'weekly'] as const).map(mode => (
               <button key={mode} onClick={() => setViewMode(mode)}
-                className={`flex-1 sm:flex-none px-4 sm:px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-semibold transition-all capitalize touch-target ${viewMode === mode ? 'bg-primary/20 text-primary border border-primary/30' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                className={`flex-1 sm:flex-none px-4 sm:px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-semibold transition-[background-color,border-color,color] capitalize touch-target ${viewMode === mode ? 'bg-primary/20 text-primary border border-primary/30' : 'text-on-surface-variant hover:text-on-surface'}`}>
                 {mode}
               </button>
             ))}
@@ -158,7 +158,7 @@ export function HabitTracker() {
         {/* Week nav */}
         <AnimatePresence>
           {viewMode === 'weekly' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-row items-center justify-between gap-2 w-full sm:w-auto">
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex flex-row items-center justify-between gap-2 w-full sm:w-auto">
               <button onClick={() => setWeekOffset(v => Math.max(0, v - 1))} disabled={weekOffset === 0} className="btn btn-ghost btn-sm disabled:opacity-30 touch-target flex-1 sm:flex-none justify-center px-1 sm:px-3 text-[11px] sm:text-xs">
                 <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />Prev
               </button>

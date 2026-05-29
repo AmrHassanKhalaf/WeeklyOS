@@ -36,7 +36,7 @@ export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
       aria-label={`Theme: ${label}. Click to change.`}
       title={`Theme: ${label} — click to change`}
       className={cn(
-        'ripple-surface relative flex items-center gap-2 rounded-xl transition-all',
+        'ripple-surface relative flex items-center gap-2 rounded-xl transition-[background-color,border-color,color]',
         'border border-outline-variant/30 bg-surface-container-low/60 hover:bg-surface-container-low',
         'text-on-surface-variant hover:text-on-surface focus-ring',
         compact ? 'w-10 h-10 justify-center' : 'px-3 py-2',

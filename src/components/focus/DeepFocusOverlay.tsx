@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Play, Pause, RotateCcw, X, CloudRain } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
@@ -264,23 +264,6 @@ function FocusRing({
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
-      <defs>
-        <filter id="deep-tick-glow" x="-50%" y="-50%" width="200%" height="200%" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <filter id="deep-tick-glow-major" x="-100%" y="-100%" width="300%" height="300%" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="2.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
       {/* Outer ambient ring */}
       <circle cx={cx} cy={cy} r={r + 22} fill="none" stroke={color} strokeWidth={1} strokeOpacity={0.06} />
 
@@ -298,7 +281,6 @@ function FocusRing({
         strokeDasharray={circumference}
         strokeDashoffset={circumference * (1 - tickProgress)}
         style={{ transition: 'stroke 0.4s' }}
-        filter={`drop-shadow(0 0 18px ${color}cc)`}
       />
 
       {/* Clock tick marks */}
@@ -311,7 +293,6 @@ function FocusRing({
             stroke={glowColor}
             strokeWidth={tick.isMajor ? 2.5 : 1.5}
             strokeLinecap="round"
-            filter={tick.isMajor ? 'url(#deep-tick-glow-major)' : 'url(#deep-tick-glow)'}
             opacity={tick.isMajor ? 1 : 0.85}
           />
         ) : (
@@ -354,6 +335,7 @@ export function DeepFocusOverlay({
   onToggle,
   onReset,
 }: DeepFocusOverlayProps) {
+  const reduceMotion = useReducedMotion()
   const isFocusMode = useLayoutStore(state => state.isFocusMode)
   const focusLevel = useLayoutStore(state => state.focusLevel)
   const setFocusMode = useLayoutStore(state => state.setFocusMode)
@@ -362,13 +344,15 @@ export function DeepFocusOverlay({
   // ── Idle tracking ──────────────────────────────────────────────────────────
   const [isIdle, setIsIdle] = useState(false)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const idleFrameRef = useRef<number | null>(null)
   const isIdleRef = useRef(isIdle)
 
   useEffect(() => {
     isIdleRef.current = isIdle
   }, [isIdle])
 
-  const resetIdle = useCallback(() => {
+  const resetIdleNow = useCallback(() => {
+    idleFrameRef.current = null
     if (isIdleRef.current) {
       isIdleRef.current = false
       setIsIdle(false)
@@ -380,9 +364,18 @@ export function DeepFocusOverlay({
     }, 4000)
   }, [])
 
+  const scheduleIdleReset = useCallback(() => {
+    if (idleFrameRef.current !== null) return
+    idleFrameRef.current = window.requestAnimationFrame(resetIdleNow)
+  }, [resetIdleNow])
+
   useEffect(() => {
     if (!isDeep) {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      if (idleFrameRef.current !== null) {
+        cancelAnimationFrame(idleFrameRef.current)
+        idleFrameRef.current = null
+      }
       if (isIdleRef.current) {
         isIdleRef.current = false
         setIsIdle(false)
@@ -390,13 +383,14 @@ export function DeepFocusOverlay({
       return
     }
     const events = ['pointermove', 'pointerdown', 'keydown', 'touchstart', 'scroll']
-    events.forEach(e => window.addEventListener(e, resetIdle, { passive: true }))
-    resetIdle()
+    events.forEach(e => window.addEventListener(e, scheduleIdleReset, { passive: true }))
+    resetIdleNow()
     return () => {
-      events.forEach(e => window.removeEventListener(e, resetIdle))
+      events.forEach(e => window.removeEventListener(e, scheduleIdleReset))
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      if (idleFrameRef.current !== null) cancelAnimationFrame(idleFrameRef.current)
     }
-  }, [isDeep, resetIdle])
+  }, [isDeep, resetIdleNow, scheduleIdleReset])
 
   // ── Entry message ──────────────────────────────────────────────────────────
   const [entryMsg] = useState(pickEntryMessage)
@@ -451,12 +445,16 @@ export function DeepFocusOverlay({
           {/* ── Ambient breathing glow ──────────────────────────────────────── */}
           <motion.div
             animate={{
-              scale: isPomodoroRunning ? [1, 1.08, 1] : [1, 1.03, 1],
-              opacity: isPomodoroRunning ? [0.25, 0.45, 0.25] : [0.1, 0.2, 0.1],
+              scale: reduceMotion ? 1 : isPomodoroRunning ? [1, 1.04, 1] : [1, 1.02, 1],
+              opacity: reduceMotion ? 0.18 : isPomodoroRunning ? [0.18, 0.32, 0.18] : [0.08, 0.16, 0.08],
             }}
-            transition={{ duration: isFocus ? 7 : 5, repeat: Infinity, ease: 'easeInOut' }}
-            className={`absolute w-[700px] h-[700px] rounded-full blur-[160px] pointer-events-none ${isFocus ? 'bg-violet-600' : 'bg-sky-500'
-              }`}
+            transition={{ duration: reduceMotion ? 0 : isFocus ? 7 : 5, repeat: reduceMotion ? 0 : Infinity, ease: 'easeInOut' }}
+            className="absolute w-[min(76vw,700px)] h-[min(76vw,700px)] rounded-full pointer-events-none"
+            style={{
+              background: isFocus
+                ? 'radial-gradient(circle, rgb(124 58 237 / 0.7) 0%, rgb(124 58 237 / 0.22) 36%, transparent 68%)'
+                : 'radial-gradient(circle, rgb(14 165 233 / 0.68) 0%, rgb(14 165 233 / 0.22) 36%, transparent 68%)',
+            }}
           />
 
           {/* ── Radial vignette ─────────────────────────────────────────────── */}
@@ -598,7 +596,7 @@ export function DeepFocusOverlay({
                 onClick={onReset}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.92 }}
-                className="w-12 h-12 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/8 hover:border-white/15 text-neutral-400 hover:text-neutral-200 transition-all"
+                className="w-12 h-12 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/8 hover:border-white/15 text-neutral-400 hover:text-neutral-200 transition-[background-color,border-color,color]"
                 title="Reset timer"
               >
                 <RotateCcw className="w-4.5 h-4.5" strokeWidth={1.5} style={{ width: 18, height: 18 }} />
@@ -609,7 +607,7 @@ export function DeepFocusOverlay({
                 onClick={onToggle}
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
-                className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-2xl ${isFocus
+                className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-colors duration-300 shadow-2xl ${isFocus
                   ? 'bg-violet-600 hover:bg-violet-500 shadow-violet-600/30 hover:shadow-violet-500/40'
                   : 'bg-sky-500 hover:bg-sky-400 shadow-sky-500/30'
                   }`}
@@ -631,7 +629,7 @@ export function DeepFocusOverlay({
                 onClick={() => setFocusMode(false)}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.92 }}
-                className="w-12 h-12 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/8 hover:border-white/15 text-neutral-400 hover:text-neutral-200 transition-all"
+                className="w-12 h-12 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/8 hover:border-white/15 text-neutral-400 hover:text-neutral-200 transition-[background-color,border-color,color]"
                 title="Exit focus mode (Esc)"
               >
                 <X className="w-4.5 h-4.5" strokeWidth={1.5} style={{ width: 18, height: 18 }} />

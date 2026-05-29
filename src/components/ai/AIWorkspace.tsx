@@ -420,7 +420,7 @@ function ModeNavigation({
               type="button"
               onClick={() => onModeChange(mode.id)}
               className={cn(
-                'relative inline-flex h-10 items-center gap-2 rounded-2xl px-3.5 text-sm font-bold transition-all focus-ring',
+                'relative inline-flex h-10 items-center gap-2 rounded-2xl px-3.5 text-sm font-bold transition-[background-color,border-color,color,transform] focus-ring',
                 active ? 'text-white' : 'text-violet-100/[0.64] hover:bg-primary/10 hover:text-violet-100'
               )}
             >
@@ -589,7 +589,7 @@ function PlanMode({
             onClick={onRecordingToggle}
             aria-pressed={isRecording}
             className={cn(
-              'inline-flex h-10 items-center gap-2 rounded-2xl border px-3 text-xs font-bold uppercase tracking-[0.12em] transition-all focus-ring',
+              'inline-flex h-10 items-center gap-2 rounded-2xl border px-3 text-xs font-bold uppercase tracking-[0.12em] transition-[background-color,border-color,color] focus-ring',
               isRecording
                 ? 'border-red-300/30 bg-red-500/[0.12] text-red-100'
                 : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.78] hover:border-primary/[0.38] hover:text-white'
@@ -773,7 +773,7 @@ function ConversationDock({
               key={prompt}
               type="button"
               onClick={() => onSuggestedPrompt(prompt)}
-              className="shrink-0 rounded-full border border-primary/[0.16] bg-primary/[0.08] px-3 py-1.5 text-[11px] font-semibold text-violet-100/[0.78] transition-all hover:border-primary/[0.36] hover:text-white focus-ring"
+              className="shrink-0 rounded-full border border-primary/[0.16] bg-primary/[0.08] px-3 py-1.5 text-[11px] font-semibold text-violet-100/[0.78] transition-[border-color,color] hover:border-primary/[0.36] hover:text-white focus-ring"
             >
               {prompt}
             </button>
@@ -808,7 +808,7 @@ function ConversationDock({
           onClick={onRecordingToggle}
           aria-pressed={isRecording}
           className={cn(
-            'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-all focus-ring',
+            'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring',
             isRecording
               ? 'border-red-300/[0.35] bg-red-500/15 text-red-200'
               : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white'
@@ -835,7 +835,7 @@ function ConversationDock({
           type="button"
           onClick={onSend}
           disabled={!chatInput.trim() || isAiTyping}
-          className="obsidian-gradient mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_-14px_rgba(124,58,237,0.95)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-ring"
+          className="obsidian-gradient mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_-14px_rgba(124,58,237,0.95)] transition-[filter,opacity] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-ring"
           title="Send"
         >
           <Send className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -900,7 +900,7 @@ function ModeHero({
           <button
             type="button"
             onClick={() => onAction(primaryAction)}
-            className="obsidian-gradient inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-[0_20px_46px_-18px_rgba(124,58,237,1)] transition-all hover:brightness-110 focus-ring"
+            className="obsidian-gradient inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-[0_20px_46px_-18px_rgba(124,58,237,1)] transition-[filter] hover:brightness-110 focus-ring"
           >
             <PrimaryIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
             {primaryLabel}
@@ -957,7 +957,7 @@ function SecondaryActionButton({
     <button
       type="button"
       onClick={() => onAction(action)}
-      className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-primary/[0.16] bg-primary/[0.07] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-violet-100/[0.76] transition-all hover:border-primary/[0.34] hover:bg-primary/[0.12] hover:text-white focus-ring"
+      className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-primary/[0.16] bg-primary/[0.07] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-violet-100/[0.76] transition-[background-color,border-color,color] hover:border-primary/[0.34] hover:bg-primary/[0.12] hover:text-white focus-ring"
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
       <span>{actionView.label}</span>
@@ -978,7 +978,7 @@ function SignalActionButton({
     <button
       type="button"
       onClick={() => onAction(action)}
-      className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-primary/[0.14] bg-black/[0.18] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-violet-100/[0.74] transition-all hover:border-primary/[0.34] hover:bg-primary/[0.1] hover:text-white focus-ring"
+      className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-primary/[0.14] bg-black/[0.18] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-violet-100/[0.74] transition-[background-color,border-color,color] hover:border-primary/[0.34] hover:bg-primary/[0.1] hover:text-white focus-ring"
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
       <span>{actionView.label}</span>
@@ -1123,7 +1123,7 @@ function IconButton({
       aria-pressed={active}
       title={title}
       className={cn(
-        'flex h-10 w-10 items-center justify-center rounded-2xl border transition-all focus-ring',
+        'flex h-10 w-10 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring',
         active
           ? 'border-red-300/[0.35] bg-red-500/15 text-red-200 shadow-[0_0_24px_rgba(248,113,113,0.18)]'
           : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white hover:shadow-[0_0_22px_rgba(124,58,237,0.16)]'

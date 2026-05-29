@@ -109,8 +109,6 @@ export function SignIn() {
 
       {/* Card */}
       <motion.div
-        layout
-        transition={{ layout: { type: 'spring', stiffness: 190, damping: 31, mass: 0.9 } }}
         className="w-full max-w-md glass-panel rounded-3xl p-8 sm:p-10 animate-scale-in relative z-10 overflow-hidden"
       >
         <motion.div
@@ -123,7 +121,6 @@ export function SignIn() {
         <div className="mb-7 relative">
           <div className="mb-5 grid grid-cols-2 rounded-2xl bg-surface-container-low/60 p-1 border border-outline-variant/30">
             <motion.div
-              layout
               role="button"
               tabIndex={0}
               onClick={() => switchMode('signin')}
@@ -144,7 +141,6 @@ export function SignIn() {
               <span className="relative">Sign in</span>
             </motion.div>
             <motion.div
-              layout
               role="button"
               tabIndex={0}
               onClick={() => switchMode('signup')}
@@ -192,7 +188,7 @@ export function SignIn() {
             onClick={handleGoogleSignIn}
             disabled={isLoading || isOAuthLoading}
             aria-busy={isOAuthLoading}
-            className="ripple-surface focus-ring w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-on-surface bg-surface-container-low/70 border border-outline-variant/40 hover:bg-surface-container/80 hover:border-primary/35 transition-all disabled:opacity-60 lift-on-hover touch-target"
+            className="ripple-surface focus-ring w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-on-surface bg-surface-container-low/70 border border-outline-variant/40 hover:bg-surface-container/80 hover:border-primary/35 transition-[background-color,border-color,color,opacity,transform] disabled:opacity-60 lift-on-hover touch-target"
           >
             <span className="inline-flex items-center gap-3">
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -247,14 +243,14 @@ export function SignIn() {
             {mode === 'signup' && (
               <motion.div
                 key="confirm-password"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
                 transition={{
-                  height: { type: 'spring', stiffness: 180, damping: 29, mass: 0.88 },
                   opacity: { duration: 0.2, ease: 'easeOut' },
+                  y: { duration: 0.2, ease: 'easeOut' },
                 }}
-                className="space-y-1.5 overflow-hidden"
+                className="space-y-1.5"
               >
                 <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Confirm Password</label>
                 <Input

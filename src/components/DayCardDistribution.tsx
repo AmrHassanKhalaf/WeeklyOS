@@ -156,7 +156,7 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
 
 
   return (
-    <div className={`group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-all focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden ${task.status === 'done' ? 'opacity-60 bg-surface-container-low' : ''}`}>
+    <div className={`group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-[background-color,border-color,opacity] focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden ${task.status === 'done' ? 'opacity-60 bg-surface-container-low' : ''}`}>
       <div className="flex items-start gap-3">
         <button
             onClick={handleToggleComplete}
@@ -431,7 +431,7 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
               <span>{progress}%</span>
             </div>
             <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
-              <div className={`h-full ${progressColor} transition-all duration-300`} style={{ width: `${progress}%` }} />
+              <div className={`h-full w-full origin-left ${progressColor} transition-transform duration-300`} style={{ transform: `scaleX(${progress / 100})` }} />
             </div>
           </div>
         )}

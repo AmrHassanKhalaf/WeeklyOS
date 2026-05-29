@@ -231,9 +231,9 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                 </div>
                 {isBreakHabit && (
                   <motion.p
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
                     className="text-[11px] text-rose-300/80 mt-1 flex items-center gap-1"
                   >
                     <Info className="text-[13px]" strokeWidth={1.5} />
@@ -274,7 +274,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                         type="button"
                         onClick={() => set('type', cat.value)}
                         title={cat.description}
-                        className={`flex flex-col items-center gap-1 rounded-xl p-2 border-2 transition-all text-[10px] font-bold ${
+                        className={`flex flex-col items-center gap-1 rounded-xl p-2 border-2 transition-[background-color,border-color,color,transform] text-[10px] font-bold ${
                           form.type === cat.value
                             ? 'scale-[1.05]'
                             : 'border-outline-variant/30 bg-surface-container-low/50 text-on-surface-variant hover:border-outline-variant'
@@ -330,7 +330,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                         key={g.value}
                         type="button"
                         onClick={() => set('group_label', g.value)}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 border-2 transition-all text-sm font-semibold ${
+                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 border-2 transition-[background-color,border-color,color,transform] text-sm font-semibold ${
                           form.group_label === g.value
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-outline-variant/30 bg-surface-container-low/50 text-on-surface-variant hover:border-outline-variant'

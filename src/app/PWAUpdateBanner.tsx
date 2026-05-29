@@ -29,7 +29,7 @@ export function PWAUpdateBanner() {
         onClick={updateApp}
         className={
           'shrink-0 px-3 py-1.5 rounded-xl text-[12px] font-bold uppercase tracking-widest ' +
-          'bg-primary text-on-primary hover:bg-primary/90 active:scale-95 transition-all'
+          'bg-primary text-on-primary hover:bg-primary/90 active:scale-95 transition-[background-color,transform]'
         }
       >
         Update

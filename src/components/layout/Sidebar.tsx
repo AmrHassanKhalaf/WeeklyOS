@@ -130,7 +130,6 @@ export function Sidebar() {
       <motion.aside
         initial={false}
         animate={{
-          width: isRail ? 80 : 256,
           x: isHidden ? (isMobile ? -288 : -256) : 0,
         }}
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
@@ -146,7 +145,7 @@ export function Sidebar() {
           {/* Brand */}
           <div
             className={cn(
-              'flex items-center mb-6 transition-all',
+              'flex items-center mb-6 transition-[gap,padding] duration-200',
               isRail ? 'justify-center' : 'gap-3 px-2',
             )}
           >
@@ -220,9 +219,9 @@ export function Sidebar() {
                 </div>
                 <div className="mt-2.5 h-1 w-full rounded-full bg-surface-container-high overflow-hidden relative">
                   <motion.div
-                    className="h-full obsidian-gradient"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, score)}%` }}
+                    className="h-full w-full origin-left obsidian-gradient"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: Math.min(100, score) / 100 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                   />
                 </div>
@@ -315,7 +314,7 @@ export function Sidebar() {
             className={cn(
               'absolute top-1/2 -translate-y-1/2 -right-3 z-50 w-6 h-6 rounded-full',
               'bg-surface-container border border-outline-variant/40 text-on-surface-variant',
-              'hover:text-on-surface hover:border-outline-variant transition-all flex items-center justify-center',
+              'hover:text-on-surface hover:border-outline-variant transition-[border-color,color] flex items-center justify-center',
               'shadow-md',
             )}
             title={
@@ -341,7 +340,7 @@ export function Sidebar() {
       {!isMobile && !isFocusMode && sidebarMode === 'hidden' && (
         <button
           onClick={toggleLeftSidebar}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-6 h-8 rounded-r-xl border border-l-0 border-outline-variant/40 bg-surface-container/90 text-on-surface-variant hover:text-on-surface hover:bg-surface-container shadow-md transition-all flex items-center justify-center"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-6 h-8 rounded-r-xl border border-l-0 border-outline-variant/40 bg-surface-container/90 text-on-surface-variant hover:text-on-surface hover:bg-surface-container shadow-md transition-[background-color,color] flex items-center justify-center"
           title="Show sidebar"
         >
           <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} />

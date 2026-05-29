@@ -106,7 +106,7 @@ export function HabitBubbleGrid({
             title={tooltip}
             whileTap={isFuture ? {} : { scale: 0.8 }}
             disabled={isFuture}
-            className={`relative rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 shrink-0 ${
+            className={`relative rounded-full transition-[opacity,transform] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 shrink-0 ${
               isFuture ? 'cursor-not-allowed opacity-25' : 'cursor-pointer'
             }`}
             style={{ width: bubbleSize, height: bubbleSize }}

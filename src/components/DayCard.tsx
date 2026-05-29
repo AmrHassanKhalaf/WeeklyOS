@@ -46,7 +46,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
         </div>
         <div className="flex-1 space-y-4">
           <div className="h-1 w-full bg-surface-container-high rounded-full overflow-hidden">
-            <div className={`h-full ${progressColor}`} style={{ width: `${day.progress}%` }} />
+          <div className={`h-full w-full origin-left ${progressColor}`} style={{ transform: `scaleX(${day.progress / 100})` }} />
           </div>
           {day.highTask && (
             <div>
@@ -64,7 +64,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
   return (
     <div
       className={cn(
-        'relative rounded-2xl overflow-hidden flex flex-col md:flex-row transition-all duration-300',
+        'relative rounded-2xl overflow-hidden flex flex-col md:flex-row transition-[background-color,border-color,transform] duration-300',
         isToday
           ? 'bg-surface-container/90 ring-1 ring-primary/35 shadow-[0_24px_60px_-22px_rgb(124_58_237_/_0.55)]'
           : 'bg-surface-container-low/85 border border-outline-variant/20 hover:border-primary/25 hover:shadow-[0_24px_50px_-22px_rgb(124_58_237_/_0.32)]',
@@ -103,7 +103,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
 
         <div
           className={cn(
-            'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+            'w-9 h-9 rounded-full flex items-center justify-center transition-colors',
             day.progress === 100
               ? 'bg-tertiary/15 ring-1 ring-tertiary/40 shadow-[0_0_18px_-2px_rgb(34_211_238_/_0.5)]'
               : 'bg-primary/10 ring-1 ring-primary/25',
@@ -139,8 +139,8 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             </div>
             <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
               <div
-                className={cn('h-full rounded-full transition-all duration-500 ease-out', progressColor)}
-                style={{ width: `${day.progress}%` }}
+                className={cn('h-full w-full origin-left rounded-full transition-transform duration-500 ease-out', progressColor)}
+                style={{ transform: `scaleX(${day.progress / 100})` }}
               />
             </div>
           </div>
