@@ -91,6 +91,8 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
       ...(updates.restDays !== undefined && { rest_days: updates.restDays }),
       ...(updates.timezone !== undefined && { timezone: updates.timezone }),
       ...(updates.weekStartDay !== undefined && { week_start_day: updates.weekStartDay }),
+      ...(updates.reportIncludedDays !== undefined && { report_included_days: updates.reportIncludedDays }),
+      ...(updates.reportClosingQuote !== undefined && { report_closing_quote: updates.reportClosingQuote }),
     })
   } catch (e) {
     console.warn('Sync failed', e)
@@ -177,8 +179,8 @@ export const useSettingsStore = create<SettingsState>()(
       setTimezone: (timezone) => { set({ timezone }); void syncSettingsToDb({ timezone }) },
       setWeekStartDay: (day) => { set({ weekStartDay: day }); void syncSettingsToDb({ weekStartDay: day }) },
       setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); void syncSettingsToDb({ analyticsEnabled: enabled }) },
-      setReportIncludedDays: (days) => { set({ reportIncludedDays: days }) },
-      setReportClosingQuote: (quote) => { set({ reportClosingQuote: quote }) },
+      setReportIncludedDays: (days) => { set({ reportIncludedDays: days }); void syncSettingsToDb({ reportIncludedDays: days }) },
+      setReportClosingQuote: (quote) => { set({ reportClosingQuote: quote }); void syncSettingsToDb({ reportClosingQuote: quote }) },
 
       loadFromDb: async () => {
         try {
@@ -204,6 +206,8 @@ export const useSettingsStore = create<SettingsState>()(
               restDays: (userSettings.rest_days as string[]) ?? state.restDays,
               timezone: userSettings.timezone ?? state.timezone,
               weekStartDay: (userSettings.week_start_day as WeekStartDay) ?? state.weekStartDay,
+              reportIncludedDays: (userSettings.report_included_days as string[]) ?? state.reportIncludedDays,
+              reportClosingQuote: (userSettings.report_closing_quote as string) ?? state.reportClosingQuote,
             }))
           }
 

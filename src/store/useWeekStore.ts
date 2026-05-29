@@ -744,6 +744,24 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         })
       }
 
+      // Restore pomodoro preset from DB
+      void supabase.from('user_settings')
+        .select('pomodoro_focus_min, pomodoro_break_min')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!data) return
+          const focusMin = (data as Record<string, unknown>).pomodoro_focus_min as number | null
+          const breakMin = (data as Record<string, unknown>).pomodoro_break_min as number | null
+          if (focusMin && breakMin) {
+            set({
+              pomodoroFocusMin: focusMin,
+              pomodoroBreakMin: breakMin,
+              pomodoroTime: focusMin * 60,
+            })
+          }
+        })
+
       // If a restored tab has lost week data, re-fetch once it becomes visible.
       const handleVisibility = () => {
         if (document.visibilityState !== 'visible') return
@@ -1380,14 +1398,24 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         pomodoroPhase: 'focus',
         isPomodoroRunning: false,
       })),
-    setPomodoroPreset: (focusMin: number, breakMin: number) =>
+    setPomodoroPreset: (focusMin: number, breakMin: number) => {
       set({
         pomodoroFocusMin: focusMin,
         pomodoroBreakMin: breakMin,
         pomodoroTime: focusMin * 60,
         pomodoroPhase: 'focus',
         isPomodoroRunning: false,
-      }),
+      })
+      // Persist to DB so the preset survives page refresh
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session?.user) return
+        void supabase.from('user_settings').upsert({
+          user_id: session.user.id,
+          pomodoro_focus_min: focusMin,
+          pomodoro_break_min: breakMin,
+        })
+      })
+    },
     updateTaskActualDuration: async (taskId: string, secondsToAdd: number) => {
       const snapshot = get().currentWeek
       if (!snapshot) return

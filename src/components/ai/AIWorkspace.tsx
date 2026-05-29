@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Clock3,
   ListTodo,
+  Loader2,
   MessageSquare,
   Mic,
   MicOff,
@@ -31,6 +32,7 @@ import { buildActionPrompt } from '../../ai/prompts'
 import type { AIActionId, WorkspaceContextLayer, WorkspaceMode } from '../../ai/types'
 import { cn } from '../../lib/cn'
 import { useLayoutStore } from '../../store/useLayoutStore'
+import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
 import { AIConfirmationPanel } from './AIConfirmationPanel'
 import { ChatThread } from './ChatThread'
 
@@ -106,8 +108,32 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
   const feedbackTimerRef = useRef<number | null>(null)
   const [chatInput, setChatInput] = useState('')
   const [brainDump, setBrainDump] = useState('')
-  const [isRecording, setIsRecording] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
   const [stagedActionLabel, setStagedActionLabel] = useState<string | null>(null)
+
+  // ── Voice recorder ────────────────────────────────────────────────────────
+  const {
+    isRecording,
+    isProcessing: isVoiceProcessing,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+  } = useVoiceRecorder({
+    onTranscript: (text) => {
+      // Append transcript to current input (don't overwrite)
+      setChatInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+      setVoiceError(null)
+      window.setTimeout(() => composerRef.current?.focus(), 50)
+    },
+    onError: (msg) => setVoiceError(msg),
+  })
+
+  const handleRecordingToggle = () => {
+    if (isVoiceProcessing) return          // locked while processing
+    if (isRecording) stopRecording()
+    else void startRecording()
+  }
+
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -201,7 +227,8 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
         <WorkspaceHeader
           weeklyContext={workspaceContext}
           isRecording={isRecording}
-          onRecordingToggle={() => setIsRecording((value) => !value)}
+          isVoiceProcessing={isVoiceProcessing}
+          onRecordingToggle={handleRecordingToggle}
           onClose={closeAIWorkspace}
         />
 
@@ -232,9 +259,10 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
                       weeklyContext={workspaceContext}
                       brainDump={brainDump}
                       isRecording={isRecording}
+                      isVoiceProcessing={isVoiceProcessing}
                       onBrainDumpChange={setBrainDump}
                       onAction={handleAction}
-                      onRecordingToggle={() => setIsRecording((value) => !value)}
+                      onRecordingToggle={handleRecordingToggle}
                     />
                   )}
                   {activeMode === 'reflect' && (
@@ -260,12 +288,14 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
           composerRef={composerRef}
           isAiTyping={isAiTyping}
           isRecording={isRecording}
+          isVoiceProcessing={isVoiceProcessing}
+          voiceError={voiceError}
           pendingConfirmations={pendingConfirmations}
           applyingConfirmationId={applyingConfirmationId}
           stagedActionLabel={stagedActionLabel}
           aiError={aiError}
           onInputChange={setChatInput}
-          onRecordingToggle={() => setIsRecording((value) => !value)}
+          onRecordingToggle={handleRecordingToggle}
           onSend={() => void handleSendMessage()}
           onApplyConfirmation={(confirmationId) => void applyConfirmation(confirmationId)}
           onDismissConfirmation={dismissConfirmation}
@@ -280,14 +310,28 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
 function WorkspaceHeader({
   weeklyContext,
   isRecording,
+  isVoiceProcessing,
   onRecordingToggle,
   onClose,
 }: {
   weeklyContext: WorkspaceContextLayer
   isRecording: boolean
+  isVoiceProcessing: boolean
   onRecordingToggle: () => void
   onClose: () => void
 }) {
+  const micTitle = isVoiceProcessing
+    ? 'Transcribing…'
+    : isRecording
+      ? 'Stop recording'
+      : 'Start voice capture'
+
+  const MicIcon = isVoiceProcessing
+    ? Loader2
+    : isRecording
+      ? MicOff
+      : Mic
+
   return (
     <header className="relative shrink-0 border-b border-primary/[0.12] bg-surface-container-lowest/[0.36] px-4 py-4 sm:px-5">
       <div
@@ -317,9 +361,11 @@ function WorkspaceHeader({
         <div className="flex items-center gap-2">
           <IconButton
             active={isRecording}
-            title={isRecording ? 'Stop voice capture' : 'Start voice capture'}
+            title={micTitle}
             onClick={onRecordingToggle}
-            icon={isRecording ? MicOff : Mic}
+            icon={MicIcon}
+            spinning={isVoiceProcessing}
+            disabled={isVoiceProcessing}
           />
           <IconButton title="Close AI Workspace" onClick={onClose} icon={X} testId="ai-workspace-close" />
         </div>
@@ -694,6 +740,8 @@ function ConversationDock({
   composerRef,
   isAiTyping,
   isRecording,
+  isVoiceProcessing,
+  voiceError,
   pendingConfirmations,
   applyingConfirmationId,
   stagedActionLabel,
@@ -711,6 +759,8 @@ function ConversationDock({
   composerRef: MutableRefObject<HTMLTextAreaElement | null>
   isAiTyping: boolean
   isRecording: boolean
+  isVoiceProcessing: boolean
+  voiceError: string | null
   pendingConfirmations: PendingToolConfirmation[]
   applyingConfirmationId: string | null
   stagedActionLabel: string | null
@@ -784,10 +834,24 @@ function ConversationDock({
         </div>
       )}
 
-      {isRecording && (
+      {voiceError && (
+        <div className="mb-2 flex items-center gap-2 rounded-2xl border border-amber-300/[0.22] bg-amber-500/[0.1] px-3 py-2 text-xs font-semibold text-amber-100">
+          <Mic className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+          <span className="flex-1 min-w-0">{voiceError}</span>
+        </div>
+      )}
+
+      {isVoiceProcessing && (
+        <div className="mb-2 flex items-center gap-2 rounded-2xl border border-violet-300/20 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
+          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" strokeWidth={2} />
+          Transcribing your voice… please wait.
+        </div>
+      )}
+
+      {isRecording && !isVoiceProcessing && (
         <div className="mb-2 flex items-center gap-2 rounded-2xl border border-red-300/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100">
-          <span className="h-2 w-2 rounded-full bg-red-300 shadow-[0_0_12px_rgba(252,165,165,0.8)]" />
-          Listening. Transcript will appear in the composer.
+          <span className="h-2 w-2 animate-pulse rounded-full bg-red-300 shadow-[0_0_12px_rgba(252,165,165,0.8)]" />
+          Listening… tap the mic again to stop.
         </div>
       )}
 
@@ -795,16 +859,23 @@ function ConversationDock({
         <button
           type="button"
           onClick={onRecordingToggle}
+          disabled={isVoiceProcessing}
           aria-pressed={isRecording}
           className={cn(
-            'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring',
-            isRecording
-              ? 'border-red-300/[0.35] bg-red-500/15 text-red-200'
-              : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white'
+            'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring disabled:cursor-not-allowed disabled:opacity-60',
+            isVoiceProcessing
+              ? 'border-violet-300/[0.35] bg-violet-500/15 text-violet-200'
+              : isRecording
+                ? 'border-red-300/[0.35] bg-red-500/15 text-red-200'
+                : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white'
           )}
-          title={isRecording ? 'Stop voice capture' : 'Start voice capture'}
+          title={isVoiceProcessing ? 'Transcribing…' : isRecording ? 'Stop recording' : 'Start voice capture'}
         >
-          {isRecording ? <MicOff className="h-[18px] w-[18px]" strokeWidth={1.7} /> : <Mic className="h-[18px] w-[18px]" strokeWidth={1.7} />}
+          {isVoiceProcessing
+            ? <Loader2 className="h-[18px] w-[18px] animate-spin" strokeWidth={1.7} />
+            : isRecording
+              ? <MicOff className="h-[18px] w-[18px]" strokeWidth={1.7} />
+              : <Mic className="h-[18px] w-[18px]" strokeWidth={1.7} />}
         </button>
         <textarea
           ref={composerRef}
@@ -1097,12 +1168,16 @@ function IconButton({
   icon: Icon,
   title,
   active,
+  spinning,
+  disabled,
   onClick,
   testId,
 }: {
   icon: LucideIcon
   title: string
   active?: boolean
+  spinning?: boolean
+  disabled?: boolean
   onClick: () => void
   testId?: string
 }) {
@@ -1110,17 +1185,18 @@ function IconButton({
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       data-testid={testId}
       aria-pressed={active}
       title={title}
       className={cn(
-        'flex h-10 w-10 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring',
+        'flex h-10 w-10 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring disabled:cursor-not-allowed disabled:opacity-60',
         active
           ? 'border-red-300/[0.35] bg-red-500/15 text-red-200 shadow-[0_0_24px_rgba(248,113,113,0.18)]'
           : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white hover:shadow-[0_0_22px_rgba(124,58,237,0.16)]'
       )}
     >
-      <Icon className="h-[18px] w-[18px]" strokeWidth={1.7} />
+      <Icon className={cn('h-[18px] w-[18px]', spinning && 'animate-spin')} strokeWidth={1.7} />
     </button>
   )
 }
