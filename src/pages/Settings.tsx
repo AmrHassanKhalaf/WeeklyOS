@@ -62,6 +62,14 @@ const AI_PROVIDER_META: Record<AIProvider, {
     credentialPlaceholder: 'AIza...',
     credentialHelp: 'Used only by the Supabase Edge Function — never exposed to the browser.',
   },
+  groq: {
+    label: 'Groq (Voice Transcription)',
+    defaultModel: 'whisper-large-v3',
+    models: ['whisper-large-v3'],
+    credentialLabel: 'Groq API Key',
+    credentialPlaceholder: 'gsk_...',
+    credentialHelp: 'Used for voice-to-text transcription via Groq Whisper. Get a free key at console.groq.com',
+  },
   grok: {
     label: 'xAI Grok',
     defaultModel: 'grok-3-mini',
@@ -419,6 +427,7 @@ export function Settings() {
                 </div>
                 <div className="space-y-4 py-4 border-y border-white/10">
                   <ProviderInput provider="gemini" label="Google Gemini" settings={settings} />
+                  <ProviderInput provider="groq" label="Groq (Voice)" settings={settings} />
                   <ProviderInput provider="grok" label="xAI Grok" settings={settings} />
                   <ProviderInput provider="ollama" label="Ollama" settings={settings} />
                 </div>
