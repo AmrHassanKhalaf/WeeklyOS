@@ -115,16 +115,22 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
   const {
     isRecording,
     isProcessing: isVoiceProcessing,
+    interimTranscript,
+    primaryAvailable,
     startRecording,
     stopRecording,
+    clearError: clearVoiceError,
   } = useVoiceRecorder({
     onTranscript: (text) => {
       // Append transcript to current input (don't overwrite)
       setChatInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
       setVoiceError(null)
+      clearVoiceError()
       window.setTimeout(() => composerRef.current?.focus(), 50)
     },
-    onError: (msg) => setVoiceError(msg),
+    onError: (msg) => {
+      setVoiceError(msg)
+    },
   })
 
   const handleRecordingToggle = () => {
@@ -287,6 +293,8 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
           isAiTyping={isAiTyping}
           isRecording={isRecording}
           isVoiceProcessing={isVoiceProcessing}
+          interimTranscript={interimTranscript}
+          primaryAvailable={primaryAvailable}
           voiceError={voiceError}
           pendingConfirmations={pendingConfirmations}
           applyingConfirmationId={applyingConfirmationId}
@@ -739,6 +747,8 @@ function ConversationDock({
   isAiTyping,
   isRecording,
   isVoiceProcessing,
+  interimTranscript,
+  primaryAvailable,
   voiceError,
   pendingConfirmations,
   applyingConfirmationId,
@@ -758,6 +768,8 @@ function ConversationDock({
   isAiTyping: boolean
   isRecording: boolean
   isVoiceProcessing: boolean
+  interimTranscript: string
+  primaryAvailable: boolean
   voiceError: string | null
   pendingConfirmations: PendingToolConfirmation[]
   applyingConfirmationId: string | null
@@ -849,7 +861,16 @@ function ConversationDock({
       {isRecording && !isVoiceProcessing && (
         <div className="mb-2 flex items-center gap-2 rounded-2xl border border-red-300/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100">
           <span className="h-2 w-2 animate-pulse rounded-full bg-red-300 shadow-[0_0_12px_rgba(252,165,165,0.8)]" />
-          Listening… tap the mic again to stop.
+          {primaryAvailable
+            ? <><span className="mr-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-300">Live</span>Listening… tap mic to stop.</>            : <><span className="mr-1 rounded-full border border-violet-400/30 bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-violet-300">Upload</span>Recording… tap mic to stop.</>
+          }
+        </div>
+      )}
+
+      {/* Live interim transcript preview (primary path only) */}
+      {isRecording && !isVoiceProcessing && interimTranscript && (
+        <div className="mb-2 rounded-2xl border border-violet-300/10 bg-violet-500/[0.06] px-3 py-2 text-xs leading-relaxed text-violet-200/60 italic">
+          {interimTranscript}
         </div>
       )}
 

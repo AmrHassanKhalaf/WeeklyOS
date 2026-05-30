@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 
-export type AIProvider = 'gemini' | 'grok' | 'ollama'
+export type AIProvider = 'gemini' | 'grok' | 'groq' | 'ollama'
 export type WeekStartDay = 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
 
 // Model names that were previously listed in the UI but are NOT valid Gemini API models.

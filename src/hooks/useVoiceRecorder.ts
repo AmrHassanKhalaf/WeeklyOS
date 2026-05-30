@@ -1,194 +1,281 @@
-// ─── useVoiceRecorder ─────────────────────────────────────────────────────────
-// Handles the full voice capture → upload → transcribe pipeline.
+// ─── useVoiceRecorder (Hybrid Voice Input) ────────────────────────────────────
+// PUBLIC API — used by AIWorkspace and any other composer that needs voice input.
+//
+// Strategy:
+//   PRIMARY   Web Speech API — live interim transcript, zero upload, zero latency.
+//   FALLBACK  MediaRecorder → Supabase Storage → Groq Whisper edge function.
+//             Used when the browser doesn't support SpeechRecognition, or when
+//             primary recognition throws a non-recoverable error.
 //
 // State machine:
-//   idle → recording → processing → idle (transcript delivered via onTranscript)
+//   idle → requesting_permission → recording → processing → idle
+//                                            ↘ error → idle (via clearError)
 //
-// Storage path: voice-responses/{userId}/{uuid}.webm
-// This matches the RLS policy: foldername[1] = auth.uid()
+// Orchestrator integration:
+//   Transcripts are ONLY injected into the composer (onTranscript callback).
+//   They are NEVER auto-sent or auto-triggering tools.
 
 import { useCallback, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { isSpeechRecognitionAvailable, useVoiceRecognition } from './useVoiceRecognition'
+import { useVoiceFallback } from './useVoiceFallback'
 
-export type VoiceRecorderState = 'idle' | 'recording' | 'processing'
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+/** Maximum duration for the primary (Web Speech) path. Prevents open sessions. */
+const MAX_RECORDING_MS = 60_000
+
+/** After the user stops speaking, wait this long before auto-stopping. */
+const SILENCE_DEBOUNCE_MS = 2_500
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export type VoiceRecorderState =
+  | 'idle'
+  | 'requesting_permission'
+  | 'recording'
+  | 'processing'
+  | 'error'
 
 export interface UseVoiceRecorderOptions {
-  /** Called with the final transcript when transcription is complete. */
+  /** Fired with the final, normalized transcript. Append or set composer text here. */
   onTranscript: (text: string) => void
-  /** Called on any error (recording, upload, transcription). */
+  /** Fired on any recoverable or fatal error with a user-friendly message. */
   onError?: (message: string) => void
 }
 
 export interface UseVoiceRecorderReturn {
   state: VoiceRecorderState
+  /** Convenience alias: state === 'recording' */
   isRecording: boolean
+  /** Convenience alias: state === 'processing' */
   isProcessing: boolean
+  /** Live interim text from the primary path. Empty string on fallback path. */
+  interimTranscript: string
+  /** True when the Web Speech API primary path is available in this browser. */
+  primaryAvailable: boolean
+  /** Request mic access and begin recording. */
   startRecording: () => Promise<void>
+  /** Stop recording and trigger transcription. */
   stopRecording: () => void
-  /** Abort recording without processing */
+  /** Abort the current recording without transcribing. */
   cancelRecording: () => void
+  /** Reset an error state back to idle. */
+  clearError: () => void
 }
+
+// ── Transcript normalization ──────────────────────────────────────────────────
+
+function normalizeTranscript(text: string): string {
+  return text
+    .trim()
+    .replace(/\s{2,}/g, ' ')       // collapse multiple spaces
+    .replace(/(\. )\1+/g, '. ')    // deduplicate repeated ". "
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useVoiceRecorder({
   onTranscript,
   onError,
 }: UseVoiceRecorderOptions): UseVoiceRecorderReturn {
-  const [state, setState] = useState<VoiceRecorderState>('idle')
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
-  const streamRef = useRef<MediaStream | null>(null)
+  const [state, setState]               = useState<VoiceRecorderState>('idle')
+  const [interimTranscript, setInterim] = useState('')
+  const primaryAvailable                = isSpeechRecognitionAvailable()
 
-  const handleError = useCallback(
-    (msg: string) => {
-      setState('idle')
-      onError?.(msg)
-      console.error('[useVoiceRecorder]', msg)
-    },
-    [onError],
-  )
+  // ── Stable refs ─────────────────────────────────────────────────────────────
+  const stateRef          = useRef<VoiceRecorderState>('idle')
+  const finalBufferRef    = useRef('')   // accumulates final segments during primary session
+  const maxTimerRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const silenceTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const usingFallbackRef  = useRef(false)
 
-  // ── Start Recording ──────────────────────────────────────────────────────────
-
-  const startRecording = useCallback(async () => {
-    if (state !== 'idle') return
-
-    // Check browser support
-    if (!navigator.mediaDevices?.getUserMedia) {
-      handleError('Your browser does not support microphone access.')
-      return
-    }
-    if (!window.MediaRecorder) {
-      handleError('Your browser does not support audio recording.')
-      return
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
-
-      // Pick best supported MIME type
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-            ? 'audio/ogg;codecs=opus'
-            : ''
-
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
-      chunksRef.current = []
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data)
-      }
-
-      recorder.onstop = () => {
-        void processRecording(mimeType || 'audio/webm')
-      }
-
-      mediaRecorderRef.current = recorder
-      recorder.start(250) // collect chunks every 250ms
-      setState('recording')
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        handleError('Microphone permission denied. Please allow microphone access.')
-      } else {
-        handleError('Could not start recording. Please check your microphone.')
-      }
-    }
-  }, [state, handleError]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Stop Recording ───────────────────────────────────────────────────────────
-
-  const stopRecording = useCallback(() => {
-    if (state !== 'recording') return
-    setState('processing')
-    mediaRecorderRef.current?.stop()
-    // Release mic
-    streamRef.current?.getTracks().forEach((t) => t.stop())
-    streamRef.current = null
-  }, [state])
-
-  // ── Cancel (discard) ─────────────────────────────────────────────────────────
-
-  const cancelRecording = useCallback(() => {
-    mediaRecorderRef.current?.stop()
-    streamRef.current?.getTracks().forEach((t) => t.stop())
-    streamRef.current = null
-    chunksRef.current = []
-    setState('idle')
+  const setStateBoth = useCallback((s: VoiceRecorderState) => {
+    stateRef.current = s
+    setState(s)
   }, [])
 
-  // ── Process: Upload → Transcribe ─────────────────────────────────────────────
+  const clearTimers = useCallback(() => {
+    if (maxTimerRef.current)     clearTimeout(maxTimerRef.current)
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    maxTimerRef.current     = null
+    silenceTimerRef.current = null
+  }, [])
 
-  async function processRecording(mimeType: string) {
-    const chunks = chunksRef.current
-    chunksRef.current = []
+  const handleError = useCallback((msg: string) => {
+    clearTimers()
+    setStateBoth('error')
+    setInterim('')
+    onError?.(msg)
+    console.error('[useVoiceRecorder]', msg)
+  }, [clearTimers, onError, setStateBoth])
 
-    if (chunks.length === 0) {
-      setState('idle')
-      return
+  // ── Primary: Web Speech API callbacks ────────────────────────────────────────
+
+  const handleInterim = useCallback((text: string) => {
+    setInterim(text)
+    // Reset silence timer on every interim result (user is still speaking)
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    silenceTimerRef.current = setTimeout(() => {
+      // Auto-stop after sustained silence
+      if (stateRef.current === 'recording' && !usingFallbackRef.current) {
+        primaryRecognition.stop()
+      }
+    }, SILENCE_DEBOUNCE_MS)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleFinalSegment = useCallback((text: string) => {
+    finalBufferRef.current += (finalBufferRef.current ? ' ' : '') + text
+  }, [])
+
+  const handleRecognitionError = useCallback((errorCode: string) => {
+    clearTimers()
+    if (stateRef.current !== 'recording') return
+
+    // 'network' is the most common non-trivial error on Chrome
+    if (errorCode === 'network') {
+      handleError('Voice recognition failed — check your internet connection.')
+    } else if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
+      handleError('Microphone permission denied. Please allow microphone access.')
+    } else {
+      // Silently fall back to upload path for other errors
+      usingFallbackRef.current = true
+      setInterim('')
+      void fallback.startRecording()
     }
+  }, [clearTimers, handleError]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    try {
-      // 1. Get user session
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
-      if (!user) {
-        handleError('You must be signed in to use voice recording.')
-        return
-      }
+  const handleRecognitionEnd = useCallback(() => {
+    clearTimers()
+    if (stateRef.current !== 'recording') return
 
-      // 2. Build blob
-      const ext = mimeType.includes('ogg') ? 'ogg' : 'webm'
-      const blob = new Blob(chunks, { type: mimeType })
+    const final = normalizeTranscript(finalBufferRef.current)
+    finalBufferRef.current = ''
+    setInterim('')
 
-      // 3. Upload to storage: voice-responses/{userId}/{uuid}.ext
-      const uuid = crypto.randomUUID()
-      const filePath = `${user.id}/${uuid}.${ext}`
-
-      const { error: uploadErr } = await supabase.storage
-        .from('voice-responses')
-        .upload(filePath, blob, {
-          contentType: mimeType,
-          upsert: false,
-        })
-
-      if (uploadErr) {
-        handleError(`Upload failed: ${uploadErr.message}`)
-        return
-      }
-
-      // 4. Call transcription edge function
-      const { data: fnData, error: fnErr } = await supabase.functions.invoke('voice-transcribe', {
-        body: { filePath },
-      })
-
-      if (fnErr) {
-        handleError(`Transcription failed: ${fnErr.message}`)
-        return
-      }
-
-      const transcript = (fnData as { transcript?: string })?.transcript ?? ''
-
-      if (transcript.trim()) {
-        onTranscript(transcript.trim())
+    if (final) {
+      onTranscript(final)
+      setStateBoth('idle')
+    } else {
+      // No final text captured — try the fallback if not already using it
+      if (!usingFallbackRef.current) {
+        usingFallbackRef.current = true
+        void fallback.startRecording()
       } else {
         handleError('No speech detected. Please try again.')
       }
-    } catch (err) {
-      handleError(`Unexpected error: ${(err as Error).message}`)
-    } finally {
-      setState('idle')
     }
-  }
+  }, [clearTimers, handleError, onTranscript, setStateBoth]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Primary recognition instance
+  const primaryRecognition = useVoiceRecognition({
+    onInterimTranscript: handleInterim,
+    onFinalTranscript:   handleFinalSegment,
+    onError:             handleRecognitionError,
+    onEnd:               handleRecognitionEnd,
+  })
+
+  // ── Fallback: upload → edge function callbacks ────────────────────────────────
+
+  const handleFallbackTranscript = useCallback((text: string) => {
+    const normalized = normalizeTranscript(text)
+    if (normalized) onTranscript(normalized)
+    setStateBoth('idle')
+  }, [onTranscript, setStateBoth])
+
+  const handleFallbackError = useCallback((msg: string) => {
+    handleError(msg)
+  }, [handleError])
+
+  const fallback = useVoiceFallback({
+    onTranscript: handleFallbackTranscript,
+    onError:      handleFallbackError,
+  })
+
+  // ── Public API ───────────────────────────────────────────────────────────────
+
+  const startRecording = useCallback(async () => {
+    if (stateRef.current !== 'idle') return
+
+    setStateBoth('requesting_permission')
+    finalBufferRef.current = ''
+    usingFallbackRef.current = false
+
+    if (primaryAvailable) {
+      // Primary path: Web Speech API
+      const started = primaryRecognition.start()
+      if (started) {
+        setStateBoth('recording')
+        // Safety: auto-stop after max duration
+        maxTimerRef.current = setTimeout(() => {
+          if (stateRef.current === 'recording') {
+            primaryRecognition.stop()
+          }
+        }, MAX_RECORDING_MS)
+      } else {
+        // Should not happen if isSpeechRecognitionAvailable() is true, but handle gracefully
+        usingFallbackRef.current = true
+        try {
+          await fallback.startRecording()
+          setStateBoth('recording')
+        } catch {
+          handleError('Could not start recording. Please check your microphone.')
+        }
+      }
+    } else {
+      // Fallback path: upload-based
+      usingFallbackRef.current = true
+      try {
+        await fallback.startRecording()
+        setStateBoth('recording')
+      } catch {
+        handleError('Could not start recording. Please check your microphone.')
+      }
+    }
+  }, [fallback, handleError, primaryAvailable, primaryRecognition, setStateBoth])
+
+  const stopRecording = useCallback(() => {
+    if (stateRef.current !== 'recording') return
+    clearTimers()
+
+    if (!usingFallbackRef.current) {
+      // Primary path: stopping triggers onend → handleRecognitionEnd
+      primaryRecognition.stop()
+      setStateBoth('processing')
+    } else {
+      // Fallback path: triggers upload → transcription pipeline
+      setStateBoth('processing')
+      fallback.stopRecording()
+    }
+  }, [clearTimers, fallback, primaryRecognition, setStateBoth])
+
+  const cancelRecording = useCallback(() => {
+    clearTimers()
+    if (!usingFallbackRef.current) {
+      primaryRecognition.abort()
+    } else {
+      fallback.cancelRecording()
+    }
+    finalBufferRef.current = ''
+    usingFallbackRef.current = false
+    setInterim('')
+    setStateBoth('idle')
+  }, [clearTimers, fallback, primaryRecognition, setStateBoth])
+
+  const clearError = useCallback(() => {
+    if (stateRef.current === 'error') {
+      setStateBoth('idle')
+    }
+  }, [setStateBoth])
 
   return {
     state,
-    isRecording: state === 'recording',
-    isProcessing: state === 'processing',
+    isRecording:       state === 'recording',
+    isProcessing:      state === 'processing',
+    interimTranscript,
+    primaryAvailable,
     startRecording,
     stopRecording,
     cancelRecording,
+    clearError,
   }
 }
