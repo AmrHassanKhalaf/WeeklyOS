@@ -146,13 +146,23 @@ export function WeeklyDistribution() {
 
     setIsAssigning(true)
     try {
+      let skipped = 0
       for (const draft of toAssign) {
-        await createTask({
-          title: draft.title.trim(),
-          priority: draft.priority,
-          day: draft.day,
-          tags: draft.tags,
-        })
+        try {
+          await createTask({
+            title: draft.title.trim(),
+            priority: draft.priority,
+            day: draft.day,
+            tags: draft.tags,
+          })
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : ''
+          if (msg.startsWith('Limit reached')) {
+            skipped++
+          } else {
+            throw err
+          }
+        }
       }
 
       for (const draft of toAssign) {
@@ -161,6 +171,9 @@ export function WeeklyDistribution() {
 
       setIsAssignModalOpen(false)
       setAssignDrafts([])
+      if (skipped > 0) {
+        alert(`${skipped} task(s) were skipped — the selected day is already at the 1-3-5 limit for that priority.`)
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       alert('Failed to assign braindump items: ' + message)
@@ -208,21 +221,52 @@ Make sure:
       const parsed = parseScheduleResponse(res.response)
       const tasksToCreate = normalizeScheduleTasks(parsed)
 
-      for (const t of tasksToCreate) {
-        await createTask({
-          title: t.title,
-          priority: t.priority,
-          day: t.day,
-          estimatedTime: t.estimatedTime,
-          tags: Array.isArray(t.tags) ? t.tags : undefined,
-        })
+      // Track running per-day counts to enforce 1-3-5 limits across AI-generated tasks
+      const dayCounts: Record<string, { high: number; medium: number; low: number }> = {}
+      const getCount = (day: string) => {
+        if (!dayCounts[day]) {
+          const dayData = currentWeek.days.find(d => d.day === day)
+          dayCounts[day] = {
+            high: dayData?.highTask ? 1 : 0,
+            medium: dayData?.mediumTasks?.length ?? 0,
+            low: dayData?.smallTasks?.length ?? 0,
+          }
+        }
+        return dayCounts[day]
       }
-      
+
+      let skipped = 0
+      for (const t of tasksToCreate) {
+        if (!t.day) continue
+        const counts = getCount(t.day)
+        if (t.priority === 'high' && counts.high >= 1) { skipped++; continue }
+        if (t.priority === 'medium' && counts.medium >= 3) { skipped++; continue }
+        if (t.priority === 'low' && counts.low >= 5) { skipped++; continue }
+
+        try {
+          await createTask({
+            title: t.title,
+            priority: t.priority,
+            day: t.day,
+            estimatedTime: t.estimatedTime,
+            tags: Array.isArray(t.tags) ? t.tags : undefined,
+          })
+          if (t.priority === 'high') counts.high++
+          else if (t.priority === 'medium') counts.medium++
+          else counts.low++
+        } catch {
+          skipped++
+        }
+      }
+
       // Auto-clear brain dump after successful distribution
       for (const item of brainDumpItems) {
         await removeItem(item.id)
       }
 
+      if (skipped > 0) {
+        alert(`${skipped} task(s) were skipped because their day was already at the 1-3-5 capacity limit.`)
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       alert('Failed to auto-distribute: ' + message)

@@ -4,7 +4,7 @@
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=vdbscudaljbxqcndwovp",
       "headers": {
-        "Authorization": "Bearer ${SUPABASE_ACCESS_TOKEN}"
+        "Authorization": "Bearer sbp_0c34690a38d35f6cb981728ec38bfddf014f99d5"
       }
     }
   }

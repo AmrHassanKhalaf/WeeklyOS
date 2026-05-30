@@ -112,7 +112,7 @@ export function MobileBottomNav() {
       aria-label="Primary"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
-      <div className="mx-3 mb-3 rounded-2xl border border-outline-variant/25 bg-surface-container/85 backdrop-blur-lg backdrop-saturate-150 shadow-[0_28px_60px_-18px_rgba(0,0,0,0.55),inset_0_1px_0_rgb(255_255_255_/_0.08)] relative overflow-hidden">
+      <div className="mx-3 mb-3 rounded-2xl border border-outline-variant/25 bg-surface-container/95 shadow-[0_22px_50px_-20px_rgba(0,0,0,0.55),inset_0_1px_0_rgb(255_255_255_/_0.08)] relative overflow-hidden">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 -top-px h-px"

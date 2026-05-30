@@ -7,6 +7,7 @@
 //
 // Powered by vite-plugin-pwa's `useRegisterSW` hook.
 
+import { useCallback } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 export interface UsePWAReturn {
@@ -48,9 +49,9 @@ export function usePWA(): UsePWAReturn {
     },
   })
 
-  const updateApp = () => {
+  const updateApp = useCallback(() => {
     void updateServiceWorker(true)
-  }
+  }, [updateServiceWorker])
 
   return { needsRefresh, updateApp, isOfflineReady }
 }

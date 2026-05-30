@@ -3,20 +3,16 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
 
 /**
- * Smooth fade + subtle slide for route changes. Respects reduced-motion.
+ * Smooth fade for route changes. Respects reduced-motion.
  * Wraps page-level content INSIDE AppLayout's <main> so the scroll region stays fixed.
  */
 export function PageTransition({ children }: { children: ReactNode }) {
   const location = useLocation()
   const reduce = useReducedMotion()
 
-  const variants = reduce
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-    : {
-        initial: { opacity: 0, y: 12 },
-        animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -8 },
-      }
+  // Keep route transitions opacity-only so the fixed scroll container and
+  // pointer hit-testing do not sit inside a moving full-page transform layer.
+  const variants = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
 
   return (
     <motion.div
@@ -25,7 +21,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
       animate="animate"
       exit="exit"
       variants={variants}
-      transition={{ duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: reduce ? 0.01 : 0.2, ease: 'easeOut' }}
       className="w-full"
     >
       {children}

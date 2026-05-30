@@ -2,8 +2,24 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 
-export type AIProvider = 'gemini' | 'grok'
+export type AIProvider = 'gemini' | 'grok' | 'ollama'
 export type WeekStartDay = 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
+
+// Model names that were previously listed in the UI but are NOT valid Gemini API models.
+// On hydration from localStorage, these get replaced with the safe fallback.
+const INVALID_GEMINI_MODELS = new Set([
+  'gemini-flash-latest',
+  'gemini-3.5-flash',
+  'gemini-3.1-pro-preview',
+  'gemini-3-flash-preview',
+  'gemini-2.5-flash-lite',
+])
+const GEMINI_MODEL_FALLBACK = 'gemini-2.5-flash'
+
+function sanitizeModel(model: string, provider: AIProvider): string {
+  if (provider === 'gemini' && INVALID_GEMINI_MODELS.has(model)) return GEMINI_MODEL_FALLBACK
+  return model
+}
 
 function getDefaultTimeZone(): string {
   try {
@@ -75,6 +91,8 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
       ...(updates.restDays !== undefined && { rest_days: updates.restDays }),
       ...(updates.timezone !== undefined && { timezone: updates.timezone }),
       ...(updates.weekStartDay !== undefined && { week_start_day: updates.weekStartDay }),
+      ...(updates.reportIncludedDays !== undefined && { report_included_days: updates.reportIncludedDays }),
+      ...(updates.reportClosingQuote !== undefined && { report_closing_quote: updates.reportClosingQuote }),
     })
   } catch (e) {
     console.warn('Sync failed', e)
@@ -86,7 +104,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       aiKeys: {},
       activeProvider: 'gemini',
-      activeModel: 'gemini-1.5-flash',
+      activeModel: 'gemini-2.5-flash',
       fallbackEnabled: true,
       theme: 'dark',
       dailyReminders: true,
@@ -161,8 +179,8 @@ export const useSettingsStore = create<SettingsState>()(
       setTimezone: (timezone) => { set({ timezone }); void syncSettingsToDb({ timezone }) },
       setWeekStartDay: (day) => { set({ weekStartDay: day }); void syncSettingsToDb({ weekStartDay: day }) },
       setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); void syncSettingsToDb({ analyticsEnabled: enabled }) },
-      setReportIncludedDays: (days) => { set({ reportIncludedDays: days }) },
-      setReportClosingQuote: (quote) => { set({ reportClosingQuote: quote }) },
+      setReportIncludedDays: (days) => { set({ reportIncludedDays: days }); void syncSettingsToDb({ reportIncludedDays: days }) },
+      setReportClosingQuote: (quote) => { set({ reportClosingQuote: quote }); void syncSettingsToDb({ reportClosingQuote: quote }) },
 
       loadFromDb: async () => {
         try {
@@ -188,6 +206,8 @@ export const useSettingsStore = create<SettingsState>()(
               restDays: (userSettings.rest_days as string[]) ?? state.restDays,
               timezone: userSettings.timezone ?? state.timezone,
               weekStartDay: (userSettings.week_start_day as WeekStartDay) ?? state.weekStartDay,
+              reportIncludedDays: (userSettings.report_included_days as string[]) ?? state.reportIncludedDays,
+              reportClosingQuote: (userSettings.report_closing_quote as string) ?? state.reportClosingQuote,
             }))
           }
 
@@ -202,7 +222,10 @@ export const useSettingsStore = create<SettingsState>()(
             set(state => ({
               ...state,
               activeProvider: (aiSettings.default_provider as AIProvider) ?? state.activeProvider,
-              activeModel: aiSettings.active_model ?? state.activeModel,
+              activeModel: sanitizeModel(
+                aiSettings.active_model ?? state.activeModel,
+                (aiSettings.default_provider as AIProvider) ?? state.activeProvider
+              ),
               fallbackEnabled: aiSettings.fallback_enabled ?? state.fallbackEnabled,
             }))
           }
@@ -238,6 +261,12 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'weeklyos-settings',
+      onRehydrateStorage: () => (state) => {
+        // Self-heal: replace any known-invalid model names that were cached in localStorage.
+        if (state && state.activeModel) {
+          state.activeModel = sanitizeModel(state.activeModel, state.activeProvider ?? 'gemini')
+        }
+      },
     }
   )
 )

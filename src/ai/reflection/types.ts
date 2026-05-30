@@ -1,4 +1,4 @@
-import type { DayOfWeek, Priority } from '../types'
+import type { DayOfWeek } from '../types'
 
 // ─── Quality Levels ─────────────────────────────────────────────────────────────
 

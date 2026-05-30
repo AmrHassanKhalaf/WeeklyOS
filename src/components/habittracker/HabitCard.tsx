@@ -112,8 +112,8 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
       {/* Reason */}
       <AnimatePresence>
         {showReason && habit.motivation && (
-          <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11 overflow-hidden">
+          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            className="text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11">
             "{habit.motivation}"
           </motion.p>
         )}
@@ -140,8 +140,8 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
             <span className="text-[11px] font-bold" style={{ color }}>{rate}%</span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-container-high overflow-hidden">
-            <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}99)`, boxShadow: `0 0 8px ${color}55` }}
-              initial={{ width: 0 }} animate={{ width: `${rate}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
+            <motion.div className="h-full w-full origin-left rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}99)`, boxShadow: `0 0 8px ${color}55` }}
+              initial={{ scaleX: 0 }} animate={{ scaleX: rate / 100 }} transition={{ duration: 0.6, ease: 'easeOut' }} />
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0 text-center">
@@ -244,8 +244,8 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
       {/* Reason */}
       <AnimatePresence>
         {showReason && habit.motivation && (
-          <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11 overflow-hidden">
+          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            className="text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11">
             "{habit.motivation}"
           </motion.p>
         )}
@@ -274,9 +274,9 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
             <span className="text-[11px] font-bold" style={{ color: progressColor }}>{cleanRate}% clean</span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-container-high overflow-hidden">
-            <motion.div className="h-full rounded-full"
+            <motion.div className="h-full w-full origin-left rounded-full"
               style={{ background: isStrong ? 'linear-gradient(90deg,#4ade80,#22c55e)' : 'linear-gradient(90deg,#f87171,#ef4444)' }}
-              initial={{ width: 0 }} animate={{ width: `${cleanRate}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
+              initial={{ scaleX: 0 }} animate={{ scaleX: cleanRate / 100 }} transition={{ duration: 0.6, ease: 'easeOut' }} />
           </div>
         </div>
         <div className="text-center shrink-0">

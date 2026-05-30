@@ -1,6 +1,6 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { Bot, Pin, Calendar, Palette, Bell, FileText, History, Shield, MonitorDown, Download, RefreshCw, Eye, EyeOff } from 'lucide-react'
-import { useSettingsStore, AIProvider, WeekStartDay, type SettingsState } from '../store/useSettingsStore'
+import { useSettingsStore, type AIProvider, type WeekStartDay, type SettingsState } from '../store/useSettingsStore'
 import { useState, useEffect } from 'react'
 import { generateWeeklyReportHTML } from '../lib/generateWeeklyReportHTML'
 import { Button } from '../components/ui/Button'
@@ -11,6 +11,12 @@ import { useWeekStore } from '../store/useWeekStore'
 import { usePinnedTaskStore } from '../store/usePinnedTaskStore'
 import type { DayOfWeek, Priority, WeekData } from '../store/useWeekStore'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
+import { supabase } from '../lib/supabase'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_PUBLIC_KEY =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string)
 
 const TIMEZONE_OPTIONS = [
   'Africa/Cairo',
@@ -31,6 +37,64 @@ const WEEK_START_OPTIONS: Array<{ value: WeekStartDay; label: string }> = [
   { value: 'monday', label: 'Monday' },
 ]
 
+const AI_PROVIDER_META: Record<AIProvider, {
+  label: string
+  defaultModel: string
+  models: string[]
+  credentialLabel: string
+  credentialPlaceholder: string
+  credentialHelp: string
+}> = {
+  gemini: {
+    label: 'Google Gemini',
+    defaultModel: 'gemini-2.5-flash',
+    models: [
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite-preview-06-17',
+      'gemini-2.5-pro',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro',
+    ],
+    credentialLabel: 'Google Gemini API Key',
+    credentialPlaceholder: 'AIza...',
+    credentialHelp: 'Used only by the Supabase Edge Function — never exposed to the browser.',
+  },
+  grok: {
+    label: 'xAI Grok',
+    defaultModel: 'grok-3-mini',
+    models: [
+      'grok-3',
+      'grok-3-mini',
+      'grok-3-fast',
+      'grok-2-1212',
+      'grok-2-vision-1212',
+    ],
+    credentialLabel: 'xAI Grok API Key',
+    credentialPlaceholder: 'xai-...',
+    credentialHelp: 'Grok requests use the xAI chat completions endpoint.',
+  },
+  ollama: {
+    label: 'Ollama (Local)',
+    defaultModel: 'llama3.2',
+    models: [
+      'llama3.2',
+      'llama3.1',
+      'llama3',
+      'mistral',
+      'gemma3',
+      'qwen2.5',
+      'deepseek-r1',
+      'phi4',
+    ],
+    credentialLabel: 'Ollama Base URL',
+    credentialPlaceholder: 'http://localhost:11434',
+    credentialHelp: 'Enter your local or self-hosted Ollama server URL.',
+  },
+}
+
 export function Settings() {
   const settings = useSettingsStore()
   const currentWeek = useWeekStore((state) => state.currentWeek)
@@ -49,6 +113,10 @@ export function Settings() {
   const [localModel, setLocalModel] = useState<string>(settings.activeModel)
   const [isSavingModel, setIsSavingModel] = useState(false)
   const [savedModel, setSavedModel] = useState(false)
+  const [modelCheck, setModelCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'error'; message: string }>({
+    status: 'idle',
+    message: '',
+  })
   const [pinnedDraft, setPinnedDraft] = useState({
     title: '',
     description: '',
@@ -87,25 +155,8 @@ export function Settings() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.autoDownloadCompletedWeekReport, currentWeek?.id])
 
-  // Determine if it's a custom model
-  const predefinedGemini = [
-    'gemini-flash-latest', 
-    'gemini-3.1-pro-preview', 
-    'gemini-3-flash-preview', 
-    'gemini-2.5-pro', 
-    'gemini-2.5-flash', 
-    'gemini-2.5-flash-lite',
-    'gemini-live-2.5-flash-native-audio'
-  ]
-  const predefinedGrok = [
-    'grok-4', 
-    'grok-4.1-fast', 
-    'grok-4-vision', 
-    'grok-code-fast-1'
-  ]
-  const isCustom = localProvider === 'gemini' 
-    ? !predefinedGemini.includes(localModel)
-    : !predefinedGrok.includes(localModel)
+  const providerConfig = AI_PROVIDER_META[localProvider]
+  const isCustom = !providerConfig.models.includes(localModel)
 
   const handleSaveModel = async () => {
     setIsSavingModel(true)
@@ -114,6 +165,59 @@ export function Settings() {
     setIsSavingModel(false)
     setSavedModel(true)
     setTimeout(() => setSavedModel(false), 2000)
+  }
+
+  const handleCheckModel = async () => {
+    if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
+      setModelCheck({ status: 'error', message: 'Missing Supabase environment variables.' })
+      return
+    }
+
+    setModelCheck({ status: 'checking', message: `Checking ${localProvider} / ${localModel}...` })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Not authenticated')
+
+      const callHandler = (token: string) =>
+        fetch(`${SUPABASE_URL}/functions/v1/ai-handler`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            apikey: SUPABASE_PUBLIC_KEY,
+          },
+          body: JSON.stringify({
+            type: 'chat',
+            input: 'Reply with exactly: OK',
+            context: { source: 'settings-model-check' },
+            overrideProvider: localProvider,
+            model: localModel,
+          }),
+        })
+
+      let response = await callHandler(session.access_token)
+      if (response.status === 401) {
+        const { data: refreshData } = await supabase.auth.refreshSession()
+        if (refreshData.session?.access_token) {
+          response = await callHandler(refreshData.session.access_token)
+        }
+      }
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error || `ai-handler returned ${response.status}`)
+      }
+
+      setModelCheck({
+        status: 'ok',
+        message: `Connected: ${payload?.providerUsed || localProvider} / ${payload?.model || localModel}`,
+      })
+    } catch (error) {
+      setModelCheck({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Model check failed',
+      })
+    }
   }
 
   const openReportWindow = (weekToExport?: WeekData | null) => {
@@ -261,21 +365,35 @@ export function Settings() {
                   <div className="flex flex-col gap-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Select value={localProvider}
-                        onChange={e => { const p=e.target.value as AIProvider; setLocalProvider(p); if(p==='grok')setLocalModel('grok-2-mini'); if(p==='gemini')setLocalModel('gemini-1.5-flash') }}
+                        onChange={e => {
+                          const p = e.target.value as AIProvider
+                          setLocalProvider(p)
+                          setLocalModel(AI_PROVIDER_META[p].defaultModel)
+                          setModelCheck({ status: 'idle', message: '' })
+                        }}
                         className="text-sm text-on-surface">
-                        <option value="gemini">Google Gemini</option>
-                        <option value="grok">Grok (xAI)</option>
+                        {Object.entries(AI_PROVIDER_META).map(([provider, config]) => (
+                          <option key={provider} value={provider}>{config.label}</option>
+                        ))}
                       </Select>
                       <Select value={isCustom?'custom':localModel}
-                        onChange={e => { if(e.target.value!=='custom')setLocalModel(e.target.value); else setLocalModel('') }}
+                        onChange={e => {
+                          if (e.target.value !== 'custom') setLocalModel(e.target.value)
+                          else setLocalModel('')
+                          setModelCheck({ status: 'idle', message: '' })
+                        }}
                         className="text-sm text-on-surface text-tertiary font-medium">
-                        {localProvider==='grok'&&(<><option value="grok-4">grok-4</option><option value="grok-4.1-fast">grok-4.1-fast</option><option value="grok-4-vision">grok-4-vision</option><option value="grok-code-fast-1">grok-code-fast-1</option></>)}
-                        {localProvider==='gemini'&&(<><option value="gemini-flash-latest">gemini-flash-latest</option><option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option><option value="gemini-3-flash-preview">gemini-3-flash-preview</option><option value="gemini-2.5-pro">gemini-2.5-pro</option><option value="gemini-2.5-flash">gemini-2.5-flash</option><option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option><option value="gemini-live-2.5-flash-native-audio">gemini-live-audio</option></>)}
+                        {providerConfig.models.map(model => (
+                          <option key={model} value={model}>{model}</option>
+                        ))}
                         <option value="custom">Other (Custom...)</option>
                       </Select>
                     </div>
                     {isCustom && (
-                      <Input type="text" value={localModel} onChange={e=>setLocalModel(e.target.value)}
+                      <Input type="text" value={localModel} onChange={e => {
+                        setLocalModel(e.target.value)
+                        setModelCheck({ status: 'idle', message: '' })
+                      }}
                         placeholder={`Custom ${localProvider} model...`}
                         className="w-full text-sm font-mono focus:border-tertiary/50 transition-colors" />
                     )}
@@ -285,13 +403,24 @@ export function Settings() {
                         className="text-[11px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">
                         {isSavingModel?'Saving...':savedModel?'Saved!':'Save Selection'}
                       </Button>
+                      <Button type="button" onClick={handleCheckModel} size="sm" variant="ghost"
+                        disabled={modelCheck.status === 'checking' || !localModel.trim()}
+                        className="text-[11px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">
+                        {modelCheck.status === 'checking' ? 'Checking...' : 'Check Model'}
+                      </Button>
                       {savedModel&&<span className="text-tertiary text-[11px] font-medium uppercase tracking-widest">Updated</span>}
                     </div>
+                    {modelCheck.message && (
+                      <p className={`text-[11px] font-medium ${modelCheck.status === 'ok' ? 'text-tertiary' : modelCheck.status === 'error' ? 'text-error' : 'text-neutral-400'}`}>
+                        {modelCheck.message}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-4 py-4 border-y border-white/10">
                   <ProviderInput provider="gemini" label="Google Gemini" settings={settings} />
                   <ProviderInput provider="grok" label="xAI Grok" settings={settings} />
+                  <ProviderInput provider="ollama" label="Ollama" settings={settings} />
                 </div>
                 <Toggle label="Fallback Provider" desc="Switch to another provider if the primary fails." checked={settings.fallbackEnabled} onChange={settings.setFallbackEnabled} />
               </div>
@@ -539,6 +668,12 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider; la
   const [isVis, setIsVis] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const providerMeta = AI_PROVIDER_META[provider]
+  const isSecret = provider !== 'ollama'
+
+  useEffect(() => {
+    setLocalVal(settings.aiKeys[provider] || '')
+  }, [provider, settings.aiKeys])
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -550,18 +685,20 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider; la
 
   return (
     <div>
-      <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">{label} API Key</label>
+      <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">{providerMeta.credentialLabel}</label>
       <div className="flex bg-surface-container-low rounded-xl border border-white/10 overflow-hidden focus-within:border-primary/50 transition-colors">
         <Input
-          type={isVis ? 'text' : 'password'}
+          type={!isSecret || isVis ? 'text' : 'password'}
           value={localVal}
           onChange={e => setLocalVal(e.target.value)}
-          placeholder="sk-..."
+          placeholder={providerMeta.credentialPlaceholder}
           className="flex-1 bg-transparent border-0 px-4 py-3 outline-none text-sm text-on-surface font-mono"
         />
-        <button onClick={() => setIsVis(!isVis)} className="px-4 text-neutral-500 hover:text-white border-l border-white/5">
-          {isVis ? <EyeOff className="w-[18px] h-[18px]" strokeWidth={1.5} /> : <Eye className="w-[18px] h-[18px]" strokeWidth={1.5} />}
-        </button>
+        {isSecret && (
+          <button onClick={() => setIsVis(!isVis)} className="px-4 text-neutral-500 hover:text-white border-l border-white/5">
+            {isVis ? <EyeOff className="w-[18px] h-[18px]" strokeWidth={1.5} /> : <Eye className="w-[18px] h-[18px]" strokeWidth={1.5} />}
+          </button>
+        )}
         <Button
           type="button"
           onClick={handleSave}
@@ -573,7 +710,8 @@ function ProviderInput({ provider, label, settings }: { provider: AIProvider; la
           {isSaving ? 'SAVING...' : saved ? 'SAVED' : 'SAVE'}
         </Button>
       </div>
-      {saved && <p className="text-tertiary text-[11px] mt-1 font-medium">API key saved successfully</p>}
+      <p className="text-neutral-500 text-[11px] mt-1">{providerMeta.credentialHelp}</p>
+      {saved && <p className="text-tertiary text-[11px] mt-1 font-medium">{label} settings saved successfully</p>}
     </div>
   )
 }

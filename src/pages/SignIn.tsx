@@ -74,34 +74,29 @@ export function SignIn() {
       {/* Layered ambient orbs — violet, pink, cyan */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full animate-float-soft"
+        className="pointer-events-none absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgb(124 58 237 / 0.32), transparent 65%)',
-          filter: 'blur(8px)',
+          background: 'radial-gradient(circle, rgb(124 58 237 / 0.22), transparent 68%)',
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 -right-32 w-[32rem] h-[32rem] rounded-full animate-float-soft"
+        className="pointer-events-none absolute -bottom-32 -right-32 w-[32rem] h-[32rem] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgb(34 211 238 / 0.26), transparent 65%)',
-          filter: 'blur(8px)',
-          animationDelay: '1.4s',
+          background: 'radial-gradient(circle, rgb(34 211 238 / 0.18), transparent 68%)',
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/2 right-0 w-[24rem] h-[24rem] rounded-full animate-float-soft"
+        className="pointer-events-none absolute top-1/2 right-0 w-[24rem] h-[24rem] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgb(244 114 182 / 0.18), transparent 60%)',
-          filter: 'blur(8px)',
-          animationDelay: '2.6s',
+          background: 'radial-gradient(circle, rgb(244 114 182 / 0.14), transparent 64%)',
         }}
       />
 
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10 animate-fade-up relative z-10">
-        <div className="w-11 h-11 rounded-2xl obsidian-gradient flex items-center justify-center shadow-[0_12px_36px_-8px_rgb(124_58_237_/_0.6)] animate-float-soft">
+        <div className="w-11 h-11 rounded-2xl obsidian-gradient flex items-center justify-center shadow-[0_12px_36px_-8px_rgb(124_58_237_/_0.6)]">
           <Sparkles className="text-white text-xl" strokeWidth={1.5} />
         </div>
         <div>
@@ -114,8 +109,6 @@ export function SignIn() {
 
       {/* Card */}
       <motion.div
-        layout
-        transition={{ layout: { type: 'spring', stiffness: 190, damping: 31, mass: 0.9 } }}
         className="w-full max-w-md glass-panel rounded-3xl p-8 sm:p-10 animate-scale-in relative z-10 overflow-hidden"
       >
         <motion.div
@@ -128,7 +121,6 @@ export function SignIn() {
         <div className="mb-7 relative">
           <div className="mb-5 grid grid-cols-2 rounded-2xl bg-surface-container-low/60 p-1 border border-outline-variant/30">
             <motion.div
-              layout
               role="button"
               tabIndex={0}
               onClick={() => switchMode('signin')}
@@ -149,7 +141,6 @@ export function SignIn() {
               <span className="relative">Sign in</span>
             </motion.div>
             <motion.div
-              layout
               role="button"
               tabIndex={0}
               onClick={() => switchMode('signup')}
@@ -197,7 +188,7 @@ export function SignIn() {
             onClick={handleGoogleSignIn}
             disabled={isLoading || isOAuthLoading}
             aria-busy={isOAuthLoading}
-            className="ripple-surface focus-ring w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-on-surface bg-surface-container-low/70 border border-outline-variant/40 hover:bg-surface-container/80 hover:border-primary/35 transition-all disabled:opacity-60 lift-on-hover touch-target"
+            className="ripple-surface focus-ring w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-on-surface bg-surface-container-low/70 border border-outline-variant/40 hover:bg-surface-container/80 hover:border-primary/35 transition-[background-color,border-color,color,opacity,transform] disabled:opacity-60 lift-on-hover touch-target"
           >
             <span className="inline-flex items-center gap-3">
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -252,14 +243,14 @@ export function SignIn() {
             {mode === 'signup' && (
               <motion.div
                 key="confirm-password"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
                 transition={{
-                  height: { type: 'spring', stiffness: 180, damping: 29, mass: 0.88 },
                   opacity: { duration: 0.2, ease: 'easeOut' },
+                  y: { duration: 0.2, ease: 'easeOut' },
                 }}
-                className="space-y-1.5 overflow-hidden"
+                className="space-y-1.5"
               >
                 <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Confirm Password</label>
                 <Input

@@ -4,12 +4,12 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   AlertTriangle,
   BarChart3,
-  Bot,
   CalendarDays,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
   ListTodo,
+  Loader2,
   MessageSquare,
   Mic,
   MicOff,
@@ -27,12 +27,14 @@ import {
 import { AI_ACTIONS } from '../../ai/actions'
 import { useOrchestratorSession, type SessionMessage } from '../../ai/hooks'
 import { WORKSPACE_MODE_DEFINITIONS, WORKSPACE_MODE_LIST } from '../../ai/modes'
+import type { PendingToolConfirmation } from '../../ai/orchestrator/types'
 import { buildActionPrompt } from '../../ai/prompts'
 import type { AIActionId, WorkspaceContextLayer, WorkspaceMode } from '../../ai/types'
 import { cn } from '../../lib/cn'
 import { useLayoutStore } from '../../store/useLayoutStore'
-import { UIBlockList } from './blocks/BrainDumpUIBlock'
-import { PlanningUIBlock } from './blocks/PlanningUIBlock'
+import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
+import { AIConfirmationPanel } from './AIConfirmationPanel'
+import { ChatThread } from './ChatThread'
 
 interface AIWorkspaceProps {
   variant?: 'default' | 'evaluation'
@@ -81,26 +83,6 @@ const glassCardClass =
 const glassPanelClass =
   'relative overflow-hidden rounded-3xl border border-white/10 bg-surface-container-lowest/[0.58] shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]'
 
-function FormattedMessage({ text }: { text: string }) {
-  return (
-    <div className="space-y-2 text-sm leading-relaxed text-on-surface/90" dir="auto">
-      {text.split('\n').map((line, index) => {
-        const trimmed = line.trim()
-        if (!trimmed) return <div key={index} className="h-1" />
-        if (/^[-*]\s+/.test(trimmed)) {
-          return (
-            <div key={index} className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/80" />
-              <p>{trimmed.replace(/^[-*]\s+/, '')}</p>
-            </div>
-          )
-        }
-        return <p key={index}>{trimmed}</p>
-      })}
-    </div>
-  )
-}
-
 export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
   const navigate = useNavigate()
   const reduceMotion = useReducedMotion()
@@ -113,15 +95,44 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
     workspaceContext,
     messages: chatMessages,
     isProcessing: isAiTyping,
+    pendingConfirmations,
+    applyingConfirmationId,
+    error: aiError,
     send,
+    applyConfirmation,
+    dismissConfirmation,
+    clearError,
   } = useOrchestratorSession(activeMode)
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
   const feedbackTimerRef = useRef<number | null>(null)
   const [chatInput, setChatInput] = useState('')
   const [brainDump, setBrainDump] = useState('')
-  const [isRecording, setIsRecording] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
   const [stagedActionLabel, setStagedActionLabel] = useState<string | null>(null)
+
+  // ── Voice recorder ────────────────────────────────────────────────────────
+  const {
+    isRecording,
+    isProcessing: isVoiceProcessing,
+    startRecording,
+    stopRecording,
+  } = useVoiceRecorder({
+    onTranscript: (text) => {
+      // Append transcript to current input (don't overwrite)
+      setChatInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+      setVoiceError(null)
+      window.setTimeout(() => composerRef.current?.focus(), 50)
+    },
+    onError: (msg) => setVoiceError(msg),
+  })
+
+  const handleRecordingToggle = () => {
+    if (isVoiceProcessing) return          // locked while processing
+    if (isRecording) stopRecording()
+    else void startRecording()
+  }
+
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -151,7 +162,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
     const message = (overrideText ?? chatInput).trim()
     if (!message || isAiTyping) return
     setChatInput('')
-    setActiveMode('chat')
+    clearError()
     await send(message)
   }
 
@@ -183,7 +194,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
       onMouseDown={closeAIWorkspace}
     >
       <motion.div
-        className="absolute inset-0 bg-background/[0.72] backdrop-blur-md"
+        className="absolute inset-0 bg-background/[0.84]"
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -206,7 +217,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
         exit={reduceMotion ? undefined : isMobile ? { y: '100%' } : { x: 28, opacity: 0 }}
         transition={{ type: 'spring', damping: 30, stiffness: 260 }}
         className={cn(
-          'absolute flex flex-col overflow-hidden border border-primary/[0.24] bg-gradient-to-br from-primary/[0.12] via-surface-container-low/[0.96] to-surface-container-lowest/[0.98] text-on-surface shadow-[0_30px_90px_-26px_rgba(0,0,0,0.9),0_0_70px_rgba(124,58,237,0.18),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-xl backdrop-saturate-150',
+          'absolute flex flex-col overflow-hidden border border-primary/[0.24] bg-gradient-to-br from-primary/[0.12] via-surface-container-low/[0.98] to-surface-container-lowest text-on-surface shadow-[0_30px_90px_-26px_rgba(0,0,0,0.9),0_0_70px_rgba(124,58,237,0.18),inset_0_1px_0_rgba(255,255,255,0.07)]',
           isMobile
             ? 'inset-x-0 bottom-0 h-[94dvh] rounded-t-[1.75rem]'
             : 'right-4 top-4 bottom-4 w-[min(1080px,calc(100vw-2rem))] rounded-[1.75rem]'
@@ -215,7 +226,8 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
         <WorkspaceHeader
           weeklyContext={workspaceContext}
           isRecording={isRecording}
-          onRecordingToggle={() => setIsRecording((value) => !value)}
+          isVoiceProcessing={isVoiceProcessing}
+          onRecordingToggle={handleRecordingToggle}
           onClose={closeAIWorkspace}
         />
 
@@ -248,7 +260,7 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
                       isRecording={isRecording}
                       onBrainDumpChange={setBrainDump}
                       onAction={handleAction}
-                      onRecordingToggle={() => setIsRecording((value) => !value)}
+                      onRecordingToggle={handleRecordingToggle}
                     />
                   )}
                   {activeMode === 'reflect' && (
@@ -274,11 +286,19 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
           composerRef={composerRef}
           isAiTyping={isAiTyping}
           isRecording={isRecording}
+          isVoiceProcessing={isVoiceProcessing}
+          voiceError={voiceError}
+          pendingConfirmations={pendingConfirmations}
+          applyingConfirmationId={applyingConfirmationId}
           stagedActionLabel={stagedActionLabel}
+          aiError={aiError}
           onInputChange={setChatInput}
-          onRecordingToggle={() => setIsRecording((value) => !value)}
+          onRecordingToggle={handleRecordingToggle}
           onSend={() => void handleSendMessage()}
+          onApplyConfirmation={(confirmationId) => void applyConfirmation(confirmationId)}
+          onDismissConfirmation={dismissConfirmation}
           onSuggestedPrompt={handleSuggestedPrompt}
+          onClearError={clearError}
         />
       </motion.section>
     </div>
@@ -288,14 +308,28 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
 function WorkspaceHeader({
   weeklyContext,
   isRecording,
+  isVoiceProcessing,
   onRecordingToggle,
   onClose,
 }: {
   weeklyContext: WorkspaceContextLayer
   isRecording: boolean
+  isVoiceProcessing: boolean
   onRecordingToggle: () => void
   onClose: () => void
 }) {
+  const micTitle = isVoiceProcessing
+    ? 'Transcribing…'
+    : isRecording
+      ? 'Stop recording'
+      : 'Start voice capture'
+
+  const MicIcon = isVoiceProcessing
+    ? Loader2
+    : isRecording
+      ? MicOff
+      : Mic
+
   return (
     <header className="relative shrink-0 border-b border-primary/[0.12] bg-surface-container-lowest/[0.36] px-4 py-4 sm:px-5">
       <div
@@ -325,9 +359,11 @@ function WorkspaceHeader({
         <div className="flex items-center gap-2">
           <IconButton
             active={isRecording}
-            title={isRecording ? 'Stop voice capture' : 'Start voice capture'}
+            title={micTitle}
             onClick={onRecordingToggle}
-            icon={isRecording ? MicOff : Mic}
+            icon={MicIcon}
+            spinning={isVoiceProcessing}
+            disabled={isVoiceProcessing}
           />
           <IconButton title="Close AI Workspace" onClick={onClose} icon={X} testId="ai-workspace-close" />
         </div>
@@ -420,7 +456,7 @@ function ModeNavigation({
               type="button"
               onClick={() => onModeChange(mode.id)}
               className={cn(
-                'relative inline-flex h-10 items-center gap-2 rounded-2xl px-3.5 text-sm font-bold transition-all focus-ring',
+                'relative inline-flex h-10 items-center gap-2 rounded-2xl px-3.5 text-sm font-bold transition-[background-color,border-color,color,transform] focus-ring',
                 active ? 'text-white' : 'text-violet-100/[0.64] hover:bg-primary/10 hover:text-violet-100'
               )}
             >
@@ -589,7 +625,7 @@ function PlanMode({
             onClick={onRecordingToggle}
             aria-pressed={isRecording}
             className={cn(
-              'inline-flex h-10 items-center gap-2 rounded-2xl border px-3 text-xs font-bold uppercase tracking-[0.12em] transition-all focus-ring',
+              'inline-flex h-10 items-center gap-2 rounded-2xl border px-3 text-xs font-bold uppercase tracking-[0.12em] transition-[background-color,border-color,color] focus-ring',
               isRecording
                 ? 'border-red-300/30 bg-red-500/[0.12] text-red-100'
                 : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.78] hover:border-primary/[0.38] hover:text-white'
@@ -691,44 +727,7 @@ function ChatMode({
         onAction={onAction}
       />
 
-      <div className="space-y-4">
-        {messages.map((message, index) => (
-          <div
-            key={`${message.role}-${index}`}
-            className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}
-          >
-            <div
-              className={cn(
-                'max-w-[92%] rounded-3xl border px-4 py-3 sm:max-w-[78%]',
-                message.role === 'user'
-                  ? 'border-primary/[0.28] bg-gradient-to-br from-primary/[0.18] via-primary/10 to-tertiary/[0.08] text-on-surface rounded-br-lg shadow-[0_16px_34px_-24px_rgba(124,58,237,0.8)]'
-                  : message.role === 'system'
-                    ? 'border-red-300/[0.18] bg-red-500/10 text-red-100 rounded-bl-lg'
-                    : 'border-primary/[0.14] bg-gradient-to-br from-primary/[0.08] via-surface-container-low/[0.58] to-surface-container-lowest/[0.78] text-on-surface rounded-bl-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
-              )}
-            >
-              {message.text && <FormattedMessage text={message.text} />}
-              {message.uiBlocks && message.uiBlocks.length > 0 && (
-                <UIBlockList blocks={message.uiBlocks} PlanningBlockComponent={PlanningUIBlock} />
-              )}
-              {message.provider && (
-                <p className="mt-3 border-t border-outline-variant/[0.12] pt-2 text-right text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-300/[0.65]">
-                  via {message.provider}
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {isAiTyping && (
-          <div className="flex justify-start">
-            <div className="inline-flex items-center gap-3 rounded-3xl rounded-bl-lg border border-primary/[0.14] bg-gradient-to-br from-primary/[0.08] via-surface-container-low/[0.58] to-surface-container-lowest/[0.78] px-4 py-3 text-sm text-on-surface-variant">
-              <Bot className="h-4 w-4 text-cyan-200" strokeWidth={1.7} />
-              <span className="animate-pulse">Processing WeeklyOS context...</span>
-            </div>
-          </div>
-        )}
-      </div>
+      <ChatThread messages={messages} isAiTyping={isAiTyping} />
     </ModeStack>
   )
 }
@@ -739,22 +738,38 @@ function ConversationDock({
   composerRef,
   isAiTyping,
   isRecording,
+  isVoiceProcessing,
+  voiceError,
+  pendingConfirmations,
+  applyingConfirmationId,
   stagedActionLabel,
+  aiError,
   onInputChange,
   onRecordingToggle,
   onSend,
+  onApplyConfirmation,
+  onDismissConfirmation,
   onSuggestedPrompt,
+  onClearError,
 }: {
   activeMode: WorkspaceMode
   chatInput: string
   composerRef: MutableRefObject<HTMLTextAreaElement | null>
   isAiTyping: boolean
   isRecording: boolean
+  isVoiceProcessing: boolean
+  voiceError: string | null
+  pendingConfirmations: PendingToolConfirmation[]
+  applyingConfirmationId: string | null
   stagedActionLabel: string | null
+  aiError: string | null
   onInputChange: (value: string) => void
   onRecordingToggle: () => void
   onSend: () => void
+  onApplyConfirmation: (confirmationId: string) => void
+  onDismissConfirmation: (confirmationId: string) => void
   onSuggestedPrompt: (prompt: string) => void
+  onClearError: () => void
 }) {
   return (
     <footer className="relative shrink-0 border-t border-primary/[0.12] bg-surface-container-lowest/[0.72] p-3 shadow-[0_-18px_42px_-30px_rgba(0,0,0,0.95)] sm:p-4">
@@ -773,13 +788,28 @@ function ConversationDock({
               key={prompt}
               type="button"
               onClick={() => onSuggestedPrompt(prompt)}
-              className="shrink-0 rounded-full border border-primary/[0.16] bg-primary/[0.08] px-3 py-1.5 text-[11px] font-semibold text-violet-100/[0.78] transition-all hover:border-primary/[0.36] hover:text-white focus-ring"
+              className="shrink-0 rounded-full border border-primary/[0.16] bg-primary/[0.08] px-3 py-1.5 text-[11px] font-semibold text-violet-100/[0.78] transition-[border-color,color] hover:border-primary/[0.36] hover:text-white focus-ring"
             >
               {prompt}
             </button>
           ))}
         </div>
       </div>
+
+      {aiError && (
+        <div className="mb-2 flex items-center gap-2 rounded-2xl border border-red-300/[0.22] bg-red-500/[0.12] px-3 py-2 text-xs font-semibold text-red-100">
+          <AlertTriangle className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+          <span className="flex-1 min-w-0 truncate">{aiError}</span>
+          <button
+            type="button"
+            onClick={onClearError}
+            className="shrink-0 rounded-lg p-0.5 hover:bg-red-300/20 transition-colors"
+            aria-label="Dismiss error"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      )}
 
       {stagedActionLabel && (
         <div className="mb-2 flex items-center gap-2 rounded-2xl border border-emerald-300/[0.16] bg-emerald-400/[0.08] px-3 py-2 text-xs font-semibold text-emerald-100">
@@ -788,6 +818,13 @@ function ConversationDock({
         </div>
       )}
 
+      <AIConfirmationPanel
+        confirmations={pendingConfirmations}
+        applyingConfirmationId={applyingConfirmationId}
+        onApply={onApplyConfirmation}
+        onDismiss={onDismissConfirmation}
+      />
+
       {isAiTyping && (
         <div className="mb-2 overflow-hidden rounded-2xl border border-primary/[0.14] bg-primary/[0.06] px-3 py-2">
           <div className="h-2 w-40 animate-pulse rounded-full bg-violet-100/[0.16]" />
@@ -795,10 +832,24 @@ function ConversationDock({
         </div>
       )}
 
-      {isRecording && (
+      {voiceError && (
+        <div className="mb-2 flex items-center gap-2 rounded-2xl border border-amber-300/[0.22] bg-amber-500/[0.1] px-3 py-2 text-xs font-semibold text-amber-100">
+          <Mic className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+          <span className="flex-1 min-w-0">{voiceError}</span>
+        </div>
+      )}
+
+      {isVoiceProcessing && (
+        <div className="mb-2 flex items-center gap-2 rounded-2xl border border-violet-300/20 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
+          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" strokeWidth={2} />
+          Transcribing your voice… please wait.
+        </div>
+      )}
+
+      {isRecording && !isVoiceProcessing && (
         <div className="mb-2 flex items-center gap-2 rounded-2xl border border-red-300/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100">
-          <span className="h-2 w-2 rounded-full bg-red-300 shadow-[0_0_12px_rgba(252,165,165,0.8)]" />
-          Listening. Transcript will appear in the composer.
+          <span className="h-2 w-2 animate-pulse rounded-full bg-red-300 shadow-[0_0_12px_rgba(252,165,165,0.8)]" />
+          Listening… tap the mic again to stop.
         </div>
       )}
 
@@ -806,16 +857,23 @@ function ConversationDock({
         <button
           type="button"
           onClick={onRecordingToggle}
+          disabled={isVoiceProcessing}
           aria-pressed={isRecording}
           className={cn(
-            'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-all focus-ring',
-            isRecording
-              ? 'border-red-300/[0.35] bg-red-500/15 text-red-200'
-              : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white'
+            'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring disabled:cursor-not-allowed disabled:opacity-60',
+            isVoiceProcessing
+              ? 'border-violet-300/[0.35] bg-violet-500/15 text-violet-200'
+              : isRecording
+                ? 'border-red-300/[0.35] bg-red-500/15 text-red-200'
+                : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white'
           )}
-          title={isRecording ? 'Stop voice capture' : 'Start voice capture'}
+          title={isVoiceProcessing ? 'Transcribing…' : isRecording ? 'Stop recording' : 'Start voice capture'}
         >
-          {isRecording ? <MicOff className="h-[18px] w-[18px]" strokeWidth={1.7} /> : <Mic className="h-[18px] w-[18px]" strokeWidth={1.7} />}
+          {isVoiceProcessing
+            ? <Loader2 className="h-[18px] w-[18px] animate-spin" strokeWidth={1.7} />
+            : isRecording
+              ? <MicOff className="h-[18px] w-[18px]" strokeWidth={1.7} />
+              : <Mic className="h-[18px] w-[18px]" strokeWidth={1.7} />}
         </button>
         <textarea
           ref={composerRef}
@@ -835,8 +893,10 @@ function ConversationDock({
           type="button"
           onClick={onSend}
           disabled={!chatInput.trim() || isAiTyping}
-          className="obsidian-gradient mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_-14px_rgba(124,58,237,0.95)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-ring"
-          title="Send"
+          className="obsidian-gradient mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_-14px_rgba(124,58,237,0.95)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 focus-ring"
+          title={isAiTyping ? 'Processing…' : 'Send message'}
+          id="ai-workspace-send-btn"
+          aria-label="Send message"
         >
           <Send className="h-[18px] w-[18px]" strokeWidth={1.8} />
         </button>
@@ -900,7 +960,7 @@ function ModeHero({
           <button
             type="button"
             onClick={() => onAction(primaryAction)}
-            className="obsidian-gradient inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-[0_20px_46px_-18px_rgba(124,58,237,1)] transition-all hover:brightness-110 focus-ring"
+            className="obsidian-gradient inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-[0_20px_46px_-18px_rgba(124,58,237,1)] transition-opacity hover:opacity-90 focus-ring"
           >
             <PrimaryIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
             {primaryLabel}
@@ -957,7 +1017,7 @@ function SecondaryActionButton({
     <button
       type="button"
       onClick={() => onAction(action)}
-      className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-primary/[0.16] bg-primary/[0.07] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-violet-100/[0.76] transition-all hover:border-primary/[0.34] hover:bg-primary/[0.12] hover:text-white focus-ring"
+      className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-primary/[0.16] bg-primary/[0.07] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-violet-100/[0.76] transition-[background-color,border-color,color] hover:border-primary/[0.34] hover:bg-primary/[0.12] hover:text-white focus-ring"
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
       <span>{actionView.label}</span>
@@ -978,7 +1038,7 @@ function SignalActionButton({
     <button
       type="button"
       onClick={() => onAction(action)}
-      className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-primary/[0.14] bg-black/[0.18] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-violet-100/[0.74] transition-all hover:border-primary/[0.34] hover:bg-primary/[0.1] hover:text-white focus-ring"
+      className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-primary/[0.14] bg-black/[0.18] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-violet-100/[0.74] transition-[background-color,border-color,color] hover:border-primary/[0.34] hover:bg-primary/[0.1] hover:text-white focus-ring"
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
       <span>{actionView.label}</span>
@@ -1106,12 +1166,16 @@ function IconButton({
   icon: Icon,
   title,
   active,
+  spinning,
+  disabled,
   onClick,
   testId,
 }: {
   icon: LucideIcon
   title: string
   active?: boolean
+  spinning?: boolean
+  disabled?: boolean
   onClick: () => void
   testId?: string
 }) {
@@ -1119,17 +1183,18 @@ function IconButton({
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       data-testid={testId}
       aria-pressed={active}
       title={title}
       className={cn(
-        'flex h-10 w-10 items-center justify-center rounded-2xl border transition-all focus-ring',
+        'flex h-10 w-10 items-center justify-center rounded-2xl border transition-[background-color,border-color,color] focus-ring disabled:cursor-not-allowed disabled:opacity-60',
         active
           ? 'border-red-300/[0.35] bg-red-500/15 text-red-200 shadow-[0_0_24px_rgba(248,113,113,0.18)]'
           : 'border-primary/[0.18] bg-primary/10 text-violet-100/[0.76] hover:border-primary/[0.38] hover:text-white hover:shadow-[0_0_22px_rgba(124,58,237,0.16)]'
       )}
     >
-      <Icon className="h-[18px] w-[18px]" strokeWidth={1.7} />
+      <Icon className={cn('h-[18px] w-[18px]', spinning && 'animate-spin')} strokeWidth={1.7} />
     </button>
   )
 }

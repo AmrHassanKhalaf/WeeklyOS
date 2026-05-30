@@ -63,7 +63,7 @@ export function WeeklyChallengeCircles() {
               disabled={future}
               className={`
                 w-16 h-16 rounded-full flex flex-col items-center justify-center font-bold
-                transition-all duration-200 shrink-0
+                transition-[background-color,border-color,color,transform] duration-200 shrink-0
                 ${future ? 'opacity-30 cursor-not-allowed bg-surface-container' : 'cursor-pointer hover:scale-105 active:scale-95'}
                 ${
                   day.status === 'success'
@@ -91,8 +91,8 @@ export function WeeklyChallengeCircles() {
         </div>
         <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-primary to-tertiary transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full w-full origin-left bg-gradient-to-r from-primary to-tertiary transition-transform duration-300"
+            style={{ transform: `scaleX(${progress / 100})` }}
           />
         </div>
       </div>

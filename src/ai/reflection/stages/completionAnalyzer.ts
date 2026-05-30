@@ -1,7 +1,6 @@
 import type { AIContext } from '../../types'
 import type { CompletionAnalysis, CompletionQuality } from '../types'
 import { THRESHOLDS } from '../../config/thresholds'
-import { SCORING_WEIGHTS } from '../../config/scoringWeights'
 import { WEEK_ORDER } from '../../planning/utils'
 
 // ─── Quality Classification ─────────────────────────────────────────────────────
@@ -43,7 +42,7 @@ export function analyzeCompletion(context: AIContext): CompletionAnalysis {
 
   // High-priority performance
   const highPriorityItems = tasks.items.filter((t) => t.priority === 'high')
-  const highPriorityCompleted = highPriorityItems.filter((t) => t.status === 'completed').length
+  const highPriorityCompleted = highPriorityItems.filter((t) => t.status === 'done').length
   const highPriorityPending = highPriorityItems.filter((t) => t.status === 'pending').length
 
   // Carry-over detection (tasks scheduled for past days still pending)

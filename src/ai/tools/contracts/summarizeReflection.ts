@@ -50,7 +50,7 @@ export const summarizeReflectionContract: AITool<
     required: ['generatedAt', 'context', 'completion', 'focus', 'habit', 'behavior', 'insights', 'summary', 'score'],
   },
 
-  execute: async (input, context: AIContext): Promise<AIToolResult<SummarizeReflectionOutput>> => {
+  execute: async (_input, context: AIContext): Promise<AIToolResult<SummarizeReflectionOutput>> => {
     // Check if user has captured any reflection notes
     const { reflections } = context
     const hasReflectionNotes =

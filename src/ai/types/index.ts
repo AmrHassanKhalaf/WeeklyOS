@@ -160,6 +160,8 @@ export interface AIProviderResponse {
   /** Provider identifier for display / debugging. */
   provider: string
   model?: string
+  /** Provider-side timing/debug metadata. Must not contain secrets or raw DB rows. */
+  metadata?: Record<string, unknown>
   raw?: unknown
 }
 

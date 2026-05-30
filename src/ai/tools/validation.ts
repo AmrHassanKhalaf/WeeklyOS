@@ -53,7 +53,7 @@ function checkPropertyType(
 
   // Recurse into array items if schema specifies
   if (type === 'array' && schema.items && Array.isArray(value)) {
-    ;(value as unknown[]).forEach((item, idx) => {
+    value.forEach((item, idx) => {
       checkPropertyType(`${field}[${idx}]`, item, schema.items!, issues)
     })
   }

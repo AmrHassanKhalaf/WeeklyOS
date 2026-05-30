@@ -744,6 +744,24 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         })
       }
 
+      // Restore pomodoro preset from DB
+      void supabase.from('user_settings')
+        .select('pomodoro_focus_min, pomodoro_break_min')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!data) return
+          const focusMin = data.pomodoro_focus_min
+          const breakMin = data.pomodoro_break_min
+          if (focusMin && breakMin) {
+            set({
+              pomodoroFocusMin: focusMin,
+              pomodoroBreakMin: breakMin,
+              pomodoroTime: focusMin * 60,
+            })
+          }
+        })
+
       // If a restored tab has lost week data, re-fetch once it becomes visible.
       const handleVisibility = () => {
         if (document.visibilityState !== 'visible') return
@@ -1138,11 +1156,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         ...dayPlan.smallTasks,
       ].filter(t => t && t.status === 'pending').map(t => t!.id)
 
-      if (pendingTasks.length > 0) {
-        await supabase.from('tasks').update({ status: 'done' }).in('id', pendingTasks)
-      }
-
-      // Optimistic update
+      // Optimistic update first
+      const snapshot = get().currentWeek
       set(state => ({
         currentWeek: state.currentWeek ? {
           ...state.currentWeek,
@@ -1157,6 +1172,17 @@ export const useWeekStore = create<WeekStore>((set, get) => {
           ),
         } : null,
       }))
+      await syncToDb()
+
+      // Persist to DB, revert on failure
+      if (pendingTasks.length > 0) {
+        const { error: dbErr } = await supabase.from('tasks').update({ status: 'done' }).in('id', pendingTasks)
+        if (dbErr) {
+          console.error('[markDayComplete] DB write failed, reverting:', dbErr)
+          set({ currentWeek: snapshot })
+          throw new Error('Failed to mark day complete. Please try again.')
+        }
+      }
     },
 
     deleteDayData: async (day) => {
@@ -1372,14 +1398,24 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         pomodoroPhase: 'focus',
         isPomodoroRunning: false,
       })),
-    setPomodoroPreset: (focusMin: number, breakMin: number) =>
+    setPomodoroPreset: (focusMin: number, breakMin: number) => {
       set({
         pomodoroFocusMin: focusMin,
         pomodoroBreakMin: breakMin,
         pomodoroTime: focusMin * 60,
         pomodoroPhase: 'focus',
         isPomodoroRunning: false,
-      }),
+      })
+      // Persist to DB so the preset survives page refresh
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session?.user) return
+        void supabase.from('user_settings').upsert({
+          user_id: session.user.id,
+          pomodoro_focus_min: focusMin,
+          pomodoro_break_min: breakMin,
+        })
+      })
+    },
     updateTaskActualDuration: async (taskId: string, secondsToAdd: number) => {
       const snapshot = get().currentWeek
       if (!snapshot) return

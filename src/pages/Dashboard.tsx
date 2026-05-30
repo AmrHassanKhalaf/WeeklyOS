@@ -48,19 +48,29 @@ export function Dashboard() {
   const [manualChallenge, setManualChallenge] = useState('')
   const [aiError, setAiError] = useState<string | null>(null)
   const [isMotionReady, setIsMotionReady] = useState(false)
+  const summary = weekSummary ?? currentWeek
+  const hasSummary = !!summary
+  const tasksReady = !!currentWeek && !isLoadingTasks
+  const challengeTitle = currentWeek?.challengeTitle ?? summary?.challengeTitle
 
   useEffect(() => {
+    if (!challengeTitle) return
+
     let idleId: number | null = null
+    let timeoutId: number | null = null
     const warm = () => {
       void loadRotatingText()
       setIsMotionReady(true)
     }
-    if (window.requestIdleCallback) {
-      idleId = window.requestIdleCallback(warm, { timeout: 1500 }) as unknown as number
-    } else {
-      idleId = window.setTimeout(warm, 800)
-    }
+    timeoutId = window.setTimeout(() => {
+      if (window.requestIdleCallback) {
+        idleId = window.requestIdleCallback(warm, { timeout: 6000 }) as unknown as number
+      } else {
+        warm()
+      }
+    }, 2500)
     return () => {
+      if (timeoutId !== null) window.clearTimeout(timeoutId)
       if (idleId === null) return
       if (window.cancelIdleCallback) {
         window.cancelIdleCallback(idleId)
@@ -68,12 +78,7 @@ export function Dashboard() {
         window.clearTimeout(idleId)
       }
     }
-  }, [])
-
-  const summary = weekSummary ?? currentWeek
-  const hasSummary = !!summary
-  const tasksReady = !!currentWeek && !isLoadingTasks
-  const challengeTitle = currentWeek?.challengeTitle ?? summary?.challengeTitle
+  }, [challengeTitle])
 
   const generateChallenge = async () => {
     if (!currentWeek || isGeneratingChallenge) return
@@ -408,7 +413,7 @@ export function Dashboard() {
                 >
                   <div
                     className={cn(
-                      'w-full rounded-md transition-all duration-300',
+                      'w-full rounded-md transition-colors duration-300',
                       d.isToday
                         ? 'obsidian-gradient shadow-[0_8px_18px_-6px_rgb(124_58_237_/_0.65)]'
                         : 'bg-primary/30 group-hover:bg-primary/45',
