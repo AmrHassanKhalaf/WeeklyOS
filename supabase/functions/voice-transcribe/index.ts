@@ -67,9 +67,16 @@ serve(async (req: Request) => {
     }
 
     // ── Convert Blob → base64 ─────────────────────────────────────────────────
+    // NOTE: Do NOT use `String.fromCharCode(...uint8Array)` — spreading a large
+    // Uint8Array as function arguments throws "Maximum call stack size exceeded"
+    // for any real audio file (typically > 100 KB).  Build the string in a loop.
     const arrayBuffer = await fileData.arrayBuffer()
     const uint8Array  = new Uint8Array(arrayBuffer)
-    const base64Audio = btoa(String.fromCharCode(...uint8Array))
+    let binaryString = ''
+    for (let i = 0; i < uint8Array.length; i++) {
+      binaryString += String.fromCharCode(uint8Array[i])
+    }
+    const base64Audio = btoa(binaryString)
 
     // ── Get Gemini API key ─────────────────────────────────────────────────────
     // First check user's own key in ai_keys table

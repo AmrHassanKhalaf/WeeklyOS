@@ -117,7 +117,6 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
     isProcessing: isVoiceProcessing,
     startRecording,
     stopRecording,
-    cancelRecording,
   } = useVoiceRecorder({
     onTranscript: (text) => {
       // Append transcript to current input (don't overwrite)
@@ -259,7 +258,6 @@ export function AIWorkspace({ variant = 'default' }: AIWorkspaceProps) {
                       weeklyContext={workspaceContext}
                       brainDump={brainDump}
                       isRecording={isRecording}
-                      isVoiceProcessing={isVoiceProcessing}
                       onBrainDumpChange={setBrainDump}
                       onAction={handleAction}
                       onRecordingToggle={handleRecordingToggle}

@@ -751,8 +751,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         .maybeSingle()
         .then(({ data }) => {
           if (!data) return
-          const focusMin = (data as Record<string, unknown>).pomodoro_focus_min as number | null
-          const breakMin = (data as Record<string, unknown>).pomodoro_break_min as number | null
+          const focusMin = data.pomodoro_focus_min
+          const breakMin = data.pomodoro_break_min
           if (focusMin && breakMin) {
             set({
               pomodoroFocusMin: focusMin,
