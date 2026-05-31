@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { DeepFocusOverlay } from '../components/focus/DeepFocusOverlay'
+import { playTimerChime, unlockTimerChime } from '../utils/timerChime'
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 const PRESETS = [
@@ -626,6 +627,7 @@ export function FocusedDay() {
     setIsLooseSession(false)
     setShowTaskPrompt(false)
     if (taskId && !isPomodoroRunningRef.current) {
+      unlockTimerChime()
       startPomodoro()
     }
   }, [updateTaskActualDuration, saveFocusSession, startPomodoro])
@@ -697,6 +699,7 @@ export function FocusedDay() {
   const prevPhase = useRef(pomodoroPhase)
   useEffect(() => {
     if (prevPhase.current !== pomodoroPhase) {
+      playTimerChime()
       if (prevPhase.current === 'focus' && pomodoroPhase === 'break') {
         setSessionCount(c => c + 1)
       }
@@ -730,6 +733,7 @@ export function FocusedDay() {
     if ('Notification' in window && Notification.permission !== 'granted') {
       void Notification.requestPermission()
     }
+    unlockTimerChime()
     startPomodoro()
     if (workerRef.current) workerRef.current.postMessage('start')
     else if (!fallbackIntervalRef.current) fallbackIntervalRef.current = setInterval(handlePomodoroTick, 1000)
