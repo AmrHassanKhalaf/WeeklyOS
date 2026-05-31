@@ -9,7 +9,11 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { DeepFocusOverlay } from '../components/focus/DeepFocusOverlay'
-import { playTimerChime, unlockTimerChime } from '../utils/timerChime'
+import {
+  playTimerCountdownAudio,
+  stopTimerCountdownAudio,
+  unlockTimerCountdownAudio,
+} from '../utils/timerCountdownAudio'
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 const PRESETS = [
@@ -627,7 +631,7 @@ export function FocusedDay() {
     setIsLooseSession(false)
     setShowTaskPrompt(false)
     if (taskId && !isPomodoroRunningRef.current) {
-      unlockTimerChime()
+      unlockTimerCountdownAudio()
       startPomodoro()
     }
   }, [updateTaskActualDuration, saveFocusSession, startPomodoro])
@@ -699,7 +703,6 @@ export function FocusedDay() {
   const prevPhase = useRef(pomodoroPhase)
   useEffect(() => {
     if (prevPhase.current !== pomodoroPhase) {
-      playTimerChime()
       if (prevPhase.current === 'focus' && pomodoroPhase === 'break') {
         setSessionCount(c => c + 1)
       }
@@ -711,6 +714,32 @@ export function FocusedDay() {
     }
     prevPhase.current = pomodoroPhase
   }, [pomodoroPhase, updateTaskActualDuration, saveFocusSession])
+
+  const lastCountdownPhase = useRef(pomodoroPhase)
+  const playedCountdownForPhase = useRef(false)
+  useEffect(() => {
+    if (lastCountdownPhase.current !== pomodoroPhase) {
+      lastCountdownPhase.current = pomodoroPhase
+      playedCountdownForPhase.current = false
+    }
+
+    const countdownStart = pomodoroPhase === 'focus' ? 5 : 10
+    if (!isPomodoroRunning && pomodoroTime > countdownStart) {
+      playedCountdownForPhase.current = false
+    }
+
+    if (!isPomodoroRunning || playedCountdownForPhase.current) return
+
+    if (pomodoroPhase === 'focus' && pomodoroTime === countdownStart) {
+      playTimerCountdownAudio('focus')
+      playedCountdownForPhase.current = true
+    }
+
+    if (pomodoroPhase === 'break' && pomodoroTime === countdownStart) {
+      playTimerCountdownAudio('break')
+      playedCountdownForPhase.current = true
+    }
+  }, [isPomodoroRunning, pomodoroPhase, pomodoroTime])
 
   // Browser notification on phase switch
   useEffect(() => {
@@ -733,13 +762,15 @@ export function FocusedDay() {
     if ('Notification' in window && Notification.permission !== 'granted') {
       void Notification.requestPermission()
     }
-    unlockTimerChime()
+    unlockTimerCountdownAudio()
     startPomodoro()
     if (workerRef.current) workerRef.current.postMessage('start')
     else if (!fallbackIntervalRef.current) fallbackIntervalRef.current = setInterval(handlePomodoroTick, 1000)
   }, [handlePomodoroTick, startPomodoro])
 
   const handleReset = useCallback(() => {
+    stopTimerCountdownAudio()
+    playedCountdownForPhase.current = false
     resetPomodoro()
     setShowTaskPrompt(false)
     setIsLooseSession(false)
@@ -747,6 +778,7 @@ export function FocusedDay() {
 
   const handleToggle = useCallback(() => {
     if (isPomodoroRunning) {
+      stopTimerCountdownAudio()
       stopPomodoro()
       if (workerRef.current) workerRef.current.postMessage('stop')
       if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current)
