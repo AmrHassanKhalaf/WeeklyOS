@@ -608,24 +608,36 @@ export function FocusedDay() {
   // ── Active Task Logic ───────────────────────────────────────────────────────
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [sessionSeconds, setSessionSeconds] = useState(0)
+  const [phaseSessionSeconds, setPhaseSessionSeconds] = useState(0)
 
   const activeTaskIdRef = useRef(activeTaskId)
   const isPomodoroRunningRef = useRef(isPomodoroRunning)
   const pomodoroPhaseRef = useRef(pomodoroPhase)
   const sessionSecondsRef = useRef(sessionSeconds)
+  const phaseSessionSecondsRef = useRef(phaseSessionSeconds)
 
   // Sync refs for worker closure
   useEffect(() => { activeTaskIdRef.current = activeTaskId }, [activeTaskId])
   useEffect(() => { isPomodoroRunningRef.current = isPomodoroRunning }, [isPomodoroRunning])
   useEffect(() => { pomodoroPhaseRef.current = pomodoroPhase }, [pomodoroPhase])
   useEffect(() => { sessionSecondsRef.current = sessionSeconds }, [sessionSeconds])
+  useEffect(() => { phaseSessionSecondsRef.current = phaseSessionSeconds }, [phaseSessionSeconds])
+
+  const savePhaseSession = useCallback((sessionType = pomodoroPhaseRef.current) => {
+    const elapsedSeconds = phaseSessionSecondsRef.current
+    if (elapsedSeconds <= 0) return
+
+    void saveFocusSession(activeTaskIdRef.current ?? undefined, elapsedSeconds, sessionType)
+    setPhaseSessionSeconds(0)
+    phaseSessionSecondsRef.current = 0
+  }, [saveFocusSession])
 
   // Change active task, save previous accumulated time if needed
   const handleMakeActive = useCallback((taskId: string | null) => {
     if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
       void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
-      void saveFocusSession(activeTaskIdRef.current, sessionSecondsRef.current, pomodoroPhaseRef.current)
     }
+    savePhaseSession()
     setSessionSeconds(0)
     setActiveTaskId(taskId)
     setIsLooseSession(false)
@@ -634,10 +646,14 @@ export function FocusedDay() {
       unlockTimerCountdownAudio()
       startPomodoro()
     }
-  }, [updateTaskActualDuration, saveFocusSession, startPomodoro])
+  }, [updateTaskActualDuration, savePhaseSession, startPomodoro])
 
   const handlePomodoroTick = useCallback(() => {
     tickPomodoro()
+
+    if (isPomodoroRunningRef.current) {
+      setPhaseSessionSeconds(s => s + 1)
+    }
 
     // Accumulate time for active task during focus phase
     if (isPomodoroRunningRef.current && pomodoroPhaseRef.current === 'focus' && activeTaskIdRef.current) {
@@ -670,6 +686,7 @@ export function FocusedDay() {
       if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
         void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
       }
+      savePhaseSession()
       if (fallbackIntervalRef.current) {
         clearInterval(fallbackIntervalRef.current)
         fallbackIntervalRef.current = null
@@ -708,12 +725,12 @@ export function FocusedDay() {
       }
       if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
         void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
-        void saveFocusSession(activeTaskIdRef.current, sessionSecondsRef.current, prevPhase.current)
         setSessionSeconds(0)
       }
+      savePhaseSession(prevPhase.current)
     }
     prevPhase.current = pomodoroPhase
-  }, [pomodoroPhase, updateTaskActualDuration, saveFocusSession])
+  }, [pomodoroPhase, updateTaskActualDuration, savePhaseSession])
 
   const lastCountdownPhase = useRef(pomodoroPhase)
   const playedCountdownForPhase = useRef(false)
@@ -770,24 +787,32 @@ export function FocusedDay() {
 
   const handleReset = useCallback(() => {
     stopTimerCountdownAudio()
+    if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
+      void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
+      setSessionSeconds(0)
+    }
+    savePhaseSession()
     playedCountdownForPhase.current = false
     resetPomodoro()
     setShowTaskPrompt(false)
     setIsLooseSession(false)
-  }, [resetPomodoro])
+  }, [resetPomodoro, savePhaseSession, updateTaskActualDuration])
 
   const handleToggle = useCallback(() => {
     if (isPomodoroRunning) {
       stopTimerCountdownAudio()
       stopPomodoro()
       if (workerRef.current) workerRef.current.postMessage('stop')
-      if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current)
+      if (fallbackIntervalRef.current) {
+        clearInterval(fallbackIntervalRef.current)
+        fallbackIntervalRef.current = null
+      }
 
       if (activeTaskIdRef.current && sessionSecondsRef.current > 0) {
         void updateTaskActualDuration(activeTaskIdRef.current, sessionSecondsRef.current)
-        void saveFocusSession(activeTaskIdRef.current, sessionSecondsRef.current, pomodoroPhaseRef.current)
         setSessionSeconds(0)
       }
+      savePhaseSession()
     } else {
       if (pomodoroPhaseRef.current === 'focus' && !activeTaskIdRef.current && !isLooseSession) {
         setShowTaskPrompt(true)
@@ -796,7 +821,7 @@ export function FocusedDay() {
       setShowTaskPrompt(false)
       startTimerNow()
     }
-  }, [isLooseSession, isPomodoroRunning, stopPomodoro, saveFocusSession, startTimerNow, updateTaskActualDuration])
+  }, [isLooseSession, isPomodoroRunning, stopPomodoro, savePhaseSession, startTimerNow, updateTaskActualDuration])
 
   const applyCustomPreset = () => {
     const f = Math.max(1, Math.min(120, Number(customFocus) || 25))
@@ -834,7 +859,12 @@ export function FocusedDay() {
   const pageGridClass = 'xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:gap-10'
   const sideColumnClass = 'xl:sticky xl:top-8'
 
-  const todayFocusSeconds = focusSessions.reduce((acc, curr) => acc + curr.duration_seconds, 0)
+  const savedTodayFocusSeconds = focusSessions.reduce(
+    (acc, curr) => curr.session_type === 'focus' ? acc + curr.duration_seconds : acc,
+    0
+  )
+  const liveFocusSeconds = isPomodoroRunning && pomodoroPhase === 'focus' ? phaseSessionSeconds : 0
+  const todayFocusSeconds = savedTodayFocusSeconds + liveFocusSeconds
 
   // Derive whether today is complete (all tasks done) — used for button state
   const allTodayTasks = [todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean)

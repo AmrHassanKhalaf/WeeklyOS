@@ -1,4 +1,5 @@
 import { type ReactNode, lazy, Suspense, useCallback, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
@@ -75,6 +76,7 @@ function NetworkStatusBadge() {
 
 // ── App Layout ─────────────────────────────────────────────────────────────────
 export function AppLayout({ children, aiVariant = 'default', disableTransition }: AppLayoutProps) {
+  const location = useLocation()
   const sidebarMode = useLayoutStore(state => state.sidebarMode)
   const isLeftSidebarOpen = useLayoutStore(state => state.isLeftSidebarOpen)
   const isRightSidebarOpen = useLayoutStore(state => state.isRightSidebarOpen)
@@ -128,6 +130,12 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
       setFocusMode(false)
     }
   }, [focusLevel, isFocusMode, setFocusMode])
+
+  useEffect(() => {
+    if (isFocusMode && location.pathname !== '/focused-day') {
+      setFocusMode(false)
+    }
+  }, [isFocusMode, location.pathname, setFocusMode])
 
   useEffect(() => {
     if (shouldShowAIWorkspace) warmAIWorkspace()

@@ -12,7 +12,13 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   )
 }
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY)
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+})
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
@@ -25,4 +31,4 @@ export const signIn = (email: string, password: string) =>
 export const signInWithGoogle = (redirectTo: string) =>
   supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })
 
-export const signOut = () => supabase.auth.signOut()
+export const signOut = () => supabase.auth.signOut({ scope: 'local' })

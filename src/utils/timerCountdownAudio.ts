@@ -5,7 +5,7 @@ const COUNTDOWN_AUDIO_SRC: Record<CountdownAudioKind, string> = {
   break: '/audio/break-end-countdown-10s.m4a',
 }
 
-let players: Partial<Record<CountdownAudioKind, HTMLAudioElement>> = {}
+const players: Partial<Record<CountdownAudioKind, HTMLAudioElement>> = {}
 
 function getPlayer(kind: CountdownAudioKind) {
   if (typeof window === 'undefined') return null

@@ -1456,14 +1456,17 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) return
       
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      const tomorrowStart = new Date(todayStart)
+      tomorrowStart.setDate(tomorrowStart.getDate() + 1)
       
       const { data, error } = await supabase
         .from('focus_sessions')
         .select('*')
         .eq('user_id', session.user.id)
-        .gte('start_time', today.toISOString())
+        .gte('start_time', todayStart.toISOString())
+        .lt('start_time', tomorrowStart.toISOString())
         .order('start_time', { ascending: true })
         
       if (!error && data) {

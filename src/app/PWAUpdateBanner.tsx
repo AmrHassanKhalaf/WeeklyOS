@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { MonitorDown, X } from 'lucide-react'
 import { usePWA } from '../hooks/usePWA'
+import { useLayoutStore } from '../store/useLayoutStore'
+import { useWeekStore } from '../store/useWeekStore'
 
 const MOBILE_QUERY = '(max-width: 1023px)'
 
@@ -25,23 +27,21 @@ function useIsMobileViewport() {
 export function PWAUpdateBanner() {
   const { needsRefresh, updateApp } = usePWA()
   const isMobile = useIsMobileViewport()
+  const isFocusMode = useLayoutStore((state) => state.isFocusMode)
+  const isPomodoroRunning = useWeekStore((state) => state.isPomodoroRunning)
   const [dismissed, setDismissed] = useState(false)
+  const isFocusSessionActive = isFocusMode || isPomodoroRunning
 
   useEffect(() => {
     if (needsRefresh) setDismissed(false)
   }, [needsRefresh])
 
-  useEffect(() => {
-    // Desktop sessions should take the fresh service worker without interrupting the UI.
-    if (needsRefresh && !isMobile) updateApp()
-  }, [isMobile, needsRefresh, updateApp])
-
-  if (!needsRefresh || !isMobile || dismissed) return null
+  if (!needsRefresh || dismissed || isFocusSessionActive) return null
 
   return (
     <div
       className={
-        'fixed inset-x-3 bottom-[calc(5.75rem+var(--safe-bottom,0px))] z-[9998] animate-fade-up ' +
+        `fixed inset-x-3 ${isMobile ? 'bottom-[calc(5.75rem+var(--safe-bottom,0px))]' : 'bottom-5'} z-[9998] animate-fade-up ` +
         'mx-auto flex max-w-md items-center gap-2.5 rounded-2xl px-3 py-2.5 ' +
         'border border-white/15 bg-surface-container/95 text-sm text-on-surface ' +
         'shadow-[0_18px_50px_-22px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md'
