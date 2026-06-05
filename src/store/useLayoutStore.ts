@@ -72,7 +72,8 @@ export const useLayoutStore = create<LayoutState>()(
           if (state.sidebarMode === 'hidden') {
             return { sidebarMode: 'expanded', isLeftSidebarOpen: true }
           }
-          return { sidebarMode: 'hidden', isLeftSidebarOpen: false }
+          const next: SidebarMode = state.sidebarMode === 'expanded' ? 'rail' : 'expanded'
+          return { sidebarMode: next, isLeftSidebarOpen: true }
         }),
 
       cycleSidebarMode: () =>
@@ -168,17 +169,23 @@ export const useLayoutStore = create<LayoutState>()(
         const safePersisted = { ...persisted }
         delete safePersisted.isFocusMode
         delete safePersisted.isTaskPickerOpen
+        const sidebarMode =
+          !initialIsMobile && safePersisted.sidebarMode === 'hidden'
+            ? 'rail'
+            : safePersisted.sidebarMode ?? currentState.sidebarMode
         return {
           ...currentState,
           ...safePersisted,
+          sidebarMode,
+          isLeftSidebarOpen: sidebarMode !== 'hidden',
           isFocusMode: false,
           isTaskPickerOpen: false,
           isRightSidebarOpen: false,
         }
       },
       // Only persist user preferences, not transient UI state
-      partialize: (state) => ({ 
-        sidebarMode: state.sidebarMode,
+      partialize: (state) => ({
+        sidebarMode: state.sidebarMode === 'hidden' ? 'rail' : state.sidebarMode,
         focusLevel: state.focusLevel,
         autoEnterFocusOnStart: state.autoEnterFocusOnStart,
       }),

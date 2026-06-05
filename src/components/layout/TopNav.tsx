@@ -63,7 +63,7 @@ export function TopNav() {
     <motion.header
       initial={false}
       style={{ left: offsetLeft }}
-      className="fixed top-0 right-0 h-14 z-40 bg-background/95 flex items-center justify-between px-2 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
+      className="fixed top-0 right-0 h-14 z-[60] bg-background/95 flex items-center justify-between px-2 sm:px-6 border-b border-outline-variant/12 shadow-[0_1px_0_0_rgb(255_255_255_/_0.04)_inset]"
     >
       {/* Left: hamburger + page title */}
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">

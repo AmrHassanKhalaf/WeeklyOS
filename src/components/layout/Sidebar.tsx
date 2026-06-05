@@ -134,7 +134,7 @@ export function Sidebar() {
         }}
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
         className={cn(
-          'fixed left-0 top-0 h-screen z-50 flex flex-col border-r border-outline-variant/15',
+          'fixed left-0 top-0 h-dvh z-[60] flex flex-col border-r border-outline-variant/15',
           'bg-surface-container-lowest/97',
           'shadow-[0_20px_48px_-30px_rgba(0,0,0,0.5),inset_-1px_0_0_rgb(255_255_255_/_0.04)]',
           width,
@@ -312,7 +312,7 @@ export function Sidebar() {
           <button
             onClick={cycleSidebarMode}
             className={cn(
-              'absolute top-1/2 -translate-y-1/2 -right-3 z-50 w-6 h-6 rounded-full',
+              'absolute top-1/2 -translate-y-1/2 -right-3 z-[61] w-6 h-6 rounded-full',
               'bg-surface-container border border-outline-variant/40 text-on-surface-variant',
               'hover:text-on-surface hover:border-outline-variant transition-[border-color,color] flex items-center justify-center',
               'shadow-md',
@@ -340,7 +340,7 @@ export function Sidebar() {
       {!isMobile && !isFocusMode && sidebarMode === 'hidden' && (
         <button
           onClick={toggleLeftSidebar}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-6 h-8 rounded-r-xl border border-l-0 border-outline-variant/40 bg-surface-container/90 text-on-surface-variant hover:text-on-surface hover:bg-surface-container shadow-md transition-[background-color,color] flex items-center justify-center"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-[61] w-6 h-8 rounded-r-xl border border-l-0 border-outline-variant/40 bg-surface-container/90 text-on-surface-variant hover:text-on-surface hover:bg-surface-container shadow-md transition-[background-color,color] flex items-center justify-center"
           title="Show sidebar"
         >
           <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} />

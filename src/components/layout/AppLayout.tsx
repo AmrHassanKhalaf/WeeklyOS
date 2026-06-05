@@ -150,7 +150,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
         : 'lg:pl-64'
 
   return (
-    <div className="min-h-screen bg-background text-on-background font-body relative overflow-hidden">
+    <div className="h-dvh bg-background text-on-background font-body relative overflow-hidden">
       {/* Offline / syncing indicator */}
       <NetworkStatusBadge />
 
@@ -163,7 +163,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-50"
             onClick={closeSidebarsOnMobile}
           />
         )}
@@ -174,7 +174,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
 
       <main
         className={cn(
-          'h-screen w-full max-w-full box-border overflow-y-auto overflow-x-hidden custom-scrollbar',
+          'h-dvh w-full max-w-full box-border overflow-y-auto overflow-x-hidden custom-scrollbar',
           isDeepFocus
             ? 'pl-0 pr-0 pt-0'
             : cn(leftPad, 'pr-0 pt-14', isMobile && !isFocusMode && 'pb-bottom-nav'),

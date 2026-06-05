@@ -108,7 +108,7 @@ export function MobileBottomNav() {
       initial={{ y: 80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: 'spring', damping: 24, stiffness: 240 }}
-      className="fixed bottom-0 inset-x-0 z-40 lg:hidden"
+      className="fixed bottom-0 inset-x-0 z-[60] lg:hidden"
       aria-label="Primary"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
