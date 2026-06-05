@@ -43,6 +43,7 @@ interface LayoutState {
   setFocusMode: (isActive: boolean, level?: FocusModeLevel) => void
   setTaskPickerOpen: (isOpen: boolean) => void
   setAutoEnterFocus: (value: boolean) => void
+  resetTransientLayout: () => void
   setMobile: (isMobile: boolean) => void
   closeSidebarsOnMobile: () => void
 }
@@ -71,7 +72,8 @@ export const useLayoutStore = create<LayoutState>()(
           if (state.sidebarMode === 'hidden') {
             return { sidebarMode: 'expanded', isLeftSidebarOpen: true }
           }
-          return { sidebarMode: 'hidden', isLeftSidebarOpen: false }
+          const next: SidebarMode = state.sidebarMode === 'expanded' ? 'rail' : 'expanded'
+          return { sidebarMode: next, isLeftSidebarOpen: true }
         }),
 
       cycleSidebarMode: () =>
@@ -118,6 +120,18 @@ export const useLayoutStore = create<LayoutState>()(
 
       setAutoEnterFocus: (value) => set({ autoEnterFocusOnStart: value }),
 
+      resetTransientLayout: () =>
+        set((state) => ({
+          isFocusMode: false,
+          isRightSidebarOpen: false,
+          isTaskPickerOpen: false,
+          ...(state.isMobile
+            ? { sidebarMode: 'hidden' as SidebarMode, isLeftSidebarOpen: false }
+            : state.sidebarMode === 'hidden'
+              ? { sidebarMode: 'expanded' as SidebarMode, isLeftSidebarOpen: true }
+              : { isLeftSidebarOpen: true }),
+        })),
+
       setMobile: (isMobile) =>
         set((state) => {
           if (isMobile === state.isMobile) return state
@@ -150,11 +164,29 @@ export const useLayoutStore = create<LayoutState>()(
     }),
     {
       name: 'weeklyos:layout',
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<LayoutState>
+        const safePersisted = { ...persisted }
+        delete safePersisted.isFocusMode
+        delete safePersisted.isTaskPickerOpen
+        const sidebarMode =
+          !initialIsMobile && safePersisted.sidebarMode === 'hidden'
+            ? 'rail'
+            : safePersisted.sidebarMode ?? currentState.sidebarMode
+        return {
+          ...currentState,
+          ...safePersisted,
+          sidebarMode,
+          isLeftSidebarOpen: sidebarMode !== 'hidden',
+          isFocusMode: false,
+          isTaskPickerOpen: false,
+          isRightSidebarOpen: false,
+        }
+      },
       // Only persist user preferences, not transient UI state
-      partialize: (state) => ({ 
-        sidebarMode: state.sidebarMode,
+      partialize: (state) => ({
+        sidebarMode: state.sidebarMode === 'hidden' ? 'rail' : state.sidebarMode,
         focusLevel: state.focusLevel,
-        isFocusMode: state.isFocusMode,
         autoEnterFocusOnStart: state.autoEnterFocusOnStart,
       }),
     },
