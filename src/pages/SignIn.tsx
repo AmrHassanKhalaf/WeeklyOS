@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Sparkles, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { signIn, signInWithGoogle, signUp } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { WeeklyOSLogo } from '../components/brand/WeeklyOSLogo'
 
 type Mode = 'signin' | 'signup'
 
@@ -96,9 +97,7 @@ export function SignIn() {
 
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10 animate-fade-up relative z-10">
-        <div className="w-11 h-11 rounded-2xl obsidian-gradient flex items-center justify-center shadow-[0_12px_36px_-8px_rgb(124_58_237_/_0.6)]">
-          <Sparkles className="text-white text-xl" strokeWidth={1.5} />
-        </div>
+        <WeeklyOSLogo className="h-12 w-12 rounded-2xl" alt="WeeklyOS logo" />
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight gradient-text">WeeklyOS</h1>
           <p className="text-[10px] text-on-surface-variant uppercase tracking-[0.22em] mt-0.5">

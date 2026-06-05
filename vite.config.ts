@@ -1,17 +1,27 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'prompt',
-      // Let vite-plugin-pwa inject the registration script automatically.
-      injectRegister: 'auto',
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const publicSiteUrl = (env.VITE_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
 
-      workbox: {
+  return {
+    plugins: [
+      {
+        name: 'weeklyos-html-metadata',
+        transformIndexHtml(html) {
+          return html.replaceAll('__WEEKLYOS_SITE_URL__', publicSiteUrl)
+        },
+      },
+      react(),
+      VitePWA({
+        registerType: 'prompt',
+        // Let vite-plugin-pwa inject the registration script automatically.
+        injectRegister: 'auto',
+
+        workbox: {
         // Pre-cache the full app shell on install.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
 
@@ -62,10 +72,10 @@ export default defineConfig({
         ],
       },
 
-      manifest: {
-        name: 'WeeklyOS',
-        short_name: 'WeeklyOS',
-        description: 'Your personal weekly operating system — plan, focus, and reflect.',
+        manifest: {
+        name: 'Weekly OS',
+        short_name: 'Weekly OS',
+        description: 'Organize Your Week. Focus Better.',
         theme_color: '#0f0f11',      // matches --md-sys-color-background dark
         background_color: '#0f0f11',
         display: 'standalone',
@@ -91,18 +101,19 @@ export default defineConfig({
           },
         ],
       },
-    }),
-  ],
+      }),
+    ],
 
-  server: {
-    headers: {
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com wss://*.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:;",
+    server: {
+      headers: {
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com wss://*.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:;",
+      },
     },
-  },
 
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
+  }
 })

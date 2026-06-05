@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  Sparkles,
   Plus,
   LogOut,
   ChevronLeft,
@@ -21,6 +20,7 @@ import { StatusDot } from '../ui/StatusDot'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { cn } from '../../lib/cn'
 import { NAV_ITEMS } from './navItems'
+import { WeeklyOSLogo } from '../brand/WeeklyOSLogo'
 
 function NavItem({
   to,
@@ -149,9 +149,7 @@ export function Sidebar() {
               isRail ? 'justify-center' : 'gap-3 px-2',
             )}
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center obsidian-gradient shrink-0 shadow-[0_8px_24px_-6px_rgb(124_58_237_/_0.4)]">
-              <Sparkles className="w-4 h-4 text-white" strokeWidth={1.5} />
-            </div>
+            <WeeklyOSLogo className="h-9 w-9 rounded-lg" alt="WeeklyOS logo" />
             <AnimatePresence>
               {!isRail && (
                 <motion.div
