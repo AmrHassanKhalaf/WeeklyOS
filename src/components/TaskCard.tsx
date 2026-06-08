@@ -3,6 +3,7 @@ import type { BrainDumpItem } from '../store/useBrainDumpStore'
 import { Check, X, Plus, Edit3, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { getTagStyle } from '../lib/tagColors'
+import { BidiText } from './ui/BidiText'
 
 interface TaskCardProps {
   item: BrainDumpItem
@@ -98,7 +99,8 @@ export function TaskCard({ item }: TaskCardProps) {
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
               onKeyDown={handleEditKeyDown}
-              className="w-full bg-transparent border-b border-primary text-sm font-medium text-on-surface outline-none py-0.5"
+              dir="auto"
+              className="bidi-plaintext w-full bg-transparent border-b border-primary text-sm font-medium text-on-surface outline-none py-0.5"
             />
             <div className="flex flex-wrap gap-2 items-center">
               {editTags.map(tag => {
@@ -143,7 +145,7 @@ export function TaskCard({ item }: TaskCardProps) {
             </div>
           </div>
         ) : (
-          <p className="text-sm font-medium text-on-surface w-full">{item.content}</p>
+          <BidiText as="p" text={item.content} className="text-sm font-medium text-on-surface w-full" />
         )}
         {!isEditing && item.tags && item.tags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap mt-1">

@@ -4,6 +4,7 @@ import { DynamicIcon } from '../ui/DynamicIcon'
 import type { Habit } from '../../store/useHabitStore'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
 import { HabitBubbleGrid } from './HabitBubbleGrid'
+import { BidiText } from '../ui/BidiText'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -113,7 +114,7 @@ export function HabitDetailModal({ habit, totalDays, onClose }: HabitDetailModal
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-lg font-extrabold text-on-surface truncate">{habit.name}</h2>
+                        <BidiText as="h2" text={habit.name} className="text-lg font-extrabold text-on-surface truncate" />
                         <span
                           className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0"
                           style={{ color: accentColor, background: `${accentColor}18` }}
@@ -174,9 +175,11 @@ export function HabitDetailModal({ habit, totalDays, onClose }: HabitDetailModal
                 {/* Motivation */}
                 {habit.motivation && (
                   <div className="mt-3 px-3 py-2 rounded-xl bg-surface-container-low/40 border border-outline-variant/20">
-                    <p className="text-[12px] text-on-surface-variant italic leading-relaxed">
-                      "{habit.motivation}"
-                    </p>
+                    <BidiText
+                      as="p"
+                      text={`"${habit.motivation}"`}
+                      className="text-[12px] text-on-surface-variant italic leading-relaxed"
+                    />
                   </div>
                 )}
               </div>

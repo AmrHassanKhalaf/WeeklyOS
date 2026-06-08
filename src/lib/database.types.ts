@@ -432,7 +432,9 @@ export type Database = {
           eval_struggle: string | null
           eval_went_well: string | null
           id: string
+          overview_note: string | null
           score: number | null
+          title: string | null
           user_id: string
           week_number: number
           year: number
@@ -451,7 +453,9 @@ export type Database = {
           eval_struggle?: string | null
           eval_went_well?: string | null
           id?: string
+          overview_note?: string | null
           score?: number | null
+          title?: string | null
           user_id: string
           week_number: number
           year: number
@@ -470,7 +474,9 @@ export type Database = {
           eval_struggle?: string | null
           eval_went_well?: string | null
           id?: string
+          overview_note?: string | null
           score?: number | null
+          title?: string | null
           user_id?: string
           week_number?: number
           year?: number

@@ -3,6 +3,7 @@ import { useWeekStore } from '../store/useWeekStore'
 import { useState, useEffect } from 'react'
 import { CheckCircle2, CircleDashed, Trash2, Edit3 } from 'lucide-react'
 import { cn } from '../lib/cn'
+import { BidiLine, BidiText } from './ui/BidiText'
 
 interface DayCardProps {
   day: DayPlan
@@ -51,7 +52,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
           {day.highTask && (
             <div>
               <p className="text-[9px] uppercase tracking-widest text-primary font-black mb-1">Strategic</p>
-              <p className="text-xs text-on-surface-variant italic">{day.highTask.title}</p>
+              <BidiText as="p" text={day.highTask.title} className="text-xs text-on-surface-variant italic" />
             </div>
           )}
         </div>
@@ -155,9 +156,11 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
               Strategic
             </p>
             {day.highTask ? (
-              <p className={cn('text-sm leading-relaxed text-on-surface', isToday && 'font-semibold')}>
-                {day.highTask.title}
-              </p>
+              <BidiText
+                as="p"
+                text={day.highTask.title}
+                className={cn('text-sm leading-relaxed text-on-surface', isToday && 'font-semibold')}
+              />
             ) : (
               <p className="text-xs text-on-surface-variant italic">No strategic task</p>
             )}
@@ -172,16 +175,18 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             {day.mediumTasks.length > 0 ? (
               <ul className="text-xs space-y-2 text-on-surface/85">
                 {day.mediumTasks.map(t => (
-                  <li
+                  <BidiLine
                     key={t.id}
+                    as="li"
+                    text={t.title}
                     className={cn(
                       'flex items-center gap-2',
                       t.status === 'done' && 'line-through opacity-40',
                     )}
                   >
                     <div className="w-1 h-1 rounded-full bg-secondary/70 shrink-0" />
-                    {t.title}
-                  </li>
+                    <span className="min-w-0 flex-1">{t.title}</span>
+                  </BidiLine>
                 ))}
               </ul>
             ) : (
@@ -198,8 +203,10 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             {day.smallTasks.length > 0 ? (
               <ul className="text-xs space-y-2.5 text-on-surface">
                 {day.smallTasks.map(t => (
-                  <li
+                  <BidiLine
                     key={t.id}
+                    as="li"
+                    text={t.title}
                     className={cn('flex items-center gap-2 font-medium', t.status === 'pending' && 'opacity-60')}
                   >
                     <div
@@ -208,8 +215,8 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
                         t.status === 'done' ? 'bg-tertiary shadow-[0_0_6px_rgb(34_211_238_/_0.6)]' : 'bg-surface-variant',
                       )}
                     />
-                    {t.title}
-                  </li>
+                    <span className="min-w-0 flex-1">{t.title}</span>
+                  </BidiLine>
                 ))}
               </ul>
             ) : (
@@ -230,8 +237,9 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             value={note}
             onChange={e => setNote(e.target.value)}
             onBlur={handleNoteBlur}
+            dir="auto"
             placeholder="What did you learn today? Any blockers?"
-            className="input-base resize-none min-h-[80px] text-base sm:text-xs"
+            className="input-base bidi-plaintext resize-none min-h-[80px] text-base sm:text-xs"
           />
         </div>
       </div>

@@ -204,8 +204,9 @@ export function WeeklyEvaluation() {
               value={evalState.wentWell}
               onChange={e => handleChange('wentWell', e.target.value)}
               onBlur={() => handleSave('wentWell')}
+              dir="auto"
               placeholder="Reflect on your wins and successes this week..."
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-tertiary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="bidi-plaintext w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-tertiary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
 
@@ -232,8 +233,9 @@ export function WeeklyEvaluation() {
               value={evalState.struggle}
               onChange={e => handleChange('struggle', e.target.value)}
               onBlur={() => handleSave('struggle')}
+              dir="auto"
               placeholder="Note any roadblocks, distractions, or missed targets..."
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-error p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="bidi-plaintext w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-error p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
 
@@ -260,8 +262,9 @@ export function WeeklyEvaluation() {
               value={evalState.lessons}
               onChange={e => handleChange('lessons', e.target.value)}
               onBlur={() => handleSave('lessons')}
+              dir="auto"
               placeholder="What changes will you make to your workflow next week?"
-              className="w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-primary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+              className="bidi-plaintext w-full h-32 bg-surface-container-lowest border border-white/5 border-l-[3px] border-l-primary p-4 sm:p-5 rounded-xl text-base sm:text-sm text-on-surface focus:outline-none focus:bg-white/[0.02] focus:border-white/10 transition-[background-color,border-color,color] resize-none placeholder:text-neutral-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             />
           </section>
         </div>

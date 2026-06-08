@@ -1,6 +1,7 @@
 import { CheckCircle2, ShieldCheck, X } from 'lucide-react'
 import type { PendingToolConfirmation } from '../../ai/orchestrator/types'
 import { cn } from '../../lib/cn'
+import { BidiText } from '../ui/BidiText'
 
 interface AIConfirmationPanelProps {
   confirmations: PendingToolConfirmation[]
@@ -58,9 +59,11 @@ export function AIConfirmationPanel({
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-100" strokeWidth={1.8} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-black text-amber-50">{confirmation.toolName}</p>
-                <p className="mt-0.5 truncate text-[11px] font-semibold text-amber-100/[0.72]">
-                  {summarizeConfirmation(confirmation)}
-                </p>
+                <BidiText
+                  as="p"
+                  text={summarizeConfirmation(confirmation)}
+                  className="mt-0.5 truncate text-[11px] font-semibold text-amber-100/[0.72]"
+                />
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <button

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { OrchestratorUIBlock, OrchestratorUIBlockKind } from '../../../ai/orchestrator/types'
 import { cn } from '../../../lib/cn'
+import { BidiLine, BidiText } from '../../ui/BidiText'
 
 // ─── Block Configuration ──────────────────────────────────────────────────────
 
@@ -73,9 +74,9 @@ function ContentLine({ raw }: { raw: string }) {
 
   if (parsed.type === 'indent') {
     return (
-      <p className="ml-4 text-[11px] leading-relaxed text-on-surface-variant/70 italic">
+      <BidiLine as="p" text={parsed.text} className="ml-4 text-[11px] leading-relaxed text-on-surface-variant/70 italic">
         {parsed.text}
-      </p>
+      </BidiLine>
     )
   }
 
@@ -86,7 +87,7 @@ function ContentLine({ raw }: { raw: string }) {
       const tags = [...parsed.text.matchAll(/\[([^\]]+)\]/g)].map((m) => m[1])
       const cleanText = parsed.text.replace(/\s*\[[^\]]+\]/g, '').trim()
       return (
-        <div className="flex items-start gap-2 text-xs">
+        <BidiLine text={cleanText} className="flex items-start gap-2 text-xs">
           <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-50" />
           <div className="flex-1 min-w-0">
             <span className="text-on-surface/85">{cleanText}</span>
@@ -101,14 +102,14 @@ function ContentLine({ raw }: { raw: string }) {
               ))}
             </span>
           </div>
-        </div>
+        </BidiLine>
       )
     }
     return (
-      <div className="flex items-start gap-2 text-xs">
+      <BidiLine text={parsed.text} className="flex items-start gap-2 text-xs">
         <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-50" />
-        <p className="text-on-surface/85 leading-relaxed">{parsed.text}</p>
-      </div>
+        <p className="min-w-0 flex-1 text-on-surface/85 leading-relaxed">{parsed.text}</p>
+      </BidiLine>
     )
   }
 
@@ -117,14 +118,14 @@ function ContentLine({ raw }: { raw: string }) {
     const label = parsed.text.slice(0, colonIdx).trim()
     const value = parsed.text.slice(colonIdx + 1).trim()
     return (
-      <div className="flex items-baseline gap-1.5 text-xs">
+      <BidiLine text={parsed.text} className="flex items-baseline gap-1.5 text-xs">
         <span className="font-semibold text-on-surface-variant">{label}:</span>
-        <span className="text-on-surface/85">{value}</span>
-      </div>
+        <span className="min-w-0 flex-1 text-on-surface/85">{value}</span>
+      </BidiLine>
     )
   }
 
-  return <p className="text-xs leading-relaxed text-on-surface/80">{parsed.text}</p>
+  return <BidiLine as="p" text={parsed.text} className="text-xs leading-relaxed text-on-surface/80" />
 }
 
 // ─── Block Component ──────────────────────────────────────────────────────────
@@ -154,9 +155,11 @@ export function PlanningUIBlock({ block, className }: PlanningUIBlockProps) {
         <div className={cn('flex h-6 w-6 shrink-0 items-center justify-center', iconColor)}>
           <Icon className="h-3.5 w-3.5" strokeWidth={1.8} />
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
-          {block.title}
-        </p>
+        <BidiText
+          as="p"
+          text={block.title}
+          className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant"
+        />
       </div>
 
       {/* Content */}

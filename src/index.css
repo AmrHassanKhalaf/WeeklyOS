@@ -714,6 +714,24 @@ body.light .ripple-dot { mix-blend-mode: normal; opacity: 0.22; }
     box-shadow: 0 0 0 4px rgb(var(--color-error) / 0.16);
   }
 
+  .bidi-plaintext {
+    unicode-bidi: plaintext;
+    text-align: start;
+  }
+
+  .bidi-line {
+    unicode-bidi: plaintext;
+    text-align: start;
+  }
+
+  .bidi-line[dir='ltr'] {
+    text-align: left;
+  }
+
+  .bidi-line[dir='rtl'] {
+    text-align: right;
+  }
+
   /* ─────────────────────────────────────────────────────────── */
   /*  BUTTONS — the heart of the interaction system              */
   /*                                                             */

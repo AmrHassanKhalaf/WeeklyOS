@@ -33,6 +33,7 @@ import type { AIActionId, WorkspaceContextLayer, WorkspaceMode } from '../../ai/
 import { cn } from '../../lib/cn'
 import { useLayoutStore } from '../../store/useLayoutStore'
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
+import { BidiLines, BidiText } from '../ui/BidiText'
 import { AIConfirmationPanel } from './AIConfirmationPanel'
 import { ChatThread } from './ChatThread'
 
@@ -646,8 +647,9 @@ function PlanMode({
         <textarea
           value={brainDump}
           onChange={(event) => onBrainDumpChange(event.target.value)}
+          dir="auto"
           placeholder="Drop thoughts, commitments, deadlines, ideas, worries, or raw meeting notes..."
-          className="ai-workspace-scrollbar custom-scrollbar relative mt-4 min-h-36 w-full resize-y rounded-2xl border border-primary/[0.16] bg-black/[0.22] px-4 py-3 text-sm leading-relaxed text-on-surface outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] transition-colors placeholder:text-on-surface-variant/[0.45] focus:border-primary/[0.45] focus:bg-primary/5"
+          className="bidi-plaintext ai-workspace-scrollbar custom-scrollbar relative mt-4 min-h-36 w-full resize-y rounded-2xl border border-primary/[0.16] bg-black/[0.22] px-4 py-3 text-sm leading-relaxed text-on-surface outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] transition-colors placeholder:text-on-surface-variant/[0.45] focus:border-primary/[0.45] focus:bg-primary/5"
         />
         <ActionPanel
           compact
@@ -692,9 +694,17 @@ function ReflectMode({
         {reflections.map((item) => (
           <div key={item.label} className={cn(glassPanelClass, 'p-4')}>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">{item.label}</p>
-            <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-on-surface/[0.86]">
-              {item.text || 'No reflection logged yet.'}
-            </p>
+            {item.text ? (
+              <BidiLines
+                text={item.text}
+                className="mt-3 line-clamp-4 space-y-1 text-sm leading-relaxed text-on-surface/[0.86]"
+                lineClassName="text-sm leading-relaxed text-on-surface/[0.86]"
+              />
+            ) : (
+              <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-on-surface/[0.86]">
+                No reflection logged yet.
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -869,9 +879,11 @@ function ConversationDock({
 
       {/* Live interim transcript preview (primary path only) */}
       {isRecording && !isVoiceProcessing && interimTranscript && (
-        <div className="mb-2 rounded-2xl border border-violet-300/10 bg-violet-500/[0.06] px-3 py-2 text-xs leading-relaxed text-violet-200/60 italic">
-          {interimTranscript}
-        </div>
+        <BidiText
+          as="div"
+          text={interimTranscript}
+          className="mb-2 rounded-2xl border border-violet-300/10 bg-violet-500/[0.06] px-3 py-2 text-xs leading-relaxed text-violet-200/60 italic"
+        />
       )}
 
       <div className="flex items-end gap-2">
@@ -907,8 +919,9 @@ function ConversationDock({
             }
           }}
           rows={1}
+          dir="auto"
           placeholder="Stage a workflow prompt or ask the workspace directly..."
-          className="ai-workspace-scrollbar custom-scrollbar min-h-11 max-h-28 flex-1 resize-none rounded-2xl border border-primary/[0.18] bg-black/20 px-4 py-3 text-sm text-on-surface outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors placeholder:text-on-surface-variant/[0.55] focus:border-primary/[0.45] focus:bg-primary/5"
+          className="bidi-plaintext ai-workspace-scrollbar custom-scrollbar min-h-11 max-h-28 flex-1 resize-none rounded-2xl border border-primary/[0.18] bg-black/20 px-4 py-3 text-sm text-on-surface outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors placeholder:text-on-surface-variant/[0.55] focus:border-primary/[0.45] focus:bg-primary/5"
         />
         <button
           type="button"

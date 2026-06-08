@@ -3,6 +3,7 @@ import { UIBlockList } from './blocks/BrainDumpUIBlock'
 import { PlanningUIBlock } from './blocks/PlanningUIBlock'
 import type { SessionMessage } from '../../ai/hooks'
 import { cn } from '../../lib/cn'
+import { BidiLine } from '../ui/BidiText'
 
 interface ChatThreadProps {
   messages: SessionMessage[]
@@ -11,19 +12,20 @@ interface ChatThreadProps {
 
 function FormattedMessage({ text }: { text: string }) {
   return (
-    <div className="space-y-2 text-sm leading-relaxed text-on-surface/90" dir="auto">
+    <div className="space-y-2 text-sm leading-relaxed text-on-surface/90">
       {text.split('\n').map((line, index) => {
         const trimmed = line.trim()
         if (!trimmed) return <div key={index} className="h-1" />
         if (/^[-*]\s+/.test(trimmed)) {
+          const content = trimmed.replace(/^[-*]\s+/, '')
           return (
-            <div key={index} className="flex gap-2">
+            <BidiLine key={index} text={content} className="flex gap-2">
               <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/80" />
-              <p>{trimmed.replace(/^[-*]\s+/, '')}</p>
-            </div>
+              <p className="min-w-0 flex-1">{content}</p>
+            </BidiLine>
           )
         }
-        return <p key={index}>{trimmed}</p>
+        return <BidiLine key={index} as="p" text={trimmed}>{trimmed}</BidiLine>
       })}
     </div>
   )

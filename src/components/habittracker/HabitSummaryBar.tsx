@@ -2,6 +2,7 @@ import { DynamicIcon } from '../ui/DynamicIcon';
 import { motion } from 'framer-motion'
 import { LineChart } from 'lucide-react'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
+import { BidiText } from '../ui/BidiText'
 
 interface HabitSummaryBarProps {
   totalDays: number
@@ -26,7 +27,7 @@ function StatCard({ icon, label, value, sub, color, bg, delay = 0 }: {
         <DynamicIcon name={icon} className="w-[15px] h-[15px]" color={color} strokeWidth={1.5} />
         <p className="text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold truncate">{label}</p>
       </div>
-      <p className="text-lg font-black truncate" style={{ color }}>{value}</p>
+      <BidiText as="p" text={value} className="text-lg font-black truncate" style={{ color }} />
       {sub && <p className="text-[11px] text-on-surface-variant font-medium">{sub}</p>}
     </motion.div>
   )
