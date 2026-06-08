@@ -325,7 +325,7 @@ function normalizeOptionalText(value: unknown): string | undefined {
 }
 
 function getDefaultWeekTitle(weekNumber: number): string {
-  return `Week ${weekNumber}`
+  return `Week ${weekNumber} Focus Sprint`
 }
 
 function buildChallengeDays(dbWeek: Record<string, unknown>, dayPlans: DayPlan[]): ChallengeDay[] {

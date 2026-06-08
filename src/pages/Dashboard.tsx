@@ -50,14 +50,14 @@ function buildAutoWeekOverview(source: WeekOverviewSource): string {
   const hasTaskTotals = typeof source.totalCompleted === 'number' && typeof source.totalPlanned === 'number'
 
   if (!hasTaskTotals) {
-    return `${prefix}Status: Ready. Week score ${source.score}/100.`
+    return `${prefix}Status: Ready. Set your direction, protect your focus, and let this week compound.`
   }
 
   const totalCompleted = source.totalCompleted ?? 0
   const totalPlanned = source.totalPlanned ?? 0
 
   if (totalPlanned === 0) {
-    return `${prefix}Status: Ready to plan. No planned tasks yet.`
+    return `${prefix}Status: Ready to plan. Choose the few outcomes that matter, then give them your cleanest energy.`
   }
 
   const completionRate = Math.round((totalCompleted / totalPlanned) * 100)
@@ -67,7 +67,13 @@ function buildAutoWeekOverview(source: WeekOverviewSource): string {
       ? 'In progress'
       : 'Not started'
 
-  return `${prefix}Status: ${status}. ${totalCompleted}/${totalPlanned} planned tasks completed (${completionRate}%).`
+  const motivation = status === 'Complete'
+    ? 'Strong finish. Capture the lesson while the momentum is fresh.'
+    : status === 'In progress'
+      ? 'Keep the pace steady; one focused block can change the shape of the week.'
+      : 'Start small and make the first win obvious.'
+
+  return `${prefix}Status: ${status}. ${totalCompleted}/${totalPlanned} planned tasks completed (${completionRate}%). ${motivation}`
 }
 
 export function Dashboard() {
