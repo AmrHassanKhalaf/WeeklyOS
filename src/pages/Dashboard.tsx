@@ -10,6 +10,9 @@ import {
   Trash2, 
   Trophy, 
   Pencil, 
+  Save,
+  Copy,
+  RotateCcw,
   Brain, 
   Sparkles, 
   Zap, 
@@ -19,12 +22,14 @@ import {
 import { useSettingsStore } from '../store/useSettingsStore'
 import BorderGlow from '../components/effects/BorderGlow'
 import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
+import { Input, Textarea } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
 import { Section } from '../components/ui/Section'
 import { Skeleton } from '../components/ui/Skeleton'
+import { BidiLines, BidiText } from '../components/ui/BidiText'
 import { WeeklyChallengeCircles } from '../components/WeeklyChallengeCircles'
 import { cn } from '../lib/cn'
+import { hasArabicText } from '../utils/textDirection'
 
 const loadRotatingText = () => import('../components/effects/RotatingText')
 const RotatingText = lazy(loadRotatingText)
@@ -33,12 +38,45 @@ function LoadingCard() {
   return <Skeleton className="h-32 border border-outline-variant/10" />
 }
 
+type WeekOverviewSource = {
+  dateRange: string
+  score: number
+  totalCompleted?: number
+  totalPlanned?: number
+}
+
+function buildAutoWeekOverview(source: WeekOverviewSource): string {
+  const prefix = source.dateRange ? `${source.dateRange}. ` : ''
+  const hasTaskTotals = typeof source.totalCompleted === 'number' && typeof source.totalPlanned === 'number'
+
+  if (!hasTaskTotals) {
+    return `${prefix}Status: Ready. Week score ${source.score}/100.`
+  }
+
+  const totalCompleted = source.totalCompleted ?? 0
+  const totalPlanned = source.totalPlanned ?? 0
+
+  if (totalPlanned === 0) {
+    return `${prefix}Status: Ready to plan. No planned tasks yet.`
+  }
+
+  const completionRate = Math.round((totalCompleted / totalPlanned) * 100)
+  const status = totalCompleted === totalPlanned
+    ? 'Complete'
+    : totalCompleted > 0
+      ? 'In progress'
+      : 'Not started'
+
+  return `${prefix}Status: ${status}. ${totalCompleted}/${totalPlanned} planned tasks completed (${completionRate}%).`
+}
+
 export function Dashboard() {
   const currentWeek = useWeekStore((state) => state.currentWeek)
   const weekSummary = useWeekStore((state) => state.weekSummary)
   const isLoadingTasks = useWeekStore((state) => state.isLoadingTasks)
   const isLoadingWeek = useWeekStore((state) => state.isLoadingWeek)
   const deleteWeekData = useWeekStore((state) => state.deleteWeekData)
+  const updateWeekOverview = useWeekStore((state) => state.updateWeekOverview)
   const restDays = useSettingsStore((state) => state.restDays)
   const { sendMessage } = useAiApi()
   const [insight, setInsight] = useState<string>('')
@@ -47,14 +85,36 @@ export function Dashboard() {
   const [isEditingChallenge, setIsEditingChallenge] = useState(false)
   const [manualChallenge, setManualChallenge] = useState('')
   const [aiError, setAiError] = useState<string | null>(null)
+  const [weekOverviewError, setWeekOverviewError] = useState<string | null>(null)
+  const [isEditingWeekOverview, setIsEditingWeekOverview] = useState(false)
+  const [isWeekOverviewSaving, setIsWeekOverviewSaving] = useState(false)
+  const [weekTitleDraft, setWeekTitleDraft] = useState('')
+  const [weekOverviewDraft, setWeekOverviewDraft] = useState('')
   const [isMotionReady, setIsMotionReady] = useState(false)
   const summary = weekSummary ?? currentWeek
   const hasSummary = !!summary
   const tasksReady = !!currentWeek && !isLoadingTasks
   const challengeTitle = currentWeek?.challengeTitle ?? summary?.challengeTitle
+  const challengeHasArabic = hasArabicText(challengeTitle ?? '')
+  const autoWeekOverview = hasSummary
+    ? buildAutoWeekOverview({
+      dateRange: summary.dateRange,
+      score: summary.score,
+      totalCompleted: currentWeek?.totalCompleted,
+      totalPlanned: currentWeek?.totalPlanned,
+    })
+    : ''
+  const displayedWeekOverview = summary?.overviewNote || autoWeekOverview
 
   useEffect(() => {
-    if (!challengeTitle) return
+    if (isEditingWeekOverview) return
+    setWeekTitleDraft(summary?.title ?? '')
+    setWeekOverviewDraft(summary?.overviewNote ?? '')
+    setWeekOverviewError(null)
+  }, [isEditingWeekOverview, summary?.id, summary?.overviewNote, summary?.title])
+
+  useEffect(() => {
+    if (!challengeTitle || challengeHasArabic) return
 
     let idleId: number | null = null
     let timeoutId: number | null = null
@@ -78,7 +138,32 @@ export function Dashboard() {
         window.clearTimeout(idleId)
       }
     }
-  }, [challengeTitle])
+  }, [challengeHasArabic, challengeTitle])
+
+  const openWeekOverviewEditor = () => {
+    if (!summary) return
+    setWeekTitleDraft(summary.title)
+    setWeekOverviewDraft(summary.overviewNote ?? '')
+    setWeekOverviewError(null)
+    setIsEditingWeekOverview(true)
+  }
+
+  const saveWeekOverview = async (nextOverview = weekOverviewDraft) => {
+    if (!summary || isWeekOverviewSaving) return
+    setIsWeekOverviewSaving(true)
+    setWeekOverviewError(null)
+    try {
+      await updateWeekOverview({
+        title: weekTitleDraft,
+        overviewNote: nextOverview,
+      })
+      setIsEditingWeekOverview(false)
+    } catch (err) {
+      setWeekOverviewError(err instanceof Error ? err.message : 'Failed to save week overview')
+    } finally {
+      setIsWeekOverviewSaving(false)
+    }
+  }
 
   const generateChallenge = async () => {
     if (!currentWeek || isGeneratingChallenge) return
@@ -172,10 +257,92 @@ export function Dashboard() {
                   <span className="inline-block w-6 h-px bg-primary/60" />
                   Week {summary.weekNumber}
                 </p>
-                <h2 className="text-responsive-h1 font-bold tracking-tight mb-3 gradient-text">{summary.title}</h2>
-                <p className="text-on-surface-variant/90 text-sm max-w-lg leading-relaxed">
-                  {summary.dateRange}. Status: Optimal. Strategic objectives are pacing 12% ahead of quarterly projections.
-                </p>
+                {isEditingWeekOverview ? (
+                  <div className="max-w-2xl space-y-3">
+                    <Input
+                      type="text"
+                      value={weekTitleDraft}
+                      onChange={e => setWeekTitleDraft(e.target.value)}
+                      dir="auto"
+                      placeholder={`Week ${summary.weekNumber}`}
+                      className="bidi-plaintext text-2xl sm:text-3xl font-bold tracking-tight"
+                    />
+                    <Textarea
+                      value={weekOverviewDraft}
+                      onChange={e => setWeekOverviewDraft(e.target.value)}
+                      rows={3}
+                      placeholder={autoWeekOverview}
+                      className="text-sm leading-relaxed resize-none"
+                    />
+                    {weekOverviewError && (
+                      <p className="text-sm text-error">{weekOverviewError}</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => void saveWeekOverview()}
+                        loading={isWeekOverviewSaving}
+                        size="sm"
+                        variant="secondary"
+                        leftIcon={<Save className="w-4 h-4" strokeWidth={1.6} />}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => void saveWeekOverview('')}
+                        disabled={isWeekOverviewSaving}
+                        size="sm"
+                        variant="ghost"
+                        leftIcon={<RotateCcw className="w-4 h-4" strokeWidth={1.6} />}
+                      >
+                        Use Auto Summary
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => setWeekOverviewDraft(autoWeekOverview)}
+                        disabled={isWeekOverviewSaving}
+                        size="sm"
+                        variant="ghost"
+                        leftIcon={<Copy className="w-4 h-4" strokeWidth={1.6} />}
+                      >
+                        Copy Auto Summary
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingWeekOverview(false)
+                          setWeekOverviewError(null)
+                        }}
+                        disabled={isWeekOverviewSaving}
+                        size="sm"
+                        variant="ghost"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="max-w-2xl">
+                    <div className="flex items-start gap-3">
+                      <BidiText as="h2" text={summary.title} className="text-responsive-h1 font-bold tracking-tight mb-3 gradient-text min-w-0 flex-1" />
+                      <button
+                        type="button"
+                        onClick={openWeekOverviewEditor}
+                        className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-primary hover:text-white hover:bg-white/10 transition-colors focus-ring"
+                        title="Edit week overview"
+                        aria-label="Edit week overview"
+                      >
+                        <Pencil className="w-4 h-4" strokeWidth={1.8} />
+                      </button>
+                    </div>
+                    <BidiLines
+                      text={displayedWeekOverview}
+                      className="text-on-surface-variant/90 text-sm leading-relaxed"
+                      lineClassName="max-w-lg"
+                    />
+                  </div>
+                )}
               </>
             ) : (
               <div className="space-y-3">
@@ -267,8 +434,16 @@ export function Dashboard() {
                       <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
                     </button>
                   </div>
-                  {isMotionReady ? (
-                    <Suspense fallback={<h3 className="text-2xl sm:text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>}>
+                  {isMotionReady && !challengeHasArabic ? (
+                    <Suspense
+                      fallback={(
+                        <BidiText
+                          as="h3"
+                          text={challengeTitle}
+                          className="text-2xl sm:text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
+                        />
+                      )}
+                    >
                       <RotatingText
                         texts={[challengeTitle]}
                         auto={false}
@@ -285,7 +460,11 @@ export function Dashboard() {
                       />
                     </Suspense>
                   ) : (
-                    <h3 className="text-2xl sm:text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]">{challengeTitle}</h3>
+                    <BidiText
+                      as="h3"
+                      text={challengeTitle}
+                      className="text-2xl sm:text-[2rem] font-black tracking-tight text-white [text-shadow:0_0_14px_rgba(159,179,255,0.45)]"
+                    />
                   )}
                 </div>
               </div>
@@ -312,8 +491,9 @@ export function Dashboard() {
                   type="text"
                   value={manualChallenge}
                   onChange={e => setManualChallenge(e.target.value)}
+                  dir="auto"
                   placeholder="E.g., Clear the backlog or Focus on Priority Project X..."
-                  className="text-sm"
+                  className="bidi-plaintext text-sm"
                   onKeyDown={e => {
                     if (e.key === 'Enter' && manualChallenge.trim()) {
                       useWeekStore.getState().updateChallenge(manualChallenge.trim(), '')

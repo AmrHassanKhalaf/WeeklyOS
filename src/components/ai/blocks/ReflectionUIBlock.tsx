@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import type { OrchestratorUIBlock, OrchestratorUIBlockKind } from '../../../ai/orchestrator/types'
 import { cn } from '../../../lib/cn'
+import { BidiLine, BidiText } from '../../ui/BidiText'
 
 // ─── Block Icon Map ───────────────────────────────────────────────────────────
 
@@ -54,10 +55,10 @@ function ContentLine({ text }: { text: string }) {
   // Bullet lines
   if (trimmed.startsWith('•')) {
     return (
-      <div className="flex items-start gap-2 text-xs text-on-surface/80">
+      <BidiLine text={trimmed.slice(1).trim()} className="flex items-start gap-2 text-xs text-on-surface/80">
         <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60" />
-        <span className="leading-relaxed">{trimmed.slice(1).trim()}</span>
-      </div>
+        <span className="min-w-0 flex-1 leading-relaxed">{trimmed.slice(1).trim()}</span>
+      </BidiLine>
     )
   }
 
@@ -67,14 +68,14 @@ function ContentLine({ text }: { text: string }) {
     const label = trimmed.slice(0, colonIdx)
     const value = trimmed.slice(colonIdx + 1).trim()
     return (
-      <div className="flex items-baseline gap-1.5 text-xs">
+      <BidiLine text={trimmed} className="flex items-baseline gap-1.5 text-xs">
         <span className="font-semibold text-on-surface-variant">{label}:</span>
-        <span className="text-on-surface/80">{value}</span>
-      </div>
+        <span className="min-w-0 flex-1 text-on-surface/80">{value}</span>
+      </BidiLine>
     )
   }
 
-  return <p className="text-xs leading-relaxed text-on-surface/80">{trimmed}</p>
+  return <BidiLine as="p" text={trimmed} className="text-xs leading-relaxed text-on-surface/80" />
 }
 
 // ─── Block Component ──────────────────────────────────────────────────────────
@@ -111,9 +112,11 @@ export function ReflectionUIBlock({ block, className }: ReflectionUIBlockProps) 
         <div className={cn('flex h-6 w-6 shrink-0 items-center justify-center', iconColor)}>
           <Icon className="h-3.5 w-3.5" strokeWidth={1.8} />
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
-          {block.title}
-        </p>
+        <BidiText
+          as="p"
+          text={block.title}
+          className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant"
+        />
       </div>
 
       {/* Content lines */}

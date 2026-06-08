@@ -305,12 +305,13 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                     type="text"
                     value={form.name}
                     onChange={e => set('name', e.target.value)}
+                    dir="auto"
                     placeholder={
                       isBreakHabit
                         ? 'e.g., Smoking, Doom scrolling, Late-night snacks…'
                         : 'e.g., Read 20 pages, Meditate 10 min…'
                     }
-                    className="input-base focus-ring"
+                    className="input-base bidi-plaintext focus-ring"
                     autoFocus
                   />
                 </motion.div>
@@ -356,12 +357,13 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                   <textarea
                     value={form.motivation}
                     onChange={e => set('motivation', e.target.value)}
+                    dir="auto"
                     placeholder={
                       isBreakHabit
                         ? 'Your reason to quit — keeps you accountable…'
                         : 'Your deeper reason — helps you stay committed…'
                     }
-                    className="input-base focus-ring resize-none"
+                    className="input-base bidi-plaintext focus-ring resize-none"
                     rows={2}
                   />
                 </motion.div>

@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input, Select, Textarea } from '../components/ui/Input'
 import { Section } from '../components/ui/Section'
+import { BidiText } from '../components/ui/BidiText'
 import { useWeekStore } from '../store/useWeekStore'
 import { usePinnedTaskStore } from '../store/usePinnedTaskStore'
 import type { DayOfWeek, Priority, WeekData } from '../store/useWeekStore'
@@ -444,7 +445,7 @@ export function Settings() {
               </div>
               <div className="space-y-3">
                 <p className="text-xs text-neutral-500">Pinned tasks repeat every week on your selected day/time until disabled or deleted.</p>
-                <Input type="text" placeholder="Task title" value={pinnedDraft.title} onChange={e=>setPinnedDraft(p=>({...p,title:e.target.value}))} className="text-sm" />
+                <Input type="text" placeholder="Task title" value={pinnedDraft.title} onChange={e=>setPinnedDraft(p=>({...p,title:e.target.value}))} dir="auto" className="bidi-plaintext text-sm" />
                 <Textarea rows={2} placeholder="Description (optional)" value={pinnedDraft.description} onChange={e=>setPinnedDraft(p=>({...p,description:e.target.value}))} className="text-sm resize-none" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Select value={pinnedDraft.priority} onChange={e=>setPinnedDraft(p=>({...p,priority:e.target.value as Priority}))} className="text-sm">
@@ -458,7 +459,7 @@ export function Settings() {
                   <Input type="time" value={pinnedDraft.startTime} onChange={e=>setPinnedDraft(p=>({...p,startTime:e.target.value}))} className="text-sm" />
                   <Input type="time" value={pinnedDraft.endTime} onChange={e=>setPinnedDraft(p=>({...p,endTime:e.target.value}))} className="text-sm" />
                 </div>
-                <Input type="text" placeholder="Tags (comma separated)" value={pinnedDraft.tags} onChange={e=>setPinnedDraft(p=>({...p,tags:e.target.value}))} className="text-sm" />
+                <Input type="text" placeholder="Tags (comma separated)" value={pinnedDraft.tags} onChange={e=>setPinnedDraft(p=>({...p,tags:e.target.value}))} dir="auto" className="bidi-plaintext text-sm" />
                 <Input type="date" value={pinnedDraft.untilDate} onChange={e=>setPinnedDraft(p=>({...p,untilDate:e.target.value}))} className="text-sm" />
                 <p className="text-[11px] text-neutral-500">Leave date empty to repeat indefinitely.</p>
                 <Button type="button" onClick={handleCreatePinnedTask} size="sm" variant="secondary" className="text-[11px] font-bold uppercase tracking-widest touch-target mt-2">Create Pinned Task</Button>
@@ -468,7 +469,7 @@ export function Settings() {
                     <div key={item.id} className="bg-surface-container-lowest border border-white/5 rounded-lg px-3 py-2.5">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold leading-tight">{item.title}</p>
+                          <BidiText as="p" text={item.title} className="text-sm font-semibold leading-tight" />
                           <p className="text-[12px] text-neutral-500 mt-0.5">{item.dayOfWeek} • {item.startTime||'--:--'} – {item.endTime||'--:--'}</p>
                         </div>
                         <div className="flex items-center gap-2">

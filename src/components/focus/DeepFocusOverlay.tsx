@@ -16,6 +16,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Play, Pause, RotateCcw, X, CloudRain } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useLayoutStore } from '../../store/useLayoutStore'
+import { BidiText } from '../ui/BidiText'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface DeepFocusOverlayProps {
@@ -560,10 +561,12 @@ export function DeepFocusOverlay({
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="mt-10 text-center px-8 max-w-lg"
             >
-              <h2 className={`text-xl md:text-2xl font-bold tracking-tight leading-snug ${activeTaskTitle ? 'text-white' : 'text-neutral-500'
-                }`}>
-                {displayTask}
-              </h2>
+              <BidiText
+                as="h2"
+                text={displayTask}
+                className={`text-xl md:text-2xl font-bold tracking-tight leading-snug ${activeTaskTitle ? 'text-white' : 'text-neutral-500'
+                  }`}
+              />
               {/* Contextual session awareness message */}
               <AnimatePresence>
                 {sessionMsg && !showEntry && (

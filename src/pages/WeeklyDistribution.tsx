@@ -11,6 +11,7 @@ import BorderGlow from '../components/effects/BorderGlow'
 import { Button } from '../components/ui/Button'
 import { Calendar, Brain, Tag, Sparkles, Loader2, X } from 'lucide-react'
 import { cn } from '../lib/cn'
+import { BidiText } from '../components/ui/BidiText'
 
 function extractJsonFromText(raw: string): unknown {
   const trimmed = raw.trim()
@@ -398,10 +399,10 @@ Make sure:
                         onChange={(e) => setAssignDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, selected: e.target.checked } : d))}
                         className="w-5 h-5 sm:w-4 sm:h-4 shrink-0 rounded touch-target sm:min-h-0 sm:min-w-0"
                       />
-                      <p className="text-base sm:text-sm font-medium text-on-surface sm:hidden truncate">{draft.title}</p>
+                      <BidiText as="p" text={draft.title} className="text-base sm:text-sm font-medium text-on-surface sm:hidden truncate" />
                     </div>
                     <div className="sm:col-span-5 min-w-0 hidden sm:block">
-                      <p className="text-sm font-medium text-on-surface truncate">{draft.title}</p>
+                      <BidiText as="p" text={draft.title} className="text-sm font-medium text-on-surface truncate" />
                       <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                         {draft.tags.length === 0 ? (
                           <span className="text-[10px] text-on-surface-variant">No tags</span>

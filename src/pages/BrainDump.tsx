@@ -119,8 +119,9 @@ export function BrainDump() {
               onKeyDown={handleKeyDown}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
+              dir="auto"
               placeholder="What's on your mind? Start typing anything… (Ctrl+Enter to save)"
-              className="relative w-full bg-transparent text-2xl sm:text-3xl font-serif text-on-surface placeholder:text-on-surface-variant/20 resize-none focus:outline-none min-h-[180px] leading-relaxed"
+              className="bidi-plaintext relative w-full bg-transparent text-2xl sm:text-3xl font-serif text-on-surface placeholder:text-on-surface-variant/20 resize-none focus:outline-none min-h-[180px] leading-relaxed"
             />
 
             <AnimatePresence>
@@ -230,8 +231,9 @@ export function BrainDump() {
                       if (e.key === 'Escape') { setShowQuickInput(false); setQuickInput('') }
                     }}
                     onBlur={handleQuickAdd}
+                    dir="auto"
                     placeholder="Task title, press Enter to save…"
-                    className="w-full bg-transparent text-sm text-on-surface outline-none placeholder:text-outline"
+                    className="bidi-plaintext w-full bg-transparent text-sm text-on-surface outline-none placeholder:text-outline"
                   />
                 </div>
               ) : (

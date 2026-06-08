@@ -4,6 +4,7 @@ import { useWeekStore } from '../store/useWeekStore'
 import { Button } from './ui/Button'
 import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus } from 'lucide-react'
 import { getTagStyle } from '../lib/tagColors'
+import { BidiText } from './ui/BidiText'
 
 interface DayCardDistributionProps {
   day: DayPlan
@@ -93,15 +94,17 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
           value={editData.title}
           onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
           onKeyDown={e => e.key === 'Enter' && handleSave()}
+          dir="auto"
           placeholder="Task title..."
-          className="w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
+          className="bidi-plaintext w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
         />
         <textarea
           value={editData.description}
           onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
+          dir="auto"
           placeholder="Notes (optional)..."
           rows={2}
-          className="w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
+          className="bidi-plaintext w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
         />
         <div className="flex gap-2">
           <input
@@ -169,7 +172,11 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
         </button>
         <div className="flex-1 min-w-0" onClick={() => setIsEditing(true)}>
             <div className="flex items-center gap-2">
-              <div className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}>{task.title}</div>
+              <BidiText
+                as="div"
+                text={task.title}
+                className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}
+              />
               {task.type === 'pinned' && (
                 <Pin className="w-3.5 h-3.5 text-primary" strokeWidth={2} aria-label="Pinned Task" />
               )}
@@ -194,7 +201,13 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
                 })}
               </div>
             )}
-            {task.description && <div className="text-xs text-on-surface-variant mt-1 line-clamp-2">{task.description}</div>}
+            {task.description && (
+              <BidiText
+                as="div"
+                text={task.description}
+                className="text-xs text-on-surface-variant mt-1 line-clamp-2"
+              />
+            )}
             {(task.startTime || task.estimatedTime) && (
             <div className="flex gap-2 mt-2 text-[10px] text-primary/70 font-medium bg-primary/5 w-max px-2 py-0.5 rounded">
                 {task.startTime && <div className="flex items-center gap-1"><Clock className="w-3 h-3" strokeWidth={2} />{task.startTime}</div>}
@@ -238,15 +251,17 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
         value={editData.title}
         onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
         onKeyDown={handleKeyDown}
+        dir="auto"
         placeholder={`${priority.charAt(0).toUpperCase() + priority.slice(1)} task title...`}
-        className="w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
+        className="bidi-plaintext w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
       />
       <textarea
         value={editData.description}
         onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
+        dir="auto"
         placeholder="Notes (optional)..."
         rows={2}
-        className="w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
+        className="bidi-plaintext w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
       />
       <div className="flex gap-2">
         <input

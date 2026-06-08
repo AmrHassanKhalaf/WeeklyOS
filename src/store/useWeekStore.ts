@@ -85,6 +85,7 @@ export interface WeekData {
   weekNumber: number
   year: number
   title: string
+  overviewNote?: string
   dateRange: string
   score: number
   totalCompleted: number
@@ -108,6 +109,7 @@ export interface WeekSummary {
   weekNumber: number
   year: number
   title: string
+  overviewNote?: string
   dateRange: string
   score: number
   challengeTitle?: string
@@ -181,6 +183,7 @@ interface WeekStore {
 
   // Focus Sessions
   focusSessions: FocusSession[]
+  yesterdayFocusSeconds: number
   fetchTodayFocusSessions: () => Promise<void>
   saveFocusSession: (taskId: string | undefined, durationSeconds: number, sessionType: 'focus' | 'break') => Promise<void>
 
@@ -188,6 +191,7 @@ interface WeekStore {
   startNewPlan: () => Promise<void>
 
   // Challenge & Evaluation
+  updateWeekOverview: (updates: { title: string; overviewNote?: string }) => Promise<void>
   updateChallenge: (title: string, desc?: string) => Promise<void>
   updateChallengeProgress: (progress: number) => Promise<void>
   toggleChallengeDayStatus: (dayOfWeek: DayOfWeek) => Promise<void>
@@ -316,6 +320,14 @@ function parseActivities(dbWeek: Record<string, unknown>): ActivityItem[] {
   return activities
 }
 
+function normalizeOptionalText(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
+
+function getDefaultWeekTitle(weekNumber: number): string {
+  return `Week ${weekNumber}`
+}
+
 function buildChallengeDays(dbWeek: Record<string, unknown>, dayPlans: DayPlan[]): ChallengeDay[] {
   const challengeOrder: DayOfWeek[] = ['friday', 'saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday']
   const defaultChallengeDays = challengeOrder.map((day) => ({
@@ -356,7 +368,8 @@ function buildWeekSummary(dbWeek: Record<string, unknown>): WeekSummary {
   const dayPlans = buildBaseDayPlans(dbWeek)
   const activities = parseActivities(dbWeek)
   const challengeDays = buildChallengeDays(dbWeek, dayPlans)
-  const title = (dbWeek.title as string) ?? 'The Digital Obsidian'
+  const title = normalizeOptionalText(dbWeek.title) ?? getDefaultWeekTitle(weekNumber)
+  const overviewNote = normalizeOptionalText(dbWeek.overview_note)
   const dateRange = dayPlans.length > 0
     ? `${dayPlans[0].date} — ${dayPlans[dayPlans.length - 1].date}`
     : ''
@@ -366,6 +379,7 @@ function buildWeekSummary(dbWeek: Record<string, unknown>): WeekSummary {
     weekNumber,
     year,
     title,
+    overviewNote,
     dateRange,
     score: (dbWeek.score as number | null) ?? 0,
     challengeTitle: (dbWeek.challenge_title as string | null) ?? undefined,
@@ -397,7 +411,8 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
 
   const activities = parseActivities(dbWeek)
   const challengeDays = buildChallengeDays(dbWeek, dayPlans)
-  const title = (dbWeek.title as string) ?? 'The Digital Obsidian'
+  const title = normalizeOptionalText(dbWeek.title) ?? getDefaultWeekTitle(weekNumber)
+  const overviewNote = normalizeOptionalText(dbWeek.overview_note)
   const dateRange = dayPlans.length > 0
     ? `${dayPlans[0].date} — ${dayPlans[dayPlans.length - 1].date}`
     : ''
@@ -407,6 +422,7 @@ function buildWeekData(dbWeek: Record<string, unknown>, tasks: Record<string, un
     weekNumber,
     year,
     title,
+    overviewNote,
     dateRange,
     score,
     totalCompleted,
@@ -683,6 +699,7 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     pomodoroFocusMin: 25,
     pomodoroBreakMin: 5,
     focusSessions: [],
+    yesterdayFocusSeconds: 0,
 
     // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -1271,6 +1288,40 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
     // ── Challenge & Evaluation ──────────────────────────────────────────────────
 
+    updateWeekOverview: async ({ title, overviewNote }) => {
+      const targetWeek = get().currentWeek ?? get().weekSummary
+      if (!targetWeek) return
+
+      const cleanTitle = title.trim()
+      const cleanOverview = overviewNote?.trim() || ''
+      const displayTitle = cleanTitle || getDefaultWeekTitle(targetWeek.weekNumber)
+      const nextOverview = cleanOverview || undefined
+      const snapshot = {
+        currentWeek: get().currentWeek,
+        weekSummary: get().weekSummary,
+      }
+
+      set(state => ({
+        currentWeek: state.currentWeek?.id === targetWeek.id
+          ? { ...state.currentWeek, title: displayTitle, overviewNote: nextOverview }
+          : state.currentWeek,
+        weekSummary: state.weekSummary?.id === targetWeek.id
+          ? { ...state.weekSummary, title: displayTitle, overviewNote: nextOverview }
+          : state.weekSummary,
+      }))
+
+      const { error } = await supabase.from('weeks').update({
+        title: cleanTitle || null,
+        overview_note: cleanOverview || null,
+      }).eq('id', targetWeek.id)
+
+      if (error) {
+        console.error('updateWeekOverview error', error)
+        set(snapshot)
+        throw error
+      }
+    },
+
     updateChallenge: async (title: string, desc?: string) => {
       const { currentWeek } = get()
       if (!currentWeek) return
@@ -1458,6 +1509,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       
       const todayStart = new Date()
       todayStart.setHours(0, 0, 0, 0)
+      const yesterdayStart = new Date(todayStart)
+      yesterdayStart.setDate(yesterdayStart.getDate() - 1)
       const tomorrowStart = new Date(todayStart)
       tomorrowStart.setDate(tomorrowStart.getDate() + 1)
       
@@ -1465,12 +1518,23 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         .from('focus_sessions')
         .select('*')
         .eq('user_id', session.user.id)
-        .gte('start_time', todayStart.toISOString())
+        .gte('start_time', yesterdayStart.toISOString())
         .lt('start_time', tomorrowStart.toISOString())
         .order('start_time', { ascending: true })
         
       if (!error && data) {
-        set({ focusSessions: data as FocusSession[] })
+        const sessions = data as FocusSession[]
+        const todaySessions = sessions.filter((item) => {
+          const start = new Date(item.start_time)
+          return start >= todayStart && start < tomorrowStart
+        })
+        const yesterdayFocusSeconds = sessions.reduce((total, item) => {
+          const start = new Date(item.start_time)
+          if (item.session_type !== 'focus' || start < yesterdayStart || start >= todayStart) return total
+          return total + item.duration_seconds
+        }, 0)
+
+        set({ focusSessions: todaySessions, yesterdayFocusSeconds })
       }
     },
 
@@ -1497,8 +1561,21 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         .single()
         
       if (!error && data) {
-        const currentSessions = get().focusSessions
-        set({ focusSessions: [...currentSessions, data as FocusSession] })
+        const savedSession = data as FocusSession
+        const savedStart = new Date(savedSession.start_time)
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        const tomorrowStart = new Date(todayStart)
+        tomorrowStart.setDate(tomorrowStart.getDate() + 1)
+        const yesterdayStart = new Date(todayStart)
+        yesterdayStart.setDate(yesterdayStart.getDate() - 1)
+
+        if (savedStart >= todayStart && savedStart < tomorrowStart) {
+          const currentSessions = get().focusSessions
+          set({ focusSessions: [...currentSessions, savedSession] })
+        } else if (savedSession.session_type === 'focus' && savedStart >= yesterdayStart && savedStart < todayStart) {
+          set(state => ({ yesterdayFocusSeconds: state.yesterdayFocusSeconds + savedSession.duration_seconds }))
+        }
       }
     },
 

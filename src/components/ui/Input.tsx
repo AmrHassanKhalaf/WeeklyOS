@@ -26,8 +26,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     <textarea
       ref={ref}
       {...props}
+      dir={props.dir ?? 'auto'}
       aria-invalid={invalid || props['aria-invalid']}
-      className={cn('input-base', invalid && 'animate-shake', className)}
+      className={cn('input-base bidi-plaintext', invalid && 'animate-shake', className)}
     />
   ),
 )

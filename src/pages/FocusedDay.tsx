@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, History, Play, Pause, ChevronUp, ChevronDown, Maximize, Minimize, BrainCircuit } from 'lucide-react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, TrendingDown, Minus, History, Play, Pause, ChevronUp, ChevronDown, Maximize, Minimize, BrainCircuit } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { DeepFocusOverlay } from '../components/focus/DeepFocusOverlay'
+import { BidiText } from '../components/ui/BidiText'
 import {
   playTimerCountdownAudio,
   stopTimerCountdownAudio,
@@ -21,6 +22,48 @@ const PRESETS = [
   { label: '50 / 10', focus: 50, brk: 10 },
   { label: '90 / 20', focus: 90, brk: 20 },
 ]
+
+function formatFocusDeltaDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  const totalMinutes = Math.max(1, Math.round(seconds / 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours <= 0) return `${totalMinutes}m`
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
+}
+
+function getFocusDeltaDisplay(todaySeconds: number, yesterdaySeconds: number) {
+  if (todaySeconds === 0 && yesterdaySeconds === 0) {
+    return {
+      label: 'No focus logged today',
+      className: 'text-neutral-500',
+      Icon: Minus,
+    }
+  }
+
+  const delta = todaySeconds - yesterdaySeconds
+  if (delta > 0) {
+    return {
+      label: `+${formatFocusDeltaDuration(delta)} from yesterday`,
+      className: 'text-tertiary',
+      Icon: TrendingUp,
+    }
+  }
+
+  if (delta < 0) {
+    return {
+      label: `-${formatFocusDeltaDuration(Math.abs(delta))} from yesterday`,
+      className: 'text-amber-300',
+      Icon: TrendingDown,
+    }
+  }
+
+  return {
+    label: 'Same as yesterday',
+    className: 'text-neutral-500',
+    Icon: Minus,
+  }
+}
 
 // ── Circular SVG progress ─────────────────────────────────────────────────────
 // Receives raw pomodoroTime + totalSecs so it can do lightweight sub-second
@@ -301,9 +344,11 @@ function TaskRow({
 
           {/* Title + metadata */}
           <div className="min-w-0 flex-1">
-            <span className={`block truncate text-base font-bold transition-colors duration-200 ${titleCls}`}>
-              {task.title}
-            </span>
+            <BidiText
+              as="span"
+              text={task.title}
+              className={`block truncate text-base font-bold transition-colors duration-200 ${titleCls}`}
+            />
             <div
               className={`mt-1 flex min-h-7 flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-wider transition-[opacity,transform,color] duration-200 ${
                 isDimmed || done ? 'pointer-events-none translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
@@ -465,7 +510,11 @@ function TaskPickerGate({
                             onClick={() => onChooseTask(task.id)}
                             className={`group/task rounded-2xl border bg-black/18 px-3 py-3 text-left transition-[background-color,border-color,color,transform] duration-200 ${tone.border}`}
                           >
-                            <span className="block truncate text-sm font-black text-neutral-200 group-hover/task:text-white">{task.title}</span>
+                            <BidiText
+                              as="span"
+                              text={task.title}
+                              className="block truncate text-sm font-black text-neutral-200 group-hover/task:text-white"
+                            />
                             <span className="mt-2 flex flex-wrap items-center gap-1.5">
                               <span className={`inline-flex items-center gap-1 rounded-lg border px-1.5 py-0.5 text-[10px] font-mono uppercase ${tone.chip}`}>
                                 <Timer className="h-3 w-3" strokeWidth={1.5} />
@@ -536,6 +585,7 @@ export function FocusedDay() {
   const markDayComplete = useWeekStore(state => state.markDayComplete)
   const updateTaskActualDuration = useWeekStore(state => state.updateTaskActualDuration)
   const focusSessions = useWeekStore(state => state.focusSessions)
+  const yesterdayFocusSeconds = useWeekStore(state => state.yesterdayFocusSeconds)
   const saveFocusSession = useWeekStore(state => state.saveFocusSession)
   const isFocusMode = useLayoutStore(state => state.isFocusMode)
   const focusLevel = useLayoutStore(state => state.focusLevel)
@@ -865,6 +915,8 @@ export function FocusedDay() {
   )
   const liveFocusSeconds = isPomodoroRunning && pomodoroPhase === 'focus' ? phaseSessionSeconds : 0
   const todayFocusSeconds = savedTodayFocusSeconds + liveFocusSeconds
+  const focusDelta = getFocusDeltaDisplay(todayFocusSeconds, yesterdayFocusSeconds)
+  const FocusDeltaIcon = focusDelta.Icon
 
   // Derive whether today is complete (all tasks done) — used for button state
   const allTodayTasks = [todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean)
@@ -1416,9 +1468,9 @@ export function FocusedDay() {
                 <div className="flex items-end justify-between">
                   <div>
                     <span className="text-3xl font-black text-on-surface">{Math.floor(todayFocusSeconds / 3600)}h {Math.floor((todayFocusSeconds % 3600) / 60)}m</span>
-                    <p className="text-xs text-tertiary mt-1.5 flex items-center gap-1">
-                      <TrendingUp className="text-[14px]" strokeWidth={1.5} />
-                      +15m from yesterday
+                    <p className={`text-xs mt-1.5 flex items-center gap-1 ${focusDelta.className}`}>
+                      <FocusDeltaIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      {focusDelta.label}
                     </p>
                   </div>
                   {/* Sparkline mock */}
@@ -1460,9 +1512,11 @@ export function FocusedDay() {
                     <div key={task!.id} className="flex items-center justify-between group">
                       <div className="flex items-center gap-3 min-w-0">
                         <span className={`shrink-0 w-2 h-2 rounded-full ${task!.priority === 'high' ? 'bg-primary shadow-[0_0_8px_#7c3aed]' : task!.priority === 'medium' ? 'bg-tertiary shadow-[0_0_8px_#14b8a6]' : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.75)]'}`} />
-                        <span className={`text-sm font-medium truncate ${task!.status === 'done' ? 'line-through text-neutral-500' : 'text-neutral-200'}`}>
-                          {task!.title}
-                        </span>
+                        <BidiText
+                          as="span"
+                          text={task!.title}
+                          className={`text-sm font-medium truncate ${task!.status === 'done' ? 'line-through text-neutral-500' : 'text-neutral-200'}`}
+                        />
                       </div>
                       <span className="shrink-0 pl-3 text-xs font-mono text-neutral-500">
                         {Math.floor((task!.actualDuration || 0) / 3600)}h {Math.floor(((task!.actualDuration || 0) % 3600) / 60)}m
@@ -1517,7 +1571,13 @@ export function FocusedDay() {
                         <div className="shrink-0 w-4 h-4 rounded-full border-4 border-[#121212] bg-neutral-600 z-10" />
                         <div className="-mt-1">
                           <p className="text-[11px] font-mono tracking-wider text-neutral-500 mb-1">{timeStr} — {session.duration_seconds >= 60 ? `${Math.floor(session.duration_seconds / 60)}m` : `${session.duration_seconds}s`} {session.session_type}</p>
-                          <p className="text-sm font-medium text-neutral-200">{task ? task.title : (session.session_type === 'break' ? 'Break Session' : 'Focus Session')}</p>
+                          {task ? (
+                            <BidiText as="p" text={task.title} className="text-sm font-medium text-neutral-200" />
+                          ) : (
+                            <p className="text-sm font-medium text-neutral-200">
+                              {session.session_type === 'break' ? 'Break Session' : 'Focus Session'}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )

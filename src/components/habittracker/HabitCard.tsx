@@ -6,6 +6,8 @@ import type { Habit } from '../../store/useHabitStore'
 import { useHabitStore, isBadHabit } from '../../store/useHabitStore'
 import { HabitBubbleGrid } from './HabitBubbleGrid'
 import { ConfettiBurst } from '../ui/Confetti'
+import { BidiText } from '../ui/BidiText'
+import { getLineDirection } from '../../utils/textDirection'
 
 // ─── Category metadata ────────────────────────────────────────────────────────
 
@@ -92,7 +94,7 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-on-surface text-sm truncate">{habit.name}</h3>
+            <BidiText as="h3" text={habit.name} className="font-bold text-on-surface text-sm truncate" />
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0"
               style={{ color, background: cat.bg }}>
               {cat.label}
@@ -112,8 +114,13 @@ function BuildHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
       {/* Reason */}
       <AnimatePresence>
         {showReason && habit.motivation && (
-          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-            className="text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11">
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            dir={getLineDirection(habit.motivation)}
+            className="bidi-line text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11"
+          >
             "{habit.motivation}"
           </motion.p>
         )}
@@ -224,7 +231,7 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-on-surface text-sm truncate">{habit.name}</h3>
+            <BidiText as="h3" text={habit.name} className="font-bold text-on-surface text-sm truncate" />
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0"
               style={{ color, background: 'rgba(248,113,113,0.12)' }}>
               Break it
@@ -244,8 +251,13 @@ function BreakHabitCard({ habit, totalDays, isWeeklyView, weekOffset, onEdit, on
       {/* Reason */}
       <AnimatePresence>
         {showReason && habit.motivation && (
-          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-            className="text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11">
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            dir={getLineDirection(habit.motivation)}
+            className="bidi-line text-[12px] text-on-surface-variant italic leading-relaxed mb-3 pl-11"
+          >
             "{habit.motivation}"
           </motion.p>
         )}
