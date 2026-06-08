@@ -989,11 +989,11 @@ export function FocusedDay() {
                 : <Maximize className="w-4 h-4" strokeWidth={1.5} />}
             </button>
 
-            <div className="relative z-10 p-6 md:p-8">
-              <div className="flex flex-col lg:flex-row items-center gap-8">
+            <div className="relative z-10 p-4 sm:p-6 2xl:p-8">
+              <div className="flex flex-col 2xl:flex-row items-center gap-6 xl:gap-8">
 
                 {/* Circular timer */}
-                <div className="relative shrink-0 mx-auto lg:mx-0 w-48 h-48 sm:w-56 sm:h-56 md:w-60 md:h-60">
+                <div className="relative shrink-0 mx-auto 2xl:mx-0 w-48 h-48 sm:w-56 sm:h-56 md:w-60 md:h-60">
                   <CircularProgress pomodoroTime={pomodoroTime} totalSecs={totalSecs} isRunning={isPomodoroRunning} phase={pomodoroPhase} size={240} />
                   {/* Center content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -1016,7 +1016,7 @@ export function FocusedDay() {
                 </div>
 
                 {/* Controls panel */}
-                <div className="flex-1 w-full min-w-0 space-y-4">
+                <div className="mx-auto w-full max-w-2xl flex-1 min-w-0 space-y-4 2xl:mx-0 2xl:max-w-none">
                   {/* Phase label + session dots */}
                   {pomodoroPhase === 'focus' && (
                     <div className="flex items-center gap-2">
@@ -1030,8 +1030,8 @@ export function FocusedDay() {
                   )}
 
                   {/* Current preset display */}
-                  <div className="flex items-center gap-2 text-sm text-neutral-400">
-                    <Timer className="text-[18px]" strokeWidth={1.5} />
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-400">
+                    <Timer className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
                     <span>{pomodoroFocusMin}min focus · {pomodoroBreakMin}min break</span>
                   </div>
 
@@ -1071,7 +1071,7 @@ export function FocusedDay() {
                       type="button"
                       onClick={isFocusMode && focusLevel === 'deep' ? () => setFocusMode(false) : () => setFocusMode(true, 'deep')}
                       whileTap={{ scale: 0.97 }}
-                      className={`group relative w-full sm:w-auto overflow-hidden rounded-xl border text-left p-3 sm:px-4 sm:py-2.5 flex items-center gap-2.5 touch-target transition-[background-color,border-color,color,transform] duration-300 ${
+                      className={`group relative w-full min-w-0 overflow-hidden rounded-xl border text-left p-3 sm:col-span-2 sm:px-4 sm:py-2.5 flex items-center justify-start gap-2.5 touch-target transition-[background-color,border-color,color,transform] duration-300 ${
                         isFocusMode && focusLevel === 'deep'
                           ? 'from-violet-500/15 via-violet-900/10 to-black/80 bg-gradient-to-br border-violet-500/40 ring-1 ring-white/10'
                           : 'bg-transparent border-white/10 hover:border-violet-500/30'
@@ -1162,7 +1162,7 @@ export function FocusedDay() {
                         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                         className="mt-4 space-y-3 will-change-[opacity,transform]"
                       >
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(6.75rem,1fr))] gap-2">
                           {PRESETS.map(p => (
                             <button
                               key={p.label}
@@ -1171,7 +1171,7 @@ export function FocusedDay() {
                                 setShowCustom(false)
                                 setPomodoroPreset(p.focus, p.brk)
                               }}
-                              className={`group/preset relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-[background-color,border-color,color] ${timerSelection === 'preset' && pomodoroFocusMin === p.focus && pomodoroBreakMin === p.brk
+                              className={`group/preset relative min-h-[4rem] min-w-0 overflow-hidden rounded-2xl border px-3 py-3 text-left transition-[background-color,border-color,color] ${timerSelection === 'preset' && pomodoroFocusMin === p.focus && pomodoroBreakMin === p.brk
                                 ? 'border-primary/60 bg-primary/15 text-primary shadow-[0_0_24px_rgba(139,92,246,0.16)]'
                                 : 'border-white/10 bg-white/[0.018] text-neutral-400 hover:border-white/25 hover:text-white hover:bg-white/[0.04]'
                                 }`}
@@ -1186,7 +1186,7 @@ export function FocusedDay() {
                               setTimerSelection('custom')
                               setShowCustom(c => !c)
                             }}
-                            className={`relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-[background-color,border-color,color] ${timerSelection === 'custom'
+                            className={`relative min-h-[4rem] min-w-0 overflow-hidden rounded-2xl border px-3 py-3 text-left transition-[background-color,border-color,color] ${timerSelection === 'custom'
                               ? 'border-teal-300/45 bg-teal-500/10 text-teal-200 shadow-[0_0_22px_rgba(45,212,191,0.12)]'
                               : 'border-white/10 bg-white/[0.018] text-neutral-400 hover:border-teal-300/30 hover:text-teal-200 hover:bg-teal-500/[0.05]'
                               }`}
@@ -1203,9 +1203,9 @@ export function FocusedDay() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -6, scale: 0.985 }}
                             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                            className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto] items-end gap-3 rounded-2xl border border-teal-300/10 bg-teal-500/[0.035] p-3"
+                            className="grid grid-cols-1 items-end gap-3 rounded-2xl border border-teal-300/10 bg-teal-500/[0.035] p-3 sm:grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))]"
                           >
-                            <label className="space-y-1.5">
+                            <label className="min-w-0 space-y-1.5">
                               <span className="text-[10px] text-neutral-500 uppercase tracking-[0.22em] font-bold">Focus</span>
                               <div className="relative">
                               <Input
@@ -1213,13 +1213,12 @@ export function FocusedDay() {
                                 min={1} max={120}
                                 value={customFocus}
                                 onChange={e => setCustomFocus(e.target.value)}
-                                  className="w-full h-11 rounded-2xl border-teal-300/15 bg-black/20 pr-10 text-center text-base font-black tabular-nums"
+                                  className="h-11 w-full min-w-0 rounded-2xl border-teal-300/15 bg-black/20 pr-10 text-center text-base font-black tabular-nums"
                               />
                                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-neutral-600">min</span>
                               </div>
                             </label>
-                            <span className="hidden sm:flex h-11 items-center text-neutral-700 font-black">/</span>
-                            <label className="space-y-1.5">
+                            <label className="min-w-0 space-y-1.5">
                               <span className="text-[10px] text-neutral-500 uppercase tracking-[0.22em] font-bold">Break</span>
                               <div className="relative">
                               <Input
@@ -1227,7 +1226,7 @@ export function FocusedDay() {
                                 min={1} max={60}
                                 value={customBreak}
                                 onChange={e => setCustomBreak(e.target.value)}
-                                  className="w-full h-11 rounded-2xl border-teal-300/15 bg-black/20 pr-10 text-center text-base font-black tabular-nums"
+                                  className="h-11 w-full min-w-0 rounded-2xl border-teal-300/15 bg-black/20 pr-10 text-center text-base font-black tabular-nums"
                               />
                                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-neutral-600">min</span>
                               </div>
@@ -1236,7 +1235,7 @@ export function FocusedDay() {
                               onClick={applyCustomPreset}
                               variant="secondary"
                               size="sm"
-                              className="h-11 rounded-2xl px-5 text-xs uppercase tracking-wider justify-center"
+                              className="h-11 w-full rounded-2xl px-5 text-xs uppercase tracking-wider justify-center self-end"
                             >
                               Apply
                             </Button>
