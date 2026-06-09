@@ -44,7 +44,7 @@ function isPriority(value: unknown): value is Priority {
 }
 
 function isTaskStatus(value: unknown): value is TaskStatus {
-  return value === 'pending' || value === 'done'
+  return value === 'pending' || value === 'done' || value === 'missed'
 }
 
 function optionalString(value: unknown): string | undefined {

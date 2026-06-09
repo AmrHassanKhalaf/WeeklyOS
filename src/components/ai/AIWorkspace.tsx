@@ -36,6 +36,7 @@ import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
 import { BidiLines, BidiText } from '../ui/BidiText'
 import { AIConfirmationPanel } from './AIConfirmationPanel'
 import { ChatThread } from './ChatThread'
+import { getLineDirection } from '../../utils/textDirection'
 
 interface AIWorkspaceProps {
   variant?: 'default' | 'evaluation'
@@ -647,7 +648,7 @@ function PlanMode({
         <textarea
           value={brainDump}
           onChange={(event) => onBrainDumpChange(event.target.value)}
-          dir="auto"
+          dir={getLineDirection(brainDump)}
           placeholder="Drop thoughts, commitments, deadlines, ideas, worries, or raw meeting notes..."
           className="bidi-plaintext ai-workspace-scrollbar custom-scrollbar relative mt-4 min-h-36 w-full resize-y rounded-2xl border border-primary/[0.16] bg-black/[0.22] px-4 py-3 text-sm leading-relaxed text-on-surface outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] transition-colors placeholder:text-on-surface-variant/[0.45] focus:border-primary/[0.45] focus:bg-primary/5"
         />
@@ -919,7 +920,7 @@ function ConversationDock({
             }
           }}
           rows={1}
-          dir="auto"
+          dir={getLineDirection(chatInput)}
           placeholder="Stage a workflow prompt or ask the workspace directly..."
           className="bidi-plaintext ai-workspace-scrollbar custom-scrollbar min-h-11 max-h-28 flex-1 resize-none rounded-2xl border border-primary/[0.18] bg-black/20 px-4 py-3 text-sm text-on-surface outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors placeholder:text-on-surface-variant/[0.55] focus:border-primary/[0.45] focus:bg-primary/5"
         />

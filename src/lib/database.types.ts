@@ -369,6 +369,7 @@ export type Database = {
           auto_download_completed_week_report: boolean | null
           daily_reminders: boolean | null
           fallback_enabled: boolean | null
+          missed_task_resolution: string | null
           pomodoro_break_min: number | null
           pomodoro_focus_min: number | null
           report_closing_quote: string | null
@@ -386,6 +387,7 @@ export type Database = {
           auto_download_completed_week_report?: boolean | null
           daily_reminders?: boolean | null
           fallback_enabled?: boolean | null
+          missed_task_resolution?: string | null
           pomodoro_break_min?: number | null
           pomodoro_focus_min?: number | null
           report_closing_quote?: string | null
@@ -403,6 +405,7 @@ export type Database = {
           auto_download_completed_week_report?: boolean | null
           daily_reminders?: boolean | null
           fallback_enabled?: boolean | null
+          missed_task_resolution?: string | null
           pomodoro_break_min?: number | null
           pomodoro_focus_min?: number | null
           report_closing_quote?: string | null

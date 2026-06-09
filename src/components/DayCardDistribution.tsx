@@ -1,15 +1,23 @@
 import { useState, useRef, useEffect } from 'react'
+import type { ReactNode } from 'react'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import type { DayPlan, Task, DayOfWeek, Priority } from '../store/useWeekStore'
 import { useWeekStore } from '../store/useWeekStore'
 import { Button } from './ui/Button'
-import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus } from 'lucide-react'
+import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus, Move, X } from 'lucide-react'
 import { getTagStyle } from '../lib/tagColors'
 import { BidiText } from './ui/BidiText'
+import { cn } from '../lib/cn'
+import { getLineDirection } from '../utils/textDirection'
 
 interface DayCardDistributionProps {
   day: DayPlan
   isHighOutputZone?: boolean
   showTags?: boolean
+  moveMode?: boolean
+  onOpenMoveModal?: (task: Task) => void
+  onRequestDayComplete?: (day: DayOfWeek) => void
 }
 
 const DAYS_OPTIONS: DayOfWeek[] = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
@@ -20,7 +28,52 @@ const normalizeInput = (value: unknown): string => {
   return String(value).trim()
 }
 
-function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }: { task?: Task; emptyHeight?: string, onEmptyClick?: () => void; showTags?: boolean }) {
+function TaskDropZone({
+  day,
+  priority,
+  moveMode,
+  children,
+}: {
+  day: DayOfWeek
+  priority: Priority
+  moveMode: boolean
+  children: ReactNode
+}) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `drop:${day}:${priority}`,
+    data: { day, priority },
+    disabled: !moveMode,
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'rounded-2xl transition-[background-color,border-color,box-shadow]',
+        moveMode && 'border border-dashed border-primary/20 bg-primary/[0.025] p-2',
+        isOver && 'border-primary/70 bg-primary/10 shadow-[0_0_24px_rgba(139,92,246,0.18)]',
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+function TaskItem({
+  task,
+  emptyHeight = 'h-12',
+  onEmptyClick,
+  showTags = true,
+  moveMode = false,
+  onOpenMoveModal,
+}: {
+  task?: Task
+  emptyHeight?: string
+  onEmptyClick?: () => void
+  showTags?: boolean
+  moveMode?: boolean
+  onOpenMoveModal?: (task: Task) => void
+}) {
   const toggleTaskComplete = useWeekStore(state => state.toggleTaskComplete)
   const deleteTask = useWeekStore(state => state.deleteTask)
   const updateTask = useWeekStore(state => state.updateTask)
@@ -30,6 +83,15 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
     title: '', start: '', duration: '', description: '', day: 'monday' as DayOfWeek, priority: 'low' as Priority
   })
   const inputRef = useRef<HTMLInputElement>(null)
+  const emptyIdRef = useRef(`empty-${Math.random().toString(36).slice(2)}`)
+  const longPressTimerRef = useRef<number | null>(null)
+  const longPressTriggeredRef = useRef(false)
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task?.id ?? emptyIdRef.current,
+    data: task ? { task } : undefined,
+    disabled: !task || !moveMode || isEditing || task.status === 'missed',
+  })
+  const dragStyle = transform ? { transform: CSS.Translate.toString(transform) } : undefined
 
   useEffect(() => {
     if (task && isEditing) {
@@ -44,6 +106,8 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [isEditing, task])
+
+  useEffect(() => clearLongPress, [])
 
   const handleSave = async () => {
     const title = normalizeInput(editData.title)
@@ -78,6 +142,23 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
     }
   }
 
+  function clearLongPress() {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+  }
+
+  function startLongPress() {
+    if (!task || isEditing || !moveMode || task.status === 'missed') return
+    longPressTriggeredRef.current = false
+    clearLongPress()
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true
+      onOpenMoveModal?.(task)
+    }, 550)
+  }
+
   if (!task) {
     return (
       <div onClick={onEmptyClick} className={`${emptyHeight} rounded-xl border border-dashed border-white/10 flex items-center justify-center text-neutral-600 text-[11px] italic cursor-pointer hover:border-white/20 transition-colors`}>
@@ -94,14 +175,14 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
           value={editData.title}
           onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
           onKeyDown={e => e.key === 'Enter' && handleSave()}
-          dir="auto"
+          dir={getLineDirection(editData.title)}
           placeholder="Task title..."
           className="bidi-plaintext w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
         />
         <textarea
           value={editData.description}
           onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
-          dir="auto"
+          dir={getLineDirection(editData.description)}
           placeholder="Notes (optional)..."
           rows={2}
           className="bidi-plaintext w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
@@ -158,24 +239,71 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
   }
 
 
+  const isDone = task.status === 'done'
+  const isMissed = task.status === 'missed'
+
   return (
-    <div className={`group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-[background-color,border-color,opacity] focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden ${task.status === 'done' ? 'opacity-60 bg-surface-container-low' : ''}`}>
+    <div
+      ref={setNodeRef}
+      style={dragStyle}
+      onPointerDown={startLongPress}
+      onPointerUp={clearLongPress}
+      onPointerCancel={clearLongPress}
+      onPointerLeave={clearLongPress}
+      className={cn(
+        'group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-[background-color,border-color,opacity] focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden',
+        isDone && 'opacity-60 bg-surface-container-low',
+        isMissed && 'border-error/25 bg-error/[0.06] opacity-85',
+        moveMode && !isMissed && 'border-primary/20 bg-primary/[0.06]',
+        isDragging && 'opacity-30',
+      )}
+    >
       <div className="flex items-start gap-3">
+        {moveMode && !isMissed && (
+          <button
+            type="button"
+            {...listeners}
+            {...attributes}
+            onClick={(event) => event.stopPropagation()}
+            className="mt-0.5 -ml-1 flex h-7 w-7 shrink-0 touch-target items-center justify-center rounded-lg text-primary/80 hover:bg-primary/10 hover:text-primary focus-ring"
+            title="Drag task"
+            aria-label="Drag task"
+          >
+            <GripVertical className="w-4 h-4" strokeWidth={1.8} />
+          </button>
+        )}
         <button
             onClick={handleToggleComplete}
-            disabled={isToggling}
-            className={`mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded border transition-colors disabled:opacity-50 ${
-                task.status === 'done' ? 'bg-primary border-primary text-background' : 'border-outline-variant hover:border-primary text-transparent'
-            }`}
+            disabled={isToggling || isMissed}
+            className={cn(
+              'mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded border transition-colors disabled:opacity-70',
+              isDone && 'bg-primary border-primary text-background',
+              isMissed && 'bg-error/15 border-error/60 text-error',
+              !isDone && !isMissed && 'border-outline-variant hover:border-primary text-transparent',
+            )}
+            title={isMissed ? 'Missed task' : isDone ? 'Mark pending' : 'Mark done'}
         >
-            <Check className="w-3 h-3" strokeWidth={3} />
+            {isMissed ? <X className="w-3 h-3" strokeWidth={3} /> : <Check className="w-3 h-3" strokeWidth={3} />}
         </button>
-        <div className="flex-1 min-w-0" onClick={() => setIsEditing(true)}>
+        <div
+          className={cn('flex-1 min-w-0', moveMode ? 'cursor-default' : 'cursor-text')}
+          onClick={() => {
+            if (longPressTriggeredRef.current) {
+              longPressTriggeredRef.current = false
+              return
+            }
+            if (!moveMode) setIsEditing(true)
+          }}
+        >
             <div className="flex items-center gap-2">
               <BidiText
                 as="div"
                 text={task.title}
-                className={`break-words leading-tight cursor-text font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}
+                className={cn(
+                  'break-words leading-tight font-medium text-on-surface',
+                  isDone && 'line-through text-on-surface-variant',
+                  isMissed && 'line-through decoration-error/60 text-error/90',
+                )}
               />
               {task.type === 'pinned' && (
                 <Pin className="w-3.5 h-3.5 text-primary" strokeWidth={2} aria-label="Pinned Task" />
@@ -215,6 +343,20 @@ function TaskItem({ task, emptyHeight = 'h-12', onEmptyClick, showTags = true }:
             </div>
             )}
         </div>
+        {moveMode && !isMissed && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpenMoveModal?.(task)
+            }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary opacity-100 transition-opacity hover:bg-white/10 hover:text-on-surface focus-ring"
+            title="Move task"
+            aria-label="Move task"
+          >
+            <Move className="w-4 h-4" strokeWidth={1.6} />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -251,14 +393,14 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
         value={editData.title}
         onChange={e => setEditData(p => ({ ...p, title: e.target.value }))}
         onKeyDown={handleKeyDown}
-        dir="auto"
+        dir={getLineDirection(editData.title)}
         placeholder={`${priority.charAt(0).toUpperCase() + priority.slice(1)} task title...`}
         className="bidi-plaintext w-full bg-transparent text-base sm:text-sm font-bold text-on-surface outline-none placeholder:text-neutral-500"
       />
       <textarea
         value={editData.description}
         onChange={e => setEditData(p => ({ ...p, description: e.target.value }))}
-        dir="auto"
+        dir={getLineDirection(editData.description)}
         placeholder="Notes (optional)..."
         rows={2}
         className="bidi-plaintext w-full bg-transparent text-base sm:text-xs text-on-surface-variant outline-none resize-none placeholder:text-neutral-600"
@@ -288,7 +430,14 @@ function TaskInlineForm({ priority, day, onSave, onCancel }: { priority: Priorit
 
 type AddingFor = { priority: Priority; day: DayOfWeek } | null
 
-export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: DayCardDistributionProps) {
+export function DayCardDistribution({
+  day,
+  isHighOutputZone,
+  showTags = true,
+  moveMode = false,
+  onOpenMoveModal,
+  onRequestDayComplete,
+}: DayCardDistributionProps) {
   const createTask = useWeekStore(state => state.createTask)
   const markDayComplete = useWeekStore(state => state.markDayComplete)
   const [addingFor, setAddingFor] = useState<AddingFor>(null)
@@ -380,7 +529,7 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
           <div className="flex items-center gap-3">
             <Button
               type="button"
-              onClick={() => markDayComplete(day.day as DayOfWeek)}
+              onClick={() => onRequestDayComplete?.(day.day as DayOfWeek) ?? markDayComplete(day.day as DayOfWeek)}
               size="sm"
               variant="secondary"
               className="text-[10px] font-bold uppercase tracking-wider"
@@ -427,7 +576,7 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
           <div className="flex items-center gap-3">
           <Button
             type="button"
-            onClick={() => markDayComplete(day.day as DayOfWeek)}
+            onClick={() => onRequestDayComplete?.(day.day as DayOfWeek) ?? markDayComplete(day.day as DayOfWeek)}
             size="sm"
             variant="secondary"
             className="text-[10px] font-bold uppercase tracking-wider"
@@ -453,7 +602,7 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
       </div>
 
       {/* Body */}
-      {!hasAnyTasks && !addingFor ? (
+      {!hasAnyTasks && !addingFor && !moveMode ? (
         <div
           className="p-6 flex-1 flex flex-col items-center justify-center text-center opacity-20 cursor-pointer hover:opacity-40 transition-opacity"
           onClick={() => startAdd('medium')}
@@ -478,8 +627,19 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
                 </span>
               </div>
             </div>
-            <TaskItem task={day.highTask} emptyHeight="h-24" onEmptyClick={() => startAdd('high')} showTags={showTags} />
-            {renderInlineForm('high')}
+            <TaskDropZone day={day.day as DayOfWeek} priority="high" moveMode={moveMode}>
+              <div className="space-y-3">
+                <TaskItem
+                  task={day.highTask}
+                  emptyHeight="h-24"
+                  onEmptyClick={moveMode ? undefined : () => startAdd('high')}
+                  showTags={showTags}
+                  moveMode={moveMode}
+                  onOpenMoveModal={onOpenMoveModal}
+                />
+                {renderInlineForm('high')}
+              </div>
+            </TaskDropZone>
           </div>
 
           {/* Medium Priority */}
@@ -497,10 +657,21 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
                 </span>
               </div>
             </div>
-            {Array.from({ length: medSlots }).map((_, i) => (
-              <TaskItem key={i} task={day.mediumTasks[i]} onEmptyClick={() => startAdd('medium')} showTags={showTags} />
-            ))}
-            {renderInlineForm('medium')}
+            <TaskDropZone day={day.day as DayOfWeek} priority="medium" moveMode={moveMode}>
+              <div className="space-y-3">
+                {Array.from({ length: medSlots }).map((_, i) => (
+                  <TaskItem
+                    key={i}
+                    task={day.mediumTasks[i]}
+                    onEmptyClick={moveMode ? undefined : () => startAdd('medium')}
+                    showTags={showTags}
+                    moveMode={moveMode}
+                    onOpenMoveModal={onOpenMoveModal}
+                  />
+                ))}
+                {renderInlineForm('medium')}
+              </div>
+            </TaskDropZone>
           </div>
 
           {/* Small Tasks */}
@@ -518,12 +689,21 @@ export function DayCardDistribution({ day, isHighOutputZone, showTags = true }: 
                 </span>
               </div>
             </div>
-            <div className="space-y-2">
-              {Array.from({ length: smallSlots }).map((_, i) => (
-                <TaskItem key={i} task={day.smallTasks[i]} onEmptyClick={() => startAdd('low')} showTags={showTags} />
-              ))}
-            </div>
-            {renderInlineForm('low')}
+            <TaskDropZone day={day.day as DayOfWeek} priority="low" moveMode={moveMode}>
+              <div className="space-y-2">
+                {Array.from({ length: smallSlots }).map((_, i) => (
+                  <TaskItem
+                    key={i}
+                    task={day.smallTasks[i]}
+                    onEmptyClick={moveMode ? undefined : () => startAdd('low')}
+                    showTags={showTags}
+                    moveMode={moveMode}
+                    onOpenMoveModal={onOpenMoveModal}
+                  />
+                ))}
+                {renderInlineForm('low')}
+              </div>
+            </TaskDropZone>
           </div>
         </div>
       )}

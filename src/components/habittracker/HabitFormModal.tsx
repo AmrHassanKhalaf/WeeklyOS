@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { HabitCategory, HabitGroup, NewHabitData } from '../../store/useHabitStore'
 import { useHabitStore } from '../../store/useHabitStore'
 import type { Habit } from '../../store/useHabitStore'
+import { getLineDirection } from '../../utils/textDirection'
 
 // ─── Category options ─────────────────────────────────────────────────────────
 
@@ -305,7 +306,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                     type="text"
                     value={form.name}
                     onChange={e => set('name', e.target.value)}
-                    dir="auto"
+                    dir={getLineDirection(form.name)}
                     placeholder={
                       isBreakHabit
                         ? 'e.g., Smoking, Doom scrolling, Late-night snacks…'
@@ -357,7 +358,7 @@ export function HabitFormModal({ isOpen, editingHabit, onClose }: HabitFormModal
                   <textarea
                     value={form.motivation}
                     onChange={e => set('motivation', e.target.value)}
-                    dir="auto"
+                    dir={getLineDirection(form.motivation)}
                     placeholder={
                       isBreakHabit
                         ? 'Your reason to quit — keeps you accountable…'
