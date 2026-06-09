@@ -1,15 +1,26 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, Brain, CheckCircle2, X } from 'lucide-react'
+import { ArrowRight, Brain, Check, CheckCircle2, Trash2, X } from 'lucide-react'
 import { Button } from './ui/Button'
 import { BidiText } from './ui/BidiText'
 import { cn } from '../lib/cn'
 import { useWeekStore } from '../store/useWeekStore'
 import type { DayOfWeek, Priority, Task, WeekData } from '../store/useWeekStore'
+import { useSettingsStore, type MissedTaskResolution } from '../store/useSettingsStore'
+
+type ReviewAction = 'done' | 'move' | MissedTaskResolution
 
 const PRIORITY_OPTIONS: Array<{ value: Priority; label: string; limit: number }> = [
   { value: 'high', label: 'High Impact', limit: 1 },
   { value: 'medium', label: 'Medium Priority', limit: 3 },
   { value: 'low', label: 'Small Tasks', limit: 5 },
+]
+
+const ACTION_OPTIONS: Array<{ value: ReviewAction; label: string; tone: string }> = [
+  { value: 'missed_copy_to_braindump', label: 'Missed + Brain Dump', tone: 'text-error' },
+  { value: 'move', label: 'Move', tone: 'text-primary' },
+  { value: 'done', label: 'Mark Done', tone: 'text-tertiary' },
+  { value: 'return_to_braindump_delete', label: 'Brain Dump only', tone: 'text-on-surface' },
+  { value: 'delete', label: 'Delete', tone: 'text-error' },
 ]
 
 function getAllTasks(week: WeekData): Task[] {
@@ -24,13 +35,27 @@ function getPendingTasks(dayTasks: Array<Task | undefined>): Task[] {
   return dayTasks.filter((task): task is Task => !!task && task.status === 'pending')
 }
 
+function getDefaultAction(resolution: MissedTaskResolution): ReviewAction {
+  return resolution
+}
+
+function getActionLabel(action: ReviewAction): string {
+  return ACTION_OPTIONS.find(option => option.value === action)?.label ?? 'Review'
+}
+
 export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: () => void }) {
   const currentWeek = useWeekStore(state => state.currentWeek)
   const moveTask = useWeekStore(state => state.moveTask)
+  const updateTask = useWeekStore(state => state.updateTask)
+  const deleteTask = useWeekStore(state => state.deleteTask)
   const returnTaskToBrainDump = useWeekStore(state => state.returnTaskToBrainDump)
+  const markTaskMissedAndCopyToBrainDump = useWeekStore(state => state.markTaskMissedAndCopyToBrainDump)
   const markDayComplete = useWeekStore(state => state.markDayComplete)
+  const missedTaskResolution = useSettingsStore(state => state.missedTaskResolution)
+  const [actions, setActions] = useState<Record<string, ReviewAction>>({})
   const [targets, setTargets] = useState<Record<string, { day: DayOfWeek; priority: Priority }>>({})
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null)
+  const [isApplying, setIsApplying] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -47,9 +72,18 @@ export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: (
 
   if (!currentWeek || !dayPlan) return null
 
+  const defaultAction = getDefaultAction(missedTaskResolution)
+
+  const resolveAction = (task: Task) => actions[task.id] ?? defaultAction
+
   const resolveTarget = (task: Task) => targets[task.id] ?? {
     day: nextDay ?? task.day ?? day,
     priority: task.priority,
+  }
+
+  const updateAction = (taskId: string, action: ReviewAction) => {
+    setActions(prev => ({ ...prev, [taskId]: action }))
+    setError(null)
   }
 
   const updateTarget = (taskId: string, updates: Partial<{ day: DayOfWeek; priority: Priority }>) => {
@@ -61,27 +95,42 @@ export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: (
     setError(null)
   }
 
-  const movePendingTask = async (task: Task, target: { day: DayOfWeek; priority: Priority }) => {
+  const applyTaskAction = async (task: Task, overrideAction?: ReviewAction) => {
+    const action = overrideAction ?? resolveAction(task)
     setBusyTaskId(task.id)
     setError(null)
     try {
-      await moveTask(task.id, target)
+      if (action === 'done') {
+        await updateTask(task.id, { status: 'done' })
+      } else if (action === 'move') {
+        await moveTask(task.id, resolveTarget(task))
+      } else if (action === 'missed_copy_to_braindump') {
+        await markTaskMissedAndCopyToBrainDump(task.id)
+      } else if (action === 'return_to_braindump_delete') {
+        await returnTaskToBrainDump(task.id)
+      } else {
+        await deleteTask(task.id)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to move task')
+      setError(err instanceof Error ? err.message : `Failed to apply ${getActionLabel(action)}`)
+      throw err
     } finally {
       setBusyTaskId(null)
     }
   }
 
-  const returnPendingTask = async (task: Task) => {
-    setBusyTaskId(task.id)
+  const applyAll = async (overrideAction?: ReviewAction) => {
+    if (isApplying || pendingTasks.length === 0) return
+    setIsApplying(true)
     setError(null)
     try {
-      await returnTaskToBrainDump(task.id)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to return task to Brain Dump')
+      for (const task of pendingTasks) {
+        await applyTaskAction(task, overrideAction)
+      }
+    } catch {
+      // The per-task handler already surfaces the error and rolls back where needed.
     } finally {
-      setBusyTaskId(null)
+      setIsApplying(false)
     }
   }
 
@@ -101,7 +150,7 @@ export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: (
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-surface-container shadow-2xl sm:rounded-2xl">
+      <div className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-surface-container shadow-2xl sm:rounded-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">End Day Review</p>
@@ -109,7 +158,7 @@ export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: (
               {dayPlan.shortName} {dayPlan.date}
             </h3>
             <p className="mt-1 text-xs text-on-surface-variant">
-              Resolve pending tasks before closing the day.
+              Default: {getActionLabel(defaultAction)}
             </p>
           </div>
           <button
@@ -133,22 +182,57 @@ export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: (
           ) : (
             <div className="space-y-3">
               {pendingTasks.map(task => {
+                const action = resolveAction(task)
                 const target = resolveTarget(task)
                 const selectedPriority = PRIORITY_OPTIONS.find(option => option.value === target.priority) ?? PRIORITY_OPTIONS[1]
                 const count = getSlotCount(currentWeek, target.day, target.priority, task.id)
                 const isFull = count >= selectedPriority.limit
-                const busy = busyTaskId === task.id
+                const busy = busyTaskId === task.id || isApplying
 
                 return (
                   <div key={task.id} className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
                       <div className="min-w-0 flex-1">
                         <BidiText as="p" text={task.title} className="text-sm font-black text-on-surface" />
                         {task.description && (
                           <BidiText as="p" text={task.description} className="mt-1 text-xs text-on-surface-variant line-clamp-2" />
                         )}
                       </div>
-                      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:w-[24rem]">
+                      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] lg:w-[30rem]">
+                        <select
+                          value={action}
+                          onChange={(event) => updateAction(task.id, event.target.value as ReviewAction)}
+                          className={cn(
+                            'input-base min-w-0 appearance-none text-xs font-bold',
+                            ACTION_OPTIONS.find(option => option.value === action)?.tone,
+                          )}
+                          disabled={busy}
+                        >
+                          {ACTION_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          disabled={!nextDay || busy}
+                          onClick={() => {
+                            if (!nextDay) return
+                            updateAction(task.id, 'move')
+                            updateTarget(task.id, { day: nextDay, priority: task.priority })
+                          }}
+                          leftIcon={<ArrowRight className="h-4 w-4" strokeWidth={1.6} />}
+                        >
+                          Tomorrow
+                        </Button>
+                      </div>
+                    </div>
+
+                    {action === 'move' && (
+                      <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center">
                         <select
                           value={target.day}
                           onChange={(event) => updateTarget(task.id, { day: event.target.value as DayOfWeek })}
@@ -173,45 +257,28 @@ export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: (
                             </option>
                           ))}
                         </select>
+                        <p className={cn('text-[11px]', isFull ? 'text-error' : 'text-on-surface-variant')}>
+                          {count}/{selectedPriority.limit}{isFull ? ' full' : ' used'}
+                        </p>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <p className={cn('text-[11px]', isFull ? 'text-error' : 'text-on-surface-variant')}>
-                        {selectedPriority.label}: {count}/{selectedPriority.limit} used{isFull ? ' — full.' : ''}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          disabled={!nextDay || busy}
-                          onClick={() => nextDay && void movePendingTask(task, { day: nextDay, priority: task.priority })}
-                          leftIcon={<ArrowRight className="h-4 w-4" strokeWidth={1.6} />}
-                        >
-                          Tomorrow
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          disabled={busy || isFull}
-                          loading={busy}
-                          onClick={() => void movePendingTask(task, target)}
-                        >
-                          Move
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          disabled={busy}
-                          onClick={() => void returnPendingTask(task)}
-                          leftIcon={<Brain className="h-4 w-4" strokeWidth={1.6} />}
-                        >
-                          Brain Dump
-                        </Button>
-                      </div>
+                    <div className="mt-3 flex flex-wrap justify-end gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy || (action === 'move' && isFull)}
+                        loading={busyTaskId === task.id}
+                        onClick={() => void applyTaskAction(task)}
+                        leftIcon={
+                          action === 'done' ? <Check className="h-4 w-4" strokeWidth={1.6} />
+                            : action === 'delete' ? <Trash2 className="h-4 w-4" strokeWidth={1.6} />
+                              : <Brain className="h-4 w-4" strokeWidth={1.6} />
+                        }
+                      >
+                        Apply
+                      </Button>
                     </div>
                   </div>
                 )
@@ -225,19 +292,42 @@ export function EndDayReviewModal({ day, onClose }: { day: DayOfWeek; onClose: (
           <span className="text-xs text-on-surface-variant">
             {pendingTasks.length} pending task{pendingTasks.length === 1 ? '' : 's'} left
           </span>
-          <div className="flex gap-3">
-            <Button type="button" variant="ghost" onClick={onClose} disabled={isCompleting}>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isCompleting || isApplying}>
               Cancel
             </Button>
-            <Button
-              type="button"
-              variant="primary"
-              disabled={pendingTasks.length > 0 || isCompleting}
-              loading={isCompleting}
-              onClick={() => void completeReviewedDay()}
-            >
-              Complete Day
-            </Button>
+            {pendingTasks.length > 0 ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={isApplying}
+                  loading={isApplying}
+                  onClick={() => void applyAll(defaultAction)}
+                >
+                  Apply default policy
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={isApplying}
+                  loading={isApplying}
+                  onClick={() => void applyAll()}
+                >
+                  Apply selected actions
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                variant="primary"
+                disabled={isCompleting}
+                loading={isCompleting}
+                onClick={() => void completeReviewedDay()}
+              >
+                Complete Day
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -13,7 +13,7 @@ import { debounce } from '../utils/debounce'
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type Priority = 'high' | 'medium' | 'low'
-export type TaskStatus = 'pending' | 'done'
+export type TaskStatus = 'pending' | 'done' | 'missed'
 export type ChallengeDayStatus = 'pending' | 'success' | 'fail'
 export type DayOfWeek =
   | 'monday'
@@ -170,6 +170,7 @@ interface WeekStore {
   updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string; estimatedTime: string; startTime: string; tags: string[] }>) => Promise<void>
   moveTask: (taskId: string, target: { day: DayOfWeek; priority: Priority }) => Promise<void>
   returnTaskToBrainDump: (taskId: string) => Promise<void>
+  markTaskMissedAndCopyToBrainDump: (taskId: string) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
   markDayComplete: (day: DayOfWeek) => Promise<void>
   deleteDayData: (day: DayOfWeek) => Promise<void>
@@ -260,13 +261,16 @@ function daySerialToIso(daySerial: number): string {
 }
 
 function mapDbTask(t: Record<string, unknown>): Task {
+  const rawStatus = t.status
+  const status: TaskStatus = rawStatus === 'done' || rawStatus === 'missed' ? rawStatus : 'pending'
+
   return {
     id: String(t.id),
     title: String(t.title),
     description: t.description ? String(t.description) : undefined,
     priority: (t.priority as Priority) ?? 'low',
     type: t.type ? (t.type as Task['type']) : undefined,
-    status: (t.status as TaskStatus) ?? 'pending',
+    status,
     day: (t.day as DayOfWeek | null) ?? undefined,
     weekId: t.week_id ? String(t.week_id) : undefined,
     startTime: t.start_time ? String(t.start_time) : undefined,
@@ -277,15 +281,19 @@ function mapDbTask(t: Record<string, unknown>): Task {
   }
 }
 
+function calculateTaskProgress(tasks: Task[]): number {
+  if (tasks.length === 0) return 0
+  const done = tasks.filter(t => t.status === 'done').length
+  return Math.round((done / tasks.length) * 100)
+}
+
 function processTasksForDay(dayPlan: DayPlan, allTasks: Task[]): DayPlan {
   const dayTasks = allTasks.filter(t => t.day === dayPlan.day)
   const highTask = dayTasks.find(t => t.priority === 'high')
   const mediumTasks = dayTasks.filter(t => t.priority === 'medium')
   const smallTasks = dayTasks.filter(t => t.priority === 'low')
 
-  const done = dayTasks.filter(t => t.status === 'done').length
-  const total = dayTasks.length
-  const progress = total > 0 ? Math.round((done / total) * 100) : 0
+  const progress = calculateTaskProgress(dayTasks)
 
   return {
     ...dayPlan,
@@ -984,6 +992,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
     toggleTaskComplete: async (taskId: string) => {
       const { currentWeek } = get()
       if (!currentWeek) return
+      const originalTask = getWeekTasks(currentWeek).find(t => t.id === taskId)
+      if (originalTask?.status === 'missed') return
       const snapshot = get().currentWeek // rollback snapshot
       let foundTask: Task | null = null
       const nextDays = currentWeek.days.map(d => {
@@ -1193,6 +1203,9 @@ export const useWeekStore = create<WeekStore>((set, get) => {
 
       const task = getWeekTasks(currentWeek).find(t => t.id === taskId)
       if (!task) return
+      if (task.status === 'missed') {
+        throw new Error('Missed tasks stay on their original day as a historical record.')
+      }
 
       assertTaskSlotAvailable(currentWeek, taskId, target.day, target.priority)
 
@@ -1264,6 +1277,50 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       }
     },
 
+    markTaskMissedAndCopyToBrainDump: async (taskId) => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) return
+
+      const currentWeek = get().currentWeek
+      if (!currentWeek) return
+
+      const task = getWeekTasks(currentWeek).find(t => t.id === taskId)
+      if (!task) return
+
+      const snapshot = get().currentWeek
+      const brainDumpRow = await createBrainDumpItem({
+        user_id: user.id,
+        content: formatTaskForBrainDump(task),
+        tags: task.tags ?? [],
+      })
+
+      const updatedTasks = getWeekTasks(currentWeek).map(t =>
+        t.id === taskId ? { ...t, status: 'missed' as TaskStatus } : t
+      )
+
+      set({
+        currentWeek: {
+          ...currentWeek,
+          days: rebuildWeekDaysWithTasks(currentWeek, updatedTasks),
+        },
+      })
+
+      try {
+        await offlineUpdate('tasks', taskId, { status: 'missed' })
+        void useBrainDumpStore.getState().loadItems()
+      } catch (err) {
+        console.error('[markTaskMissedAndCopyToBrainDump] Task update failed, reverting:', err)
+        set({ currentWeek: snapshot })
+        try {
+          await deleteBrainDumpItem(brainDumpRow.id)
+        } catch (rollbackErr) {
+          console.error('[markTaskMissedAndCopyToBrainDump] Brain dump rollback failed:', rollbackErr)
+        }
+        throw err
+      }
+    },
+
     deleteTask: async (taskId) => {
       const snapshot = get().currentWeek // rollback snapshot
       // Optimistic: remove from local state first
@@ -1292,6 +1349,8 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       if (!week) return
       const dayPlan = week.days.find(d => d.day === day)
       if (!dayPlan) return
+      const completePendingTask = (task: Task): Task =>
+        task.status === 'pending' ? { ...task, status: 'done' } : task
 
       const pendingTasks = [
         dayPlan.highTask,
@@ -1304,15 +1363,20 @@ export const useWeekStore = create<WeekStore>((set, get) => {
       set(state => ({
         currentWeek: state.currentWeek ? {
           ...state.currentWeek,
-          days: state.currentWeek.days.map(d =>
-            d.day === day ? {
+          days: state.currentWeek.days.map(d => {
+            if (d.day !== day) return d
+            const highTask = d.highTask ? completePendingTask(d.highTask) : undefined
+            const mediumTasks = d.mediumTasks.map(completePendingTask)
+            const smallTasks = d.smallTasks.map(completePendingTask)
+            const tasks = [highTask, ...mediumTasks, ...smallTasks].filter(Boolean) as Task[]
+            return {
               ...d,
-              progress: 100,
-              highTask: d.highTask ? { ...d.highTask, status: 'done' } : undefined,
-              mediumTasks: d.mediumTasks.map(t => ({ ...t, status: 'done' })),
-              smallTasks: d.smallTasks.map(t => ({ ...t, status: 'done' })),
-            } : d
-          ),
+              progress: calculateTaskProgress(tasks),
+              highTask,
+              mediumTasks,
+              smallTasks,
+            }
+          }),
         } : null,
       }))
       await syncToDb()

@@ -1,7 +1,7 @@
 import type { DayPlan, DayOfWeek } from '../store/useWeekStore'
 import { useWeekStore } from '../store/useWeekStore'
 import { useState, useEffect } from 'react'
-import { CheckCircle2, CircleDashed, Trash2, Edit3 } from 'lucide-react'
+import { CheckCircle2, CircleDashed, Trash2, Edit3, X } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { BidiLine, BidiText } from './ui/BidiText'
 import { getLineDirection } from '../utils/textDirection'
@@ -160,7 +160,12 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
               <BidiText
                 as="p"
                 text={day.highTask.title}
-                className={cn('text-sm leading-relaxed text-on-surface', isToday && 'font-semibold')}
+                className={cn(
+                  'text-sm leading-relaxed text-on-surface',
+                  isToday && 'font-semibold',
+                  day.highTask.status === 'done' && 'line-through opacity-50',
+                  day.highTask.status === 'missed' && 'line-through text-error/80',
+                )}
               />
             ) : (
               <p className="text-xs text-on-surface-variant italic">No strategic task</p>
@@ -183,9 +188,14 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
                     className={cn(
                       'flex items-center gap-2',
                       t.status === 'done' && 'line-through opacity-40',
+                      t.status === 'missed' && 'line-through text-error/75',
                     )}
                   >
-                    <div className="w-1 h-1 rounded-full bg-secondary/70 shrink-0" />
+                    {t.status === 'missed' ? (
+                      <X className="w-3 h-3 shrink-0 text-error" strokeWidth={2.2} />
+                    ) : (
+                      <div className="w-1 h-1 rounded-full bg-secondary/70 shrink-0" />
+                    )}
                     <span className="min-w-0 flex-1">{t.title}</span>
                   </BidiLine>
                 ))}
@@ -208,14 +218,22 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
                     key={t.id}
                     as="li"
                     text={t.title}
-                    className={cn('flex items-center gap-2 font-medium', t.status === 'pending' && 'opacity-60')}
+                    className={cn(
+                      'flex items-center gap-2 font-medium',
+                      t.status === 'pending' && 'opacity-60',
+                      t.status === 'missed' && 'line-through text-error/75',
+                    )}
                   >
-                    <div
-                      className={cn(
-                        'w-1.5 h-1.5 rounded-full shrink-0',
-                        t.status === 'done' ? 'bg-tertiary shadow-[0_0_6px_rgb(34_211_238_/_0.6)]' : 'bg-surface-variant',
-                      )}
-                    />
+                    {t.status === 'missed' ? (
+                      <X className="w-3 h-3 shrink-0 text-error" strokeWidth={2.2} />
+                    ) : (
+                      <div
+                        className={cn(
+                          'w-1.5 h-1.5 rounded-full shrink-0',
+                          t.status === 'done' ? 'bg-tertiary shadow-[0_0_6px_rgb(34_211_238_/_0.6)]' : 'bg-surface-variant',
+                        )}
+                      />
+                    )}
                     <span className="min-w-0 flex-1">{t.title}</span>
                   </BidiLine>
                 ))}

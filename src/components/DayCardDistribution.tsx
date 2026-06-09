@@ -5,7 +5,7 @@ import { CSS } from '@dnd-kit/utilities'
 import type { DayPlan, Task, DayOfWeek, Priority } from '../store/useWeekStore'
 import { useWeekStore } from '../store/useWeekStore'
 import { Button } from './ui/Button'
-import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus, Move } from 'lucide-react'
+import { Trash2, Check, Pin, Clock, Hourglass, Leaf, Moon, GripVertical, Sparkles, ListTodo, Plus, Move, X } from 'lucide-react'
 import { getTagStyle } from '../lib/tagColors'
 import { BidiText } from './ui/BidiText'
 import { cn } from '../lib/cn'
@@ -89,7 +89,7 @@ function TaskItem({
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task?.id ?? emptyIdRef.current,
     data: task ? { task } : undefined,
-    disabled: !task || !moveMode || isEditing,
+    disabled: !task || !moveMode || isEditing || task.status === 'missed',
   })
   const dragStyle = transform ? { transform: CSS.Translate.toString(transform) } : undefined
 
@@ -150,7 +150,7 @@ function TaskItem({
   }
 
   function startLongPress() {
-    if (!task || isEditing || moveMode) return
+    if (!task || isEditing || !moveMode || task.status === 'missed') return
     longPressTriggeredRef.current = false
     clearLongPress()
     longPressTimerRef.current = window.setTimeout(() => {
@@ -239,6 +239,9 @@ function TaskItem({
   }
 
 
+  const isDone = task.status === 'done'
+  const isMissed = task.status === 'missed'
+
   return (
     <div
       ref={setNodeRef}
@@ -249,13 +252,14 @@ function TaskItem({
       onPointerLeave={clearLongPress}
       className={cn(
         'group bg-surface-container-highest p-3 rounded-xl border border-transparent hover:border-white/10 text-sm transition-[background-color,border-color,opacity] focus-within:ring-1 focus-within:ring-primary/50 relative overflow-hidden',
-        task.status === 'done' ? 'opacity-60 bg-surface-container-low' : '',
-        moveMode && 'border-primary/20 bg-primary/[0.06]',
+        isDone && 'opacity-60 bg-surface-container-low',
+        isMissed && 'border-error/25 bg-error/[0.06] opacity-85',
+        moveMode && !isMissed && 'border-primary/20 bg-primary/[0.06]',
         isDragging && 'opacity-30',
       )}
     >
       <div className="flex items-start gap-3">
-        {moveMode && (
+        {moveMode && !isMissed && (
           <button
             type="button"
             {...listeners}
@@ -270,12 +274,16 @@ function TaskItem({
         )}
         <button
             onClick={handleToggleComplete}
-            disabled={isToggling}
-            className={`mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded border transition-colors disabled:opacity-50 ${
-                task.status === 'done' ? 'bg-primary border-primary text-background' : 'border-outline-variant hover:border-primary text-transparent'
-            }`}
+            disabled={isToggling || isMissed}
+            className={cn(
+              'mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded border transition-colors disabled:opacity-70',
+              isDone && 'bg-primary border-primary text-background',
+              isMissed && 'bg-error/15 border-error/60 text-error',
+              !isDone && !isMissed && 'border-outline-variant hover:border-primary text-transparent',
+            )}
+            title={isMissed ? 'Missed task' : isDone ? 'Mark pending' : 'Mark done'}
         >
-            <Check className="w-3 h-3" strokeWidth={3} />
+            {isMissed ? <X className="w-3 h-3" strokeWidth={3} /> : <Check className="w-3 h-3" strokeWidth={3} />}
         </button>
         <div
           className={cn('flex-1 min-w-0', moveMode ? 'cursor-default' : 'cursor-text')}
@@ -291,7 +299,11 @@ function TaskItem({
               <BidiText
                 as="div"
                 text={task.title}
-                className={`break-words leading-tight font-medium text-on-surface ${task.status === 'done' ? 'line-through text-on-surface-variant' : ''}`}
+                className={cn(
+                  'break-words leading-tight font-medium text-on-surface',
+                  isDone && 'line-through text-on-surface-variant',
+                  isMissed && 'line-through decoration-error/60 text-error/90',
+                )}
               />
               {task.type === 'pinned' && (
                 <Pin className="w-3.5 h-3.5 text-primary" strokeWidth={2} aria-label="Pinned Task" />
@@ -331,21 +343,20 @@ function TaskItem({
             </div>
             )}
         </div>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation()
-            onOpenMoveModal?.(task)
-          }}
-          className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-on-surface-variant opacity-0 transition-opacity hover:bg-white/10 hover:text-on-surface focus-ring group-hover:opacity-100',
-            moveMode && 'opacity-100 text-primary',
-          )}
-          title="Move task"
-          aria-label="Move task"
-        >
-          <Move className="w-4 h-4" strokeWidth={1.6} />
-        </button>
+        {moveMode && !isMissed && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpenMoveModal?.(task)
+            }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary opacity-100 transition-opacity hover:bg-white/10 hover:text-on-surface focus-ring"
+            title="Move task"
+            aria-label="Move task"
+          >
+            <Move className="w-4 h-4" strokeWidth={1.6} />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -591,7 +602,7 @@ export function DayCardDistribution({
       </div>
 
       {/* Body */}
-      {!hasAnyTasks && !addingFor ? (
+      {!hasAnyTasks && !addingFor && !moveMode ? (
         <div
           className="p-6 flex-1 flex flex-col items-center justify-center text-center opacity-20 cursor-pointer hover:opacity-40 transition-opacity"
           onClick={() => startAdd('medium')}
@@ -621,7 +632,7 @@ export function DayCardDistribution({
                 <TaskItem
                   task={day.highTask}
                   emptyHeight="h-24"
-                  onEmptyClick={() => startAdd('high')}
+                  onEmptyClick={moveMode ? undefined : () => startAdd('high')}
                   showTags={showTags}
                   moveMode={moveMode}
                   onOpenMoveModal={onOpenMoveModal}
@@ -652,7 +663,7 @@ export function DayCardDistribution({
                   <TaskItem
                     key={i}
                     task={day.mediumTasks[i]}
-                    onEmptyClick={() => startAdd('medium')}
+                    onEmptyClick={moveMode ? undefined : () => startAdd('medium')}
                     showTags={showTags}
                     moveMode={moveMode}
                     onOpenMoveModal={onOpenMoveModal}
@@ -684,7 +695,7 @@ export function DayCardDistribution({
                   <TaskItem
                     key={i}
                     task={day.smallTasks[i]}
-                    onEmptyClick={() => startAdd('low')}
+                    onEmptyClick={moveMode ? undefined : () => startAdd('low')}
                     showTags={showTags}
                     moveMode={moveMode}
                     onOpenMoveModal={onOpenMoveModal}

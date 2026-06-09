@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 
 export type AIProvider = 'gemini' | 'grok' | 'groq' | 'ollama'
 export type WeekStartDay = 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
+export type MissedTaskResolution = 'missed_copy_to_braindump' | 'return_to_braindump_delete' | 'delete'
 
 // Model names that were previously listed in the UI but are NOT valid Gemini API models.
 // On hydration from localStorage, these get replaced with the safe fallback.
@@ -48,6 +49,7 @@ export interface SettingsState {
   restDays: string[]  // e.g. ['friday', 'saturday']
   timezone: string
   weekStartDay: WeekStartDay
+  missedTaskResolution: MissedTaskResolution
 
   // Privacy
   analyticsEnabled: boolean
@@ -68,6 +70,7 @@ export interface SettingsState {
   setRestDays: (days: string[]) => void
   setTimezone: (timezone: string) => void
   setWeekStartDay: (day: WeekStartDay) => void
+  setMissedTaskResolution: (resolution: MissedTaskResolution) => void
   setAnalyticsEnabled: (enabled: boolean) => void
   setReportIncludedDays: (days: string[]) => void
   setReportClosingQuote: (quote: string) => void
@@ -91,6 +94,7 @@ const syncSettingsToDb = async (updates: Partial<SettingsState>) => {
       ...(updates.restDays !== undefined && { rest_days: updates.restDays }),
       ...(updates.timezone !== undefined && { timezone: updates.timezone }),
       ...(updates.weekStartDay !== undefined && { week_start_day: updates.weekStartDay }),
+      ...(updates.missedTaskResolution !== undefined && { missed_task_resolution: updates.missedTaskResolution }),
       ...(updates.reportIncludedDays !== undefined && { report_included_days: updates.reportIncludedDays }),
       ...(updates.reportClosingQuote !== undefined && { report_closing_quote: updates.reportClosingQuote }),
     })
@@ -113,6 +117,7 @@ export const useSettingsStore = create<SettingsState>()(
       restDays: ['friday'],
       timezone: getDefaultTimeZone(),
       weekStartDay: 'saturday',
+      missedTaskResolution: 'missed_copy_to_braindump',
       analyticsEnabled: false,
       reportIncludedDays: ['saturday','sunday','monday','tuesday','wednesday','thursday','friday'],
       reportClosingQuote: 'The secret of getting ahead is getting started.',
@@ -178,6 +183,7 @@ export const useSettingsStore = create<SettingsState>()(
       setRestDays: (days) => { set({ restDays: days }); void syncSettingsToDb({ restDays: days }) },
       setTimezone: (timezone) => { set({ timezone }); void syncSettingsToDb({ timezone }) },
       setWeekStartDay: (day) => { set({ weekStartDay: day }); void syncSettingsToDb({ weekStartDay: day }) },
+      setMissedTaskResolution: (resolution) => { set({ missedTaskResolution: resolution }); void syncSettingsToDb({ missedTaskResolution: resolution }) },
       setAnalyticsEnabled: (enabled) => { set({ analyticsEnabled: enabled }); void syncSettingsToDb({ analyticsEnabled: enabled }) },
       setReportIncludedDays: (days) => { set({ reportIncludedDays: days }); void syncSettingsToDb({ reportIncludedDays: days }) },
       setReportClosingQuote: (quote) => { set({ reportClosingQuote: quote }); void syncSettingsToDb({ reportClosingQuote: quote }) },
@@ -206,6 +212,7 @@ export const useSettingsStore = create<SettingsState>()(
               restDays: (userSettings.rest_days as string[]) ?? state.restDays,
               timezone: userSettings.timezone ?? state.timezone,
               weekStartDay: (userSettings.week_start_day as WeekStartDay) ?? state.weekStartDay,
+              missedTaskResolution: (userSettings.missed_task_resolution as MissedTaskResolution) ?? state.missedTaskResolution,
               reportIncludedDays: (userSettings.report_included_days as string[]) ?? state.reportIncludedDays,
               reportClosingQuote: (userSettings.report_closing_quote as string) ?? state.reportClosingQuote,
             }))

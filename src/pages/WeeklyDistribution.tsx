@@ -9,9 +9,11 @@ import {
   DragOverlay,
   MouseSensor,
   TouchSensor,
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -125,6 +127,11 @@ function parseDropTarget(id: unknown): { day: DayOfWeek; priority: Priority } | 
   if (!ALL_DAYS.includes(day as DayOfWeek)) return null
   if (!['high', 'medium', 'low'].includes(priority)) return null
   return { day: day as DayOfWeek, priority: priority as Priority }
+}
+
+const taskMoveCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args)
+  return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args)
 }
 
 type AssignDraft = {
@@ -562,7 +569,7 @@ Make sure:
         <div className="flex-1 container-responsive pb-8 overflow-y-auto custom-scrollbar">
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={taskMoveCollisionDetection}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}

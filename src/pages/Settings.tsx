@@ -1,6 +1,6 @@
 import { AppLayout } from '../components/layout/AppLayout'
 import { Bot, Pin, Calendar, Palette, Bell, FileText, History, Shield, MonitorDown, Download, RefreshCw, Eye, EyeOff } from 'lucide-react'
-import { useSettingsStore, type AIProvider, type WeekStartDay, type SettingsState } from '../store/useSettingsStore'
+import { useSettingsStore, type AIProvider, type WeekStartDay, type SettingsState, type MissedTaskResolution } from '../store/useSettingsStore'
 import { useState, useEffect } from 'react'
 import { generateWeeklyReportHTML } from '../lib/generateWeeklyReportHTML'
 import { Button } from '../components/ui/Button'
@@ -36,6 +36,24 @@ const WEEK_START_OPTIONS: Array<{ value: WeekStartDay; label: string }> = [
   { value: 'saturday', label: 'Saturday' },
   { value: 'sunday', label: 'Sunday' },
   { value: 'monday', label: 'Monday' },
+]
+
+const MISSED_TASK_OPTIONS: Array<{ value: MissedTaskResolution; label: string; desc: string }> = [
+  {
+    value: 'missed_copy_to_braindump',
+    label: 'Missed + Brain Dump',
+    desc: 'Keep an X on the original day and copy the task back for replanning.',
+  },
+  {
+    value: 'return_to_braindump_delete',
+    label: 'Brain Dump only',
+    desc: 'Return unfinished tasks to Brain Dump and remove them from the day.',
+  },
+  {
+    value: 'delete',
+    label: 'Delete',
+    desc: 'Remove unfinished tasks when applying the default policy.',
+  },
 ]
 
 const AI_PROVIDER_META: Record<AIProvider, {
@@ -528,6 +546,29 @@ export function Settings() {
                         >
                           {day.slice(0,3)}
                         </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Missed Task Handling</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {MISSED_TASK_OPTIONS.map(option => {
+                      const active = settings.missedTaskResolution === option.value
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => settings.setMissedTaskResolution(option.value)}
+                          className={`rounded-xl border px-4 py-3 text-left transition-[background-color,border-color,color] focus-ring ${
+                            active
+                              ? 'border-primary/45 bg-primary/12 text-on-surface'
+                              : 'border-white/10 bg-surface-container-low/45 text-on-surface-variant hover:border-white/20 hover:text-on-surface'
+                          }`}
+                        >
+                          <span className="block text-xs font-bold uppercase tracking-wider">{option.label}</span>
+                          <span className="mt-1 block text-[11px] leading-snug text-neutral-500">{option.desc}</span>
+                        </button>
                       )
                     })}
                   </div>

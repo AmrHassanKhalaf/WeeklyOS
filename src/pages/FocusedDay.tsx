@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, TrendingDown, Minus, History, Play, Pause, ChevronUp, ChevronDown, Maximize, Minimize, BrainCircuit } from 'lucide-react'
+import { Check, Clock, Timer, Zap, RotateCcw, SlidersHorizontal, Target, Inbox, BadgeCheck, TrendingUp, TrendingDown, Minus, History, Play, Pause, ChevronUp, ChevronDown, Maximize, Minimize, BrainCircuit, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -234,6 +234,7 @@ function TaskRow({
   isRunning?: boolean
 }) {
   const done = task.status === 'done'
+  const missed = task.status === 'missed'
   const totalSecs = (task.actualDuration || 0) + unsavedSeconds
   const taskDuration = `${Math.floor(totalSecs / 60)}m ${(totalSecs % 60).toString().padStart(2, '0')}s`
 
@@ -298,6 +299,8 @@ function TaskRow({
 
   const containerCls = isDimmed
     ? 'border-white/5 bg-transparent opacity-25 grayscale'
+    : missed
+      ? 'border-error/20 bg-error/[0.045] opacity-75'
     : done
       ? 'border-white/[0.06] bg-transparent opacity-45 grayscale'
       : isActive
@@ -306,6 +309,8 @@ function TaskRow({
 
   const titleCls = done
     ? 'line-through text-neutral-600'
+    : missed
+      ? 'line-through text-error/80'
     : isActive ? C.titleActive
       : `text-neutral-400 ${C.titleInteractive}`
 
@@ -317,7 +322,7 @@ function TaskRow({
         <div className={`pointer-events-none absolute inset-0 ${C.wash} ${isRunning ? 'opacity-100' : 'opacity-75'}`} />
       )}
       {/* Left accent stripe — visible when hovered or active */}
-      {!done && !isDimmed && (
+      {!done && !missed && !isDimmed && (
         <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-opacity duration-300 ${C.stripe} ${showExpanded ? 'opacity-100' : 'opacity-0 group-hover/task:opacity-100'}`} />
       )}
 
@@ -328,18 +333,21 @@ function TaskRow({
           {/* Checkbox */}
           <button
             onClick={(e) => { e.stopPropagation(); onToggle() }}
+            disabled={missed}
             className="group/check -ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-ring"
-            aria-label={done ? 'Mark task incomplete' : 'Mark task complete'}
+            aria-label={missed ? 'Missed task' : done ? 'Mark task incomplete' : 'Mark task complete'}
           >
             <span
               className={`flex items-center justify-center rounded-full border transition-colors duration-200 ${
-                done
+                missed
+                  ? 'border-error/60 bg-error/15 text-error'
+                  : done
                   ? 'border-neutral-500 bg-neutral-700 text-neutral-300'
                   : 'border-neutral-500 text-transparent group-hover/check:border-neutral-300 group-hover/check:bg-white/[0.03]'
               }`}
               style={{ width: 22, height: 22 }}
             >
-              {done && <Check className="w-3.5 h-3.5" strokeWidth={2} />}
+              {missed ? <X className="w-3.5 h-3.5" strokeWidth={2.3} /> : done && <Check className="w-3.5 h-3.5" strokeWidth={2} />}
             </span>
           </button>
 
@@ -352,7 +360,7 @@ function TaskRow({
             />
             <div
               className={`mt-1 flex min-h-7 flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-wider transition-[opacity,transform,color] duration-200 ${
-                isDimmed || done ? 'pointer-events-none translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
+                isDimmed || done || missed ? 'pointer-events-none translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
               } ${isActive ? 'text-neutral-400' : 'text-neutral-600 group-hover/task:text-neutral-400'}`}
             >
               <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 transition-[background-color,border-color,color] duration-200 ${isActive ? C.pill : `border-transparent ${C.pillInteractive}`}`}>
@@ -377,7 +385,7 @@ function TaskRow({
               <span className={`w-3 h-3 rounded-full ${C.dot} ${isRunning ? 'animate-pulse' : ''}`} />
               {isRunning ? 'Running' : 'Active'}
             </button>
-          ) : !done ? (
+          ) : !done && !missed ? (
             <button
               onClick={(e) => { e.stopPropagation(); onMakeActive?.() }}
               className={`shrink-0 px-3 py-1.5 touch-target rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-[background-color,border-color,color] duration-200
@@ -920,9 +928,9 @@ export function FocusedDay() {
   const focusDelta = getFocusDeltaDisplay(todayFocusSeconds, yesterdayFocusSeconds)
   const FocusDeltaIcon = focusDelta.Icon
 
-  // Derive whether today is complete (all tasks done) — used for button state
+  // Derive whether today is reviewed (no pending tasks) for the day-complete button.
   const allTodayTasks = [todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean)
-  const isDayComplete = allTodayTasks.length > 0 && allTodayTasks.every(t => t!.status === 'done')
+  const isDayComplete = allTodayTasks.length > 0 && allTodayTasks.every(t => t!.status !== 'pending')
 
   const handleMarkDayComplete = async () => {
     if (isDayCompleting || isDayComplete) return
@@ -967,9 +975,9 @@ export function FocusedDay() {
         {showTaskPrompt && (
           <TaskPickerGate
             sections={[
-              { label: 'Main Objective', tone: 'purple', tasks: mainTask && mainTask.status !== 'done' ? [mainTask] : [] },
-              { label: 'Supporting Tasks', tone: 'teal', tasks: mediumTasks.filter(task => task.status !== 'done') },
-              { label: 'Quick Wins', tone: 'yellow', tasks: quickWins.filter(task => task.status !== 'done') },
+              { label: 'Main Objective', tone: 'purple', tasks: mainTask && mainTask.status === 'pending' ? [mainTask] : [] },
+              { label: 'Supporting Tasks', tone: 'teal', tasks: mediumTasks.filter(task => task.status === 'pending') },
+              { label: 'Quick Wins', tone: 'yellow', tasks: quickWins.filter(task => task.status === 'pending') },
             ]}
             onChooseTask={handleMakeActive}
             onStartWithoutTask={() => {
@@ -1518,11 +1526,15 @@ export function FocusedDay() {
                   {[todayPlan.highTask, ...todayPlan.mediumTasks, ...todayPlan.smallTasks].filter(Boolean).map(task => (
                     <div key={task!.id} className="flex items-center justify-between group">
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className={`shrink-0 w-2 h-2 rounded-full ${task!.priority === 'high' ? 'bg-primary shadow-[0_0_8px_#7c3aed]' : task!.priority === 'medium' ? 'bg-tertiary shadow-[0_0_8px_#14b8a6]' : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.75)]'}`} />
+                        {task!.status === 'missed' ? (
+                          <X className="w-3.5 h-3.5 shrink-0 text-error" strokeWidth={2.3} />
+                        ) : (
+                          <span className={`shrink-0 w-2 h-2 rounded-full ${task!.priority === 'high' ? 'bg-primary shadow-[0_0_8px_#7c3aed]' : task!.priority === 'medium' ? 'bg-tertiary shadow-[0_0_8px_#14b8a6]' : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.75)]'}`} />
+                        )}
                         <BidiText
                           as="span"
                           text={task!.title}
-                          className={`text-sm font-medium truncate ${task!.status === 'done' ? 'line-through text-neutral-500' : 'text-neutral-200'}`}
+                          className={`text-sm font-medium truncate ${task!.status === 'done' ? 'line-through text-neutral-500' : task!.status === 'missed' ? 'line-through text-error/75' : 'text-neutral-200'}`}
                         />
                       </div>
                       <span className="shrink-0 pl-3 text-xs font-mono text-neutral-500">
