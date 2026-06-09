@@ -8,6 +8,7 @@ import { useBrainDumpStore } from '../store/useBrainDumpStore'
 import { useWeekStore } from '../store/useWeekStore'
 import { Button } from '../components/ui/Button'
 import { cn } from '../lib/cn'
+import { getLineDirection } from '../utils/textDirection'
 
 export function BrainDump() {
   const brainDumpItems = useBrainDumpStore(state => state.brainDumpItems)
@@ -119,7 +120,7 @@ export function BrainDump() {
               onKeyDown={handleKeyDown}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
-              dir="auto"
+              dir={getLineDirection(inputValue)}
               placeholder="What's on your mind? Start typing anything… (Ctrl+Enter to save)"
               className="bidi-plaintext relative w-full bg-transparent text-2xl sm:text-3xl font-serif text-on-surface placeholder:text-on-surface-variant/20 resize-none focus:outline-none min-h-[180px] leading-relaxed"
             />
@@ -231,7 +232,7 @@ export function BrainDump() {
                       if (e.key === 'Escape') { setShowQuickInput(false); setQuickInput('') }
                     }}
                     onBlur={handleQuickAdd}
-                    dir="auto"
+                    dir={getLineDirection(quickInput)}
                     placeholder="Task title, press Enter to save…"
                     className="bidi-plaintext w-full bg-transparent text-sm text-on-surface outline-none placeholder:text-outline"
                   />

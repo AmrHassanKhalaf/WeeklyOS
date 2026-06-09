@@ -4,12 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AppLayout } from '../components/layout/AppLayout'
 import { useLayoutStore } from '../store/useLayoutStore'
 import { useWeekStore } from '../store/useWeekStore'
-import type { Task } from '../store/useWeekStore'
+import type { DayOfWeek, Task } from '../store/useWeekStore'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { DeepFocusOverlay } from '../components/focus/DeepFocusOverlay'
 import { BidiText } from '../components/ui/BidiText'
+import { EndDayReviewModal } from '../components/EndDayReviewModal'
 import {
   playTimerCountdownAudio,
   stopTimerCountdownAudio,
@@ -607,6 +608,7 @@ export function FocusedDay() {
   const [showFocusRecordsList, setShowFocusRecordsList] = useState(true)
   const [isDayCompleting, setIsDayCompleting] = useState(false)
   const [dayCompleteError, setDayCompleteError] = useState<string | null>(null)
+  const [reviewDay, setReviewDay] = useState<DayOfWeek | null>(null)
 
   useEffect(() => {
     setTaskPickerOpen(showTaskPrompt)
@@ -924,6 +926,11 @@ export function FocusedDay() {
 
   const handleMarkDayComplete = async () => {
     if (isDayCompleting || isDayComplete) return
+    const pendingTodayTasks = allTodayTasks.filter(t => t && t.status === 'pending')
+    if (pendingTodayTasks.length > 0) {
+      setReviewDay(todayPlan.day)
+      return
+    }
     setDayCompleteError(null)
     setIsDayCompleting(true)
     try {
@@ -1597,6 +1604,12 @@ export function FocusedDay() {
         </AnimatePresence>
 
       </motion.div>
+      {reviewDay && (
+        <EndDayReviewModal
+          day={reviewDay}
+          onClose={() => setReviewDay(null)}
+        />
+      )}
     </AppLayout>
   )
 }

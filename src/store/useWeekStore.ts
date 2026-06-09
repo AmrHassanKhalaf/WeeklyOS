@@ -3,7 +3,9 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { offlineDelete, offlineInsert, offlineUpdate } from '../lib/supabaseWithOffline'
 import type { Json } from '../lib/database.types'
+import { createBrainDumpItem, deleteBrainDumpItem } from '../services/brainDumpRepository'
 import { useSettingsStore } from './useSettingsStore'
+import { useBrainDumpStore } from './useBrainDumpStore'
 import type { WeekStartDay } from './useSettingsStore'
 import { formatDaySerial, getAdjacentWeek, getWeekInfoForDate, getWeekStartDaySerial, getWeeksInYear } from '../utils/weekDateUtils'
 import { debounce } from '../utils/debounce'
@@ -166,6 +168,8 @@ interface WeekStore {
   toggleTaskComplete: (taskId: string) => Promise<void>
   createTask: (task: { title: string; priority: Priority; day?: DayOfWeek; description?: string; startTime?: string; estimatedTime?: string; tags?: string[] }) => Promise<void>
   updateTask: (taskId: string, updates: Partial<{ title: string; priority: Priority; day: DayOfWeek | null; status: TaskStatus; description: string; estimatedTime: string; startTime: string; tags: string[] }>) => Promise<void>
+  moveTask: (taskId: string, target: { day: DayOfWeek; priority: Priority }) => Promise<void>
+  returnTaskToBrainDump: (taskId: string) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
   markDayComplete: (day: DayOfWeek) => Promise<void>
   deleteDayData: (day: DayOfWeek) => Promise<void>
@@ -212,6 +216,18 @@ const DAY_SHORT: Record<DayOfWeek, string> = {
   thursday: 'Thu',
   friday: 'Fri',
   saturday: 'Sat',
+}
+
+const PRIORITY_LIMITS: Record<Priority, number> = {
+  high: 1,
+  medium: 3,
+  low: 5,
+}
+
+const PRIORITY_LABELS: Record<Priority, string> = {
+  high: 'High Impact',
+  medium: 'Medium Priority',
+  low: 'Small Tasks',
 }
 
 function getOrderedDays(weekStartDay: WeekStartDay): DayOfWeek[] {
@@ -278,6 +294,39 @@ function processTasksForDay(dayPlan: DayPlan, allTasks: Task[]): DayPlan {
     mediumTasks: mediumTasks,
     smallTasks: smallTasks,
   }
+}
+
+function getWeekTasks(week: WeekData): Task[] {
+  return week.days.flatMap(d => [d.highTask, ...d.mediumTasks, ...d.smallTasks].filter(Boolean) as Task[])
+}
+
+function getTaskSlotCount(week: WeekData, day: DayOfWeek, priority: Priority, excludeTaskId?: string): number {
+  return getWeekTasks(week).filter(t => t.day === day && t.priority === priority && t.id !== excludeTaskId).length
+}
+
+function assertTaskSlotAvailable(week: WeekData, taskId: string, day: DayOfWeek, priority: Priority): void {
+  const count = getTaskSlotCount(week, day, priority, taskId)
+  if (count >= PRIORITY_LIMITS[priority]) {
+    throw new Error(`Limit reached: ${DAY_SHORT[day]} already has ${PRIORITY_LIMITS[priority]} ${PRIORITY_LABELS[priority]} task${PRIORITY_LIMITS[priority] > 1 ? 's' : ''}.`)
+  }
+}
+
+function rebuildWeekDaysWithTasks(week: WeekData, tasks: Task[]): DayPlan[] {
+  return week.days.map(d => processTasksForDay(
+    { ...d, highTask: undefined, mediumTasks: [], smallTasks: [] },
+    tasks
+  ))
+}
+
+function formatTaskForBrainDump(task: Task): string {
+  const details = [
+    task.description?.trim(),
+    task.startTime ? `Start: ${task.startTime}` : '',
+    task.estimatedTime ? `Estimate: ${task.estimatedTime}` : '',
+  ].filter(Boolean)
+
+  if (details.length === 0) return task.title
+  return `${task.title}\n${details.join('\n')}`
 }
 
 function buildBaseDayPlans(dbWeek: Record<string, unknown>): DayPlan[] {
@@ -1135,6 +1184,83 @@ export const useWeekStore = create<WeekStore>((set, get) => {
         const errObj = updateError as { code?: string; message?: string }
         console.error('[updateTask] DB write failed, reverting. Code:', errObj?.code, '| Message:', errObj?.message)
         set({ currentWeek: snapshot })
+      }
+    },
+
+    moveTask: async (taskId, target) => {
+      const currentWeek = get().currentWeek
+      if (!currentWeek) return
+
+      const task = getWeekTasks(currentWeek).find(t => t.id === taskId)
+      if (!task) return
+
+      assertTaskSlotAvailable(currentWeek, taskId, target.day, target.priority)
+
+      if (task.day === target.day && task.priority === target.priority) return
+
+      const snapshot = get().currentWeek
+      const updatedTasks = getWeekTasks(currentWeek).map(t =>
+        t.id === taskId ? { ...t, day: target.day, priority: target.priority } : t
+      )
+
+      set({
+        currentWeek: {
+          ...currentWeek,
+          days: rebuildWeekDaysWithTasks(currentWeek, updatedTasks),
+        },
+      })
+
+      try {
+        await offlineUpdate('tasks', taskId, {
+          day: target.day,
+          priority: target.priority,
+        })
+      } catch (err) {
+        console.error('[moveTask] DB write failed, reverting:', err)
+        set({ currentWeek: snapshot })
+        throw err
+      }
+    },
+
+    returnTaskToBrainDump: async (taskId) => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) return
+
+      const currentWeek = get().currentWeek
+      if (!currentWeek) return
+
+      const task = getWeekTasks(currentWeek).find(t => t.id === taskId)
+      if (!task) return
+
+      const snapshot = get().currentWeek
+      const brainDumpRow = await createBrainDumpItem({
+        user_id: user.id,
+        content: formatTaskForBrainDump(task),
+        tags: task.tags ?? [],
+      })
+
+      const remainingTasks = getWeekTasks(currentWeek).filter(t => t.id !== taskId)
+
+      set({
+        currentWeek: {
+          ...currentWeek,
+          days: rebuildWeekDaysWithTasks(currentWeek, remainingTasks),
+        },
+      })
+
+      try {
+        await offlineDelete('tasks', taskId)
+        void useBrainDumpStore.getState().loadItems()
+      } catch (err) {
+        console.error('[returnTaskToBrainDump] Task delete failed, reverting:', err)
+        set({ currentWeek: snapshot })
+        try {
+          await deleteBrainDumpItem(brainDumpRow.id)
+        } catch (rollbackErr) {
+          console.error('[returnTaskToBrainDump] Brain dump rollback failed:', rollbackErr)
+        }
+        throw err
       }
     },
 

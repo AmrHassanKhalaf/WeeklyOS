@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { CheckCircle2, CircleDashed, Trash2, Edit3 } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { BidiLine, BidiText } from './ui/BidiText'
+import { getLineDirection } from '../utils/textDirection'
 
 interface DayCardProps {
   day: DayPlan
@@ -237,7 +238,7 @@ export function DayCard({ day, isCompact = false }: DayCardProps) {
             value={note}
             onChange={e => setNote(e.target.value)}
             onBlur={handleNoteBlur}
-            dir="auto"
+            dir={getLineDirection(note)}
             placeholder="What did you learn today? Any blockers?"
             className="input-base bidi-plaintext resize-none min-h-[80px] text-base sm:text-xs"
           />
