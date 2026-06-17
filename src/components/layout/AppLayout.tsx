@@ -150,7 +150,7 @@ export function AppLayout({ children, aiVariant = 'default', disableTransition }
         : 'lg:pl-64'
 
   return (
-    <div className="h-dvh bg-background text-on-background font-body relative overflow-hidden">
+    <div className="h-dvh text-on-background font-body relative overflow-hidden">
       {/* Offline / syncing indicator */}
       <NetworkStatusBadge />
 
