@@ -227,6 +227,51 @@ body {
   overflow-x: hidden;
 }
 
+/* Stacking context: app content floats above the fixed wave layer */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ──────────────────────────────────────────────────────────────────────── */
+/*  Ambient wave background — fixed, blended, zero layout impact           */
+/*  Dark mode  : screen blend keeps the purple neon waves on black canvas  */
+/*  Light mode : CSS-only remix → soft lavender on white, multiply blend   */
+/* ──────────────────────────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  /* Image fills the viewport, pinned to the bottom where waves live */
+  background-image: url('/bg-wave-purple.png');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+
+  /* Dark mode defaults: subtle screen blend at low opacity */
+  opacity: 0.55;
+  mix-blend-mode: screen;
+
+  /* GPU-composited — no repaints on scroll */
+  will-change: opacity, filter;
+  transition:
+    opacity 0.45s ease,
+    filter  0.45s ease;
+}
+
+/* ── Light mode: dedicated soft lavender wave image ─────────────────────── */
+/*  Swaps to a purpose-built pastel image so no CSS trickery is needed.     */
+/*  multiply blend darkens white canvas → waves integrate naturally.        */
+body.light::before {
+  background-image: url('/bg-wave-light.png');
+  opacity: 0.75;
+  mix-blend-mode: multiply;
+  filter: none;
+}
+
 body.light { color-scheme: light; }
 
 /* ──────────────────────────────────────────────────────────────────────── */
