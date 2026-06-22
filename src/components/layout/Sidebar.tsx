@@ -72,7 +72,7 @@ function NavItem({
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             />
           )}
-          <Icon 
+          <Icon
             className={cn(
               'w-[18px] h-[18px] relative z-10 transition-colors duration-150',
               isActive ? 'text-primary' : 'text-neutral-500 group-hover:text-neutral-300',
